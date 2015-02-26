@@ -2,6 +2,7 @@ package jforex.strategies;
 
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
@@ -24,6 +25,7 @@ import com.dukascopy.api.Period;
 
 import jforex.BasicTAStrategy;
 import jforex.techanalysis.Trend;
+import jforex.techanalysis.Trend.TREND_STATE;
 import jforex.utils.FXUtils;
 import jforex.utils.FXUtils.TradeLog;
 
@@ -32,17 +34,104 @@ public class SimpleMAsIDCrossTrendFollow extends BasicTAStrategy implements IStr
 	protected Period usedTimeFrame = Period.FOUR_HOURS;
 	
 	protected class LocalTradeLog extends FXUtils.TradeLog {
-		boolean isMA200Highest = false, isMA200Lowest = false;
+		boolean 
+			isMA200Highest = false, isMA200Lowest = false,
+			reEntry = false;
+		
+		double 
+			entryBarBottomChPos = 0.0, 
+			entryBarTopChPos = 0.0,
+			
+			maxFavourableChangeATR1Bar = -1.0,
+			maxAdverseChangeATR1Bar = -1.0,
+			maxFavourableChangeATR2Bar = -1.0,
+			maxAdverseChangeATR2Bar = -1.0,
+			maxFavourableChangeATR3Bar = -1.0,
+			maxAdverseChangeATR3Bar = -1.0;
+		
+		int bBandsWalk5Up = -1, bBandsWalkDown5 = -1;
+		
+		Trend.TREND_STATE entryTrendState;
 		
 		public LocalTradeLog(String pOrderLabel, boolean pIsLong, long pSignalTime, double pEntryPrice, double pSL, double pInitialRisk,
-							 boolean isMA200Highest, boolean isMA200Lowest) {
+							 boolean isMA200Highest, boolean isMA200Lowest, 
+							 boolean reEntry,
+							 double entryBarBottomChPos, double entryBarTopChPos,
+							 int bBandsWalk5Up, int bBandsWalkDown5,
+							 TREND_STATE entryTrendState) {
 			super(pOrderLabel, pIsLong, pSignalTime, pEntryPrice, pSL, pInitialRisk);
 			this.isMA200Highest = isMA200Highest;
 			this.isMA200Lowest = isMA200Lowest;
+			this.reEntry = reEntry;
+			this.entryBarBottomChPos = entryBarBottomChPos;
+			this.entryBarTopChPos = entryBarTopChPos;
+			this.bBandsWalk5Up = bBandsWalk5Up;
+			this.bBandsWalkDown5 = bBandsWalkDown5;
+			this.entryTrendState = entryTrendState;
 		}
 		
-		public String exitReport(Instrument instrument) {
-			return new String(super.exitReport(instrument) + ";" + isMA200Highest + ";" + isMA200Lowest);
+		public String exitReport(Instrument instrument, int noOfBarsInTrade) {
+			return new String(super.exitReport(instrument) + ";" + isMA200Highest + ";" + isMA200Lowest
+					 + ";" + reEntry + ";" + entryBarBottomChPos  
+					 + ";" + FXUtils.df1.format(entryBarBottomChPos)  + ";" + FXUtils.df1.format(entryBarTopChPos)
+					 + ";" + FXUtils.if1.format(bBandsWalkDown5) + FXUtils.if1.format(bBandsWalk5Up)
+					 + ";" + FXUtils.df1.format(this.maxAdverseChangeATR1Bar)  + ";" + FXUtils.df1.format(this.maxAdverseChangeATR2Bar)  + ";" + FXUtils.df1.format(this.maxAdverseChangeATR3Bar)  
+					 + ";" + FXUtils.df1.format(this.maxFavourableChangeATR1Bar)  + ";" + FXUtils.df1.format(this.maxFavourableChangeATR2Bar)  + ";" + FXUtils.df1.format(this.maxFavourableChangeATR3Bar)  
+					 + ";" + FXUtils.if1.format(noOfBarsInTrade));
+		}
+		
+		public void updatePriceMoves(boolean isLong, List<IBar> last3Bars, double barLowChannelPos, double barHighChannelPos, double atr) {
+			if (isLong) {
+				// check favourable price moves, counting from last close
+				double
+					goodMove1 = last3Bars.get(2).getClose() - last3Bars.get(2).getLow(), // current bar
+					goodMove2 = last3Bars.get(2).getClose() - last3Bars.get(1).getLow(),
+					goodMove3 = last3Bars.get(2).getClose() - last3Bars.get(0).getLow();
+				if (goodMove1 / atr > maxFavourableChangeATR1Bar)
+					maxFavourableChangeATR1Bar = goodMove1 / atr; 
+				if (goodMove2 / atr > maxFavourableChangeATR2Bar)
+					maxFavourableChangeATR2Bar = goodMove2 / atr;
+				if (goodMove3 / atr > maxFavourableChangeATR3Bar)
+					maxFavourableChangeATR3Bar = goodMove3 / atr;
+				// check adverse price moves, counting from last close. Only from upper channel half
+				if (barHighChannelPos > 50.0) {
+					double 
+						badMove1 = last3Bars.get(2).getHigh() - last3Bars.get(2).getClose(),
+						badMove2 = last3Bars.get(1).getHigh() - last3Bars.get(2).getClose(),
+						badMove3 = last3Bars.get(0).getHigh() - last3Bars.get(2).getClose();
+					if (badMove1 / atr > maxAdverseChangeATR1Bar)
+						maxAdverseChangeATR1Bar = badMove1 / atr;
+					if (badMove2 / atr > maxAdverseChangeATR2Bar)
+						maxAdverseChangeATR2Bar = badMove2 / atr;
+					if (badMove3 / atr > maxAdverseChangeATR3Bar)
+						maxAdverseChangeATR3Bar = badMove3 / atr;
+				}
+			} else {
+				// check favourable price moves, counting from last close
+				double
+					goodMove1 = last3Bars.get(2).getHigh() - last3Bars.get(2).getClose() , // current bar
+					goodMove2 = last3Bars.get(1).getHigh() - last3Bars.get(2).getClose(),
+					goodMove3 = last3Bars.get(0).getHigh() - last3Bars.get(2).getClose();
+				if (goodMove1 / atr > maxFavourableChangeATR1Bar)
+					maxFavourableChangeATR1Bar = goodMove1 / atr; 
+				if (goodMove2 / atr > maxFavourableChangeATR2Bar)
+					maxFavourableChangeATR2Bar = goodMove2 / atr;
+				if (goodMove3 / atr > maxFavourableChangeATR3Bar)
+					maxFavourableChangeATR3Bar = goodMove3 / atr;
+				// check adverse price moves, counting from last close. Only from lower channel half
+				if (barHighChannelPos < 50.0) {
+					double 
+						badMove1 = last3Bars.get(2).getClose() - last3Bars.get(2).getLow(),
+						badMove2 = last3Bars.get(2).getClose() - last3Bars.get(1).getLow(),
+						badMove3 = last3Bars.get(2).getClose() - last3Bars.get(0).getLow();
+					if (badMove1 / atr > maxAdverseChangeATR1Bar)
+						maxAdverseChangeATR1Bar = badMove1 / atr;
+					if (badMove2 / atr > maxAdverseChangeATR2Bar)
+						maxAdverseChangeATR2Bar = badMove2 / atr;
+					if (badMove3 / atr > maxAdverseChangeATR3Bar)
+						maxAdverseChangeATR3Bar = badMove3 / atr;
+				}				
+			}
 		}
 	}
 
@@ -53,8 +142,9 @@ public class SimpleMAsIDCrossTrendFollow extends BasicTAStrategy implements IStr
 		public boolean 
 			waitingOrder = false,
 			openPosition = false;
-		public int orderCounter = 0;
-		int noOfBarsInTrade = 0;		
+		public int 
+			orderCounter = 0,
+			noOfBarsInTrade = 0;		
 
 		public PairTradeData(Instrument pair) {
 			super();
@@ -107,34 +197,90 @@ public class SimpleMAsIDCrossTrendFollow extends BasicTAStrategy implements IStr
 		PairTradeData currPairData = pairsTradeData.get(instrument.toString());
 		TradeLog tradeLog = currPairData.tradeLog;
 		IOrder positionOrder = currPairData.positionOrder;
-		if (positionOrder != null && positionOrder.getState().equals(IOrder.State.FILLED)) {
-			// already in position
-			if (positionOrder.isLong()) {
-				double ma100 = indicators.sma(instrument, usedTimeFrame, OfferSide.BID, AppliedPrice.CLOSE, 100, Filter.WEEKENDS, 1, bidBar.getTime(), 0)[0];
-				if (ma100 > positionOrder.getStopLossPrice()) {
-					positionOrder.setStopLossPrice(ma100);
-					tradeLog.updateMaxRisk(ma100);
-				}
-			} else {
-				double ma100 = indicators.sma(instrument, usedTimeFrame, OfferSide.ASK, AppliedPrice.CLOSE, 100, Filter.WEEKENDS, 1, bidBar.getTime(), 0)[0];
-				if (ma100 < positionOrder.getStopLossPrice()) {	
-					positionOrder.setStopLossPrice(ma100);
-					tradeLog.updateMaxRisk(ma100);
-				}
-			}
-            // update trade logs too
-			double atr = indicators.atr(instrument, period, OfferSide.BID, 14, Filter.WEEKENDS, 1, bidBar.getTime(), 0)[0];
-			if (currPairData.noOfBarsInTrade++ > 0)
-				tradeLog.updateMaxLoss(bidBar, atr);
-            tradeLog.updateMaxProfit(bidBar);
-            tradeLog.updateMaxDD(bidBar, atr);
+		
+		if (openPositionProcessing(instrument, period, bidBar, currPairData))
 			return;
-		}
 		
 		Trend.TREND_STATE 
 			trendStateForBull = trendDetector.getTrendState(instrument, usedTimeFrame, OfferSide.ASK, AppliedPrice.CLOSE, bidBar.getTime()),
 			trendStateForBear = trendDetector.getTrendState(instrument, usedTimeFrame, OfferSide.BID, AppliedPrice.CLOSE, bidBar.getTime());
 
+		waitingOrderProcessing(period, bidBar, tradeLog, positionOrder, trendStateForBull, trendStateForBear);
+		
+		boolean 
+			bullishSignal = false,
+			bearishSignal = false;
+		
+		bullishSignal = trendStateForBull.equals(Trend.TREND_STATE.UP_STRONG);
+		
+		bearishSignal = !bullishSignal && 
+						(trendStateForBear.equals(Trend.TREND_STATE.DOWN_STRONG));
+		if (bullishSignal) {
+			if (currPairData.waitingOrder && positionOrder.isLong() && askBar.getHigh() < positionOrder.getOpenPrice())
+				return;
+			
+			if (currPairData.waitingOrder && !positionOrder.isLong()) { 
+				if (tradeLog != null)
+					tradeLog.exitReason = new String("cancelled");
+				positionOrder.close();
+				positionOrder.waitForUpdate(IOrder.State.CANCELED);
+			}
+			
+			placeBullishOrder(instrument, currPairData, askBar, bidBar);
+			boolean 
+				isMA200Highest = trendDetector.isMA200Highest(instrument, period, OfferSide.ASK, AppliedPrice.CLOSE, askBar.getTime()),
+				isMA200Lowest = trendDetector.isMA200Lowest(instrument, period, OfferSide.BID, AppliedPrice.CLOSE, bidBar.getTime());
+			Trend.TREND_STATE prevTrendState = trendDetector.getTrendState(instrument, usedTimeFrame, OfferSide.ASK, AppliedPrice.CLOSE, history.getPreviousBarStart(usedTimeFrame, bidBar.getTime()));
+				
+			currPairData.tradeLog = new LocalTradeLog(currPairData.positionOrder.getLabel(), 
+					currPairData.positionOrder.isLong(), 
+					bidBar.getTime(), 
+					currPairData.positionOrder.getOpenPrice(), 
+					currPairData.positionOrder.getStopLossPrice(), 
+					currPairData.positionOrder.getOpenPrice() - currPairData.positionOrder.getStopLossPrice(),
+					isMA200Highest, isMA200Lowest,
+					trendStateForBull.equals(prevTrendState),
+					tradeTrigger.priceChannelPos(instrument, usedTimeFrame, OfferSide.ASK, bidBar.getTime(), askBar.getLow(), 0),
+					tradeTrigger.priceChannelPos(instrument, usedTimeFrame, OfferSide.ASK, bidBar.getTime(), askBar.getHigh(), 0),
+					channelPosition.consequitiveBarsAbove(instrument, usedTimeFrame, OfferSide.ASK, askBar.getTime(), 5),
+					channelPosition.consequitiveBarsBelow(instrument, usedTimeFrame, OfferSide.BID, bidBar.getTime(), 5),
+					trendStateForBull);
+
+		}
+		else if (bearishSignal) {
+			if (currPairData.waitingOrder && !positionOrder.isLong() && bidBar.getLow() > positionOrder.getOpenPrice())
+				return;
+			
+			if (currPairData.waitingOrder && positionOrder.isLong()) {
+				if (tradeLog != null)
+					tradeLog.exitReason = new String("cancelled");
+				positionOrder.close();
+				positionOrder.waitForUpdate(IOrder.State.CANCELED);
+			}
+			
+			placeBearishOrder(instrument, currPairData, bidBar, askBar);
+			boolean 
+				isMA200Highest = trendDetector.isMA200Highest(instrument, period, OfferSide.ASK, AppliedPrice.CLOSE, askBar.getTime()),
+				isMA200Lowest = trendDetector.isMA200Lowest(instrument, period, OfferSide.BID, AppliedPrice.CLOSE, bidBar.getTime());
+			Trend.TREND_STATE prevTrendState = trendDetector.getTrendState(instrument, usedTimeFrame, OfferSide.BID, AppliedPrice.CLOSE, history.getPreviousBarStart(usedTimeFrame, bidBar.getTime()));
+            currPairData.tradeLog = new LocalTradeLog(currPairData.positionOrder.getLabel(), 
+					currPairData.positionOrder.isLong(), 
+					bidBar.getTime(), 
+					currPairData.positionOrder.getOpenPrice(), 
+					currPairData.positionOrder.getStopLossPrice(), 
+					currPairData.positionOrder.getStopLossPrice() - currPairData.positionOrder.getOpenPrice(),
+					isMA200Highest, isMA200Lowest,
+					trendStateForBear.equals(prevTrendState),
+					tradeTrigger.priceChannelPos(instrument, usedTimeFrame, OfferSide.BID, bidBar.getTime(), bidBar.getLow(), 0),
+					tradeTrigger.priceChannelPos(instrument, usedTimeFrame, OfferSide.BID, bidBar.getTime(), bidBar.getHigh(), 0),
+					channelPosition.consequitiveBarsAbove(instrument, usedTimeFrame, OfferSide.ASK, askBar.getTime(), 5),
+					channelPosition.consequitiveBarsBelow(instrument, usedTimeFrame, OfferSide.BID, bidBar.getTime(), 5),
+					trendStateForBull);
+		}		
+	}
+
+	protected void waitingOrderProcessing(Period period, IBar bidBar, TradeLog tradeLog, IOrder positionOrder,
+			Trend.TREND_STATE trendStateForBull, Trend.TREND_STATE trendStateForBear) throws JFException {
 		if (positionOrder != null && positionOrder.getState().equals(IOrder.State.OPENED)) {
 			if (positionOrder.isLong() && !trendStateForBull.equals(Trend.TREND_STATE.UP_STRONG)) {
 				if (positionOrder.getState().equals(IOrder.State.OPENED)) {
@@ -171,63 +317,42 @@ public class SimpleMAsIDCrossTrendFollow extends BasicTAStrategy implements IStr
 				}
 			}
 		}
-		
-		boolean 
-			bullishSignal = false,
-			bearishSignal = false;
-		
-		
-		bullishSignal = trendStateForBull.equals(Trend.TREND_STATE.UP_STRONG);
-		
-		bearishSignal = !bullishSignal && 
-						(trendStateForBear.equals(Trend.TREND_STATE.DOWN_STRONG));
-		if (bullishSignal) {
-			if (currPairData.waitingOrder && positionOrder.isLong() && askBar.getHigh() < positionOrder.getOpenPrice())
-				return;
-			
-			if (currPairData.waitingOrder && !positionOrder.isLong()) { 
-				if (tradeLog != null)
-					tradeLog.exitReason = new String("cancelled");
-				positionOrder.close();
-				positionOrder.waitForUpdate(IOrder.State.CANCELED);
-			}
-			
-			placeBullishOrder(instrument, currPairData, askBar, bidBar);
-			boolean 
-				isMA200Highest = trendDetector.isMA200Highest(instrument, period, OfferSide.ASK, AppliedPrice.CLOSE, askBar.getTime()),
-				isMA200Lowest = trendDetector.isMA200Lowest(instrument, period, OfferSide.BID, AppliedPrice.CLOSE, bidBar.getTime());
-            currPairData.tradeLog = new LocalTradeLog(currPairData.positionOrder.getLabel(), 
-					currPairData.positionOrder.isLong(), 
-					bidBar.getTime(), 
-					currPairData.positionOrder.getOpenPrice(), 
-					currPairData.positionOrder.getStopLossPrice(), 
-					currPairData.positionOrder.getOpenPrice() - currPairData.positionOrder.getStopLossPrice(),
-					isMA200Highest, isMA200Lowest);
+	}
 
-		}
-		else if (bearishSignal) {
-			if (currPairData.waitingOrder && !positionOrder.isLong() && bidBar.getLow() > positionOrder.getOpenPrice())
-				return;
-			
-			if (currPairData.waitingOrder && positionOrder.isLong()) {
-				if (tradeLog != null)
-					tradeLog.exitReason = new String("cancelled");
-				positionOrder.close();
-				positionOrder.waitForUpdate(IOrder.State.CANCELED);
+	protected boolean openPositionProcessing(Instrument instrument, Period period, IBar bidBar, PairTradeData currPairData) throws JFException {
+		LocalTradeLog tradeLog = currPairData.tradeLog;
+		IOrder positionOrder = currPairData.positionOrder;
+		if (positionOrder != null && positionOrder.getState().equals(IOrder.State.FILLED)) {
+			// already in position
+			if (positionOrder.isLong()) {
+				double ma100 = indicators.sma(instrument, usedTimeFrame, OfferSide.BID, AppliedPrice.CLOSE, 100, Filter.WEEKENDS, 1, bidBar.getTime(), 0)[0];
+				if (ma100 > positionOrder.getStopLossPrice()) {
+					positionOrder.setStopLossPrice(ma100);
+					tradeLog.updateMaxRisk(ma100);
+				}
+			} else {
+				double ma100 = indicators.sma(instrument, usedTimeFrame, OfferSide.ASK, AppliedPrice.CLOSE, 100, Filter.WEEKENDS, 1, bidBar.getTime(), 0)[0];
+				if (ma100 < positionOrder.getStopLossPrice()) {	
+					positionOrder.setStopLossPrice(ma100);
+					tradeLog.updateMaxRisk(ma100);
+				}
 			}
-			
-			placeBearishOrder(instrument, currPairData, bidBar, askBar);
-			boolean 
-				isMA200Highest = trendDetector.isMA200Highest(instrument, period, OfferSide.ASK, AppliedPrice.CLOSE, askBar.getTime()),
-				isMA200Lowest = trendDetector.isMA200Lowest(instrument, period, OfferSide.BID, AppliedPrice.CLOSE, bidBar.getTime());
-            currPairData.tradeLog = new LocalTradeLog(currPairData.positionOrder.getLabel(), 
-					currPairData.positionOrder.isLong(), 
-					bidBar.getTime(), 
-					currPairData.positionOrder.getOpenPrice(), 
-					currPairData.positionOrder.getStopLossPrice(), 
-					currPairData.positionOrder.getStopLossPrice() - currPairData.positionOrder.getOpenPrice(),
-					isMA200Highest, isMA200Lowest);
-		}		
+            // update trade logs too
+			double atr = indicators.atr(instrument, period, OfferSide.BID, 14, Filter.WEEKENDS, 1, bidBar.getTime(), 0)[0];
+			List<IBar> last3Bars = positionOrder.isLong() ? history.getBars(instrument, usedTimeFrame, OfferSide.BID, Filter.WEEKENDS, 3, bidBar.getTime(), 0) : history.getBars(instrument, usedTimeFrame, OfferSide.ASK, Filter.WEEKENDS, 3, bidBar.getTime(), 0);
+
+			if (currPairData.noOfBarsInTrade++ > 0) {
+				tradeLog.updateMaxLoss(bidBar, atr);
+	            tradeLog.updateMaxProfit(bidBar);
+	            tradeLog.updateMaxDD(bidBar, atr);
+	            tradeLog.updatePriceMoves(positionOrder.isLong(), last3Bars, 
+	            		tradeTrigger.priceChannelPos(instrument, usedTimeFrame, OfferSide.ASK, bidBar.getTime(), bidBar.getLow(), 0), 
+	            		tradeTrigger.priceChannelPos(instrument, usedTimeFrame, OfferSide.ASK, bidBar.getTime(), bidBar.getHigh(), 0), 
+	            		atr / Math.pow(10, instrument.getPipScale()));
+			}
+			return true;
+		} else
+			return false;
 	}
 
 	private void placeBearishOrder(Instrument instrument, PairTradeData currPair, IBar bidBar, IBar askBar) throws JFException {
@@ -261,7 +386,7 @@ public class SimpleMAsIDCrossTrendFollow extends BasicTAStrategy implements IStr
 	            if (currPair.tradeLog.exitReason == null)
 		            currPair.tradeLog.exitReason = reasonsStr;
 	            currPair.tradeLog.PnL = currPair.positionOrder.getProfitLossInPips();
-	            log.print(currPair.tradeLog.exitReport(message.getOrder().getInstrument()));
+	            log.print(currPair.tradeLog.exitReport(message.getOrder().getInstrument(), currPair.noOfBarsInTrade));
             }
 			
 			currPair.resetVars();

@@ -85,7 +85,7 @@ public abstract class BasicStrategy {
 		
 	    DateTime ts = new DateTime();
 	    String tsString = ts.toString("yyyy_MM_dd_HH_mm_ss");
-	    this.log = new Logger(console, reportDir + "//" + getReportFileName() + tsString + ".txt");
+	    this.log = conf.getProperty("logToFileOnly", "no").equals("yes") ? new Logger(reportDir + "//" + getReportFileName() + tsString + ".txt") : new Logger(console, reportDir + "//" + getReportFileName() + tsString + ".txt");
 	    // Print header of the logfile        
 	    log.print("Starting strategy " + getStrategyName() + "; Logging to " + reportDir + "//" + getReportFileName() + tsString + ".txt");
 	    log.print("Configuration:");
