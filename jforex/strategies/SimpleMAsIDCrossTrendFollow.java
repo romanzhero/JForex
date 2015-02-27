@@ -49,6 +49,14 @@ public class SimpleMAsIDCrossTrendFollow extends BasicTAStrategy implements IStr
 			maxFavourableChangeATR3Bar = -1.0,
 			maxAdverseChangeATR3Bar = -1.0;
 		
+		long
+			maxFavourableChangeATR1BarTime = -1,
+			maxAdverseChangeATR1BarTime = -1,
+			maxFavourableChangeATR2BarTime = -1,
+			maxAdverseChangeATR2BarTime = -1,
+			maxFavourableChangeATR3BarTime = -1,
+			maxAdverseChangeATR3BarTime = -1;
+		
 		int bBandsWalk5Up = -1, bBandsWalkDown5 = -1;
 		
 		Trend.TREND_STATE entryTrendState;
@@ -72,17 +80,22 @@ public class SimpleMAsIDCrossTrendFollow extends BasicTAStrategy implements IStr
 		
 		public String exitReport(Instrument instrument, int noOfBarsInTrade) {
 			return new String(super.exitReport(instrument) + ";" + isMA200Highest + ";" + isMA200Lowest
-					 + ";" + reEntry + ";" + entryBarBottomChPos  
+					 + ";" + reEntry + ";" + entryTrendState
 					 + ";" + FXUtils.df1.format(entryBarBottomChPos)  + ";" + FXUtils.df1.format(entryBarTopChPos)
-					 + ";" + FXUtils.if1.format(bBandsWalkDown5) + FXUtils.if1.format(bBandsWalk5Up)
-					 + ";" + FXUtils.df1.format(this.maxAdverseChangeATR1Bar)  + ";" + FXUtils.df1.format(this.maxAdverseChangeATR2Bar)  + ";" + FXUtils.df1.format(this.maxAdverseChangeATR3Bar)  
-					 + ";" + FXUtils.df1.format(this.maxFavourableChangeATR1Bar)  + ";" + FXUtils.df1.format(this.maxFavourableChangeATR2Bar)  + ";" + FXUtils.df1.format(this.maxFavourableChangeATR3Bar)  
+					 + ";" + FXUtils.if1.format(bBandsWalkDown5)  + ";" + FXUtils.if1.format(bBandsWalk5Up)
+					 + ";" + FXUtils.df1.format(this.maxAdverseChangeATR1Bar) + ";" + FXUtils.getFormatedTimeGMT(maxAdverseChangeATR1BarTime)  
+					 + ";" + FXUtils.df1.format(this.maxAdverseChangeATR2Bar) + ";" + FXUtils.getFormatedTimeGMT(maxAdverseChangeATR2BarTime)  
+					 + ";" + FXUtils.df1.format(this.maxAdverseChangeATR3Bar) + ";" + FXUtils.getFormatedTimeGMT(maxAdverseChangeATR3BarTime)  
+					 + ";" + FXUtils.df1.format(this.maxFavourableChangeATR1Bar) + ";" + FXUtils.getFormatedTimeGMT(maxFavourableChangeATR1BarTime)  
+					 + ";" + FXUtils.df1.format(this.maxFavourableChangeATR2Bar) + ";" + FXUtils.getFormatedTimeGMT(maxFavourableChangeATR2BarTime)  
+					 + ";" + FXUtils.df1.format(this.maxFavourableChangeATR3Bar) + ";" + FXUtils.getFormatedTimeGMT(maxFavourableChangeATR3BarTime)  
 					 + ";" + FXUtils.if1.format(noOfBarsInTrade));
 		}
 		
-		public void updatePriceMoves(boolean isLong, List<IBar> last3Bars, double barLowChannelPos, double barHighChannelPos, double atr) {
+		public void updatePriceMoves(Instrument instrument, boolean isLong, List<IBar> last3Bars, double atr) throws JFException {
 			if (isLong) {
 				// check favourable price moves, counting from last close
+				IBar currBar = last3Bars.get(2);
 				double
 					goodMove1 = last3Bars.get(2).getClose() - last3Bars.get(2).getLow(), // current bar
 					goodMove2 = last3Bars.get(2).getClose() - last3Bars.get(1).getLow(),
@@ -93,21 +106,36 @@ public class SimpleMAsIDCrossTrendFollow extends BasicTAStrategy implements IStr
 					maxFavourableChangeATR2Bar = goodMove2 / atr;
 				if (goodMove3 / atr > maxFavourableChangeATR3Bar)
 					maxFavourableChangeATR3Bar = goodMove3 / atr;
-				// check adverse price moves, counting from last close. Only from upper channel half
+				double barHighChannelPos = tradeTrigger.priceChannelPos(instrument, usedTimeFrame, OfferSide.ASK, currBar.getTime(), currBar.getHigh(), 0);				
+				// check adverse price moves, counting from last close. Only from upper channel half of start bar
 				if (barHighChannelPos > 50.0) {
 					double 
-						badMove1 = last3Bars.get(2).getHigh() - last3Bars.get(2).getClose(),
-						badMove2 = last3Bars.get(1).getHigh() - last3Bars.get(2).getClose(),
-						badMove3 = last3Bars.get(0).getHigh() - last3Bars.get(2).getClose();
-					if (badMove1 / atr > maxAdverseChangeATR1Bar)
+						badMove1 = last3Bars.get(2).getHigh() - last3Bars.get(2).getClose();
+					if (badMove1 / atr > maxAdverseChangeATR1Bar) {
 						maxAdverseChangeATR1Bar = badMove1 / atr;
-					if (badMove2 / atr > maxAdverseChangeATR2Bar)
-						maxAdverseChangeATR2Bar = badMove2 / atr;
-					if (badMove3 / atr > maxAdverseChangeATR3Bar)
-						maxAdverseChangeATR3Bar = badMove3 / atr;
+						maxAdverseChangeATR1BarTime = currBar.getTime();
+					}
 				}
+				barHighChannelPos = tradeTrigger.priceChannelPos(instrument, usedTimeFrame, OfferSide.ASK, last3Bars.get(1).getTime(), last3Bars.get(1).getHigh(), 0);				
+				if (barHighChannelPos > 50.0) {
+					double badMove2 = last3Bars.get(1).getHigh() - last3Bars.get(2).getClose();
+					if (badMove2 / atr > maxAdverseChangeATR2Bar) {
+						maxAdverseChangeATR2Bar = badMove2 / atr;
+						maxAdverseChangeATR2BarTime = currBar.getTime();
+					}
+				}
+				barHighChannelPos = tradeTrigger.priceChannelPos(instrument, usedTimeFrame, OfferSide.ASK, last3Bars.get(2).getTime(), last3Bars.get(2).getHigh(), 0);				
+				if (barHighChannelPos > 50.0) {
+					double badMove3 = last3Bars.get(0).getHigh() - last3Bars.get(2).getClose();
+					if (badMove3 / atr > maxAdverseChangeATR3Bar) {
+						maxAdverseChangeATR3Bar = badMove3 / atr;
+						maxAdverseChangeATR3BarTime = currBar.getTime();
+					}
+				}
+
 			} else {
 				// check favourable price moves, counting from last close
+				IBar currBar = last3Bars.get(2);
 				double
 					goodMove1 = last3Bars.get(2).getHigh() - last3Bars.get(2).getClose() , // current bar
 					goodMove2 = last3Bars.get(1).getHigh() - last3Bars.get(2).getClose(),
@@ -119,17 +147,29 @@ public class SimpleMAsIDCrossTrendFollow extends BasicTAStrategy implements IStr
 				if (goodMove3 / atr > maxFavourableChangeATR3Bar)
 					maxFavourableChangeATR3Bar = goodMove3 / atr;
 				// check adverse price moves, counting from last close. Only from lower channel half
+				double barHighChannelPos = tradeTrigger.priceChannelPos(instrument, usedTimeFrame, OfferSide.ASK, currBar.getTime(), currBar.getHigh(), 0);				
 				if (barHighChannelPos < 50.0) {
-					double 
-						badMove1 = last3Bars.get(2).getClose() - last3Bars.get(2).getLow(),
-						badMove2 = last3Bars.get(2).getClose() - last3Bars.get(1).getLow(),
-						badMove3 = last3Bars.get(2).getClose() - last3Bars.get(0).getLow();
-					if (badMove1 / atr > maxAdverseChangeATR1Bar)
+					double badMove1 = last3Bars.get(2).getClose() - last3Bars.get(2).getLow();
+					if (badMove1 / atr > maxAdverseChangeATR1Bar) {
 						maxAdverseChangeATR1Bar = badMove1 / atr;
-					if (badMove2 / atr > maxAdverseChangeATR2Bar)
+						maxAdverseChangeATR1BarTime = currBar.getTime();
+					}
+				}				
+				barHighChannelPos = tradeTrigger.priceChannelPos(instrument, usedTimeFrame, OfferSide.ASK, last3Bars.get(1).getTime(), last3Bars.get(1).getHigh(), 0);				
+				if (barHighChannelPos < 50.0) {
+					double badMove2 = last3Bars.get(2).getClose() - last3Bars.get(1).getLow();
+					if (badMove2 / atr > maxAdverseChangeATR2Bar) {
 						maxAdverseChangeATR2Bar = badMove2 / atr;
-					if (badMove3 / atr > maxAdverseChangeATR3Bar)
+						maxAdverseChangeATR2BarTime = currBar.getTime();
+					}
+				}				
+				barHighChannelPos = tradeTrigger.priceChannelPos(instrument, usedTimeFrame, OfferSide.ASK, last3Bars.get(2).getTime(), last3Bars.get(2).getHigh(), 0);				
+				if (barHighChannelPos < 50.0) {
+					double badMove3 = last3Bars.get(2).getClose() - last3Bars.get(0).getLow();
+					if (badMove3 / atr > maxAdverseChangeATR3Bar) {
 						maxAdverseChangeATR3Bar = badMove3 / atr;
+						maxAdverseChangeATR3BarTime = currBar.getTime();
+					}
 				}				
 			}
 		}
@@ -345,10 +385,7 @@ public class SimpleMAsIDCrossTrendFollow extends BasicTAStrategy implements IStr
 				tradeLog.updateMaxLoss(bidBar, atr);
 	            tradeLog.updateMaxProfit(bidBar);
 	            tradeLog.updateMaxDD(bidBar, atr);
-	            tradeLog.updatePriceMoves(positionOrder.isLong(), last3Bars, 
-	            		tradeTrigger.priceChannelPos(instrument, usedTimeFrame, OfferSide.ASK, bidBar.getTime(), bidBar.getLow(), 0), 
-	            		tradeTrigger.priceChannelPos(instrument, usedTimeFrame, OfferSide.ASK, bidBar.getTime(), bidBar.getHigh(), 0), 
-	            		atr / Math.pow(10, instrument.getPipScale()));
+	            tradeLog.updatePriceMoves(instrument, positionOrder.isLong(), last3Bars, atr);
 			}
 			return true;
 		} else
