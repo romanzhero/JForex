@@ -100,12 +100,18 @@ public class SimpleMAsIDCrossTrendFollow extends BasicTAStrategy implements IStr
 					goodMove1 = last3Bars.get(2).getClose() - last3Bars.get(2).getLow(), // current bar
 					goodMove2 = last3Bars.get(2).getClose() - last3Bars.get(1).getLow(),
 					goodMove3 = last3Bars.get(2).getClose() - last3Bars.get(0).getLow();
-				if (goodMove1 / atr > maxFavourableChangeATR1Bar)
+				if (goodMove1 / atr > maxFavourableChangeATR1Bar) {
 					maxFavourableChangeATR1Bar = goodMove1 / atr; 
-				if (goodMove2 / atr > maxFavourableChangeATR2Bar)
+					maxFavourableChangeATR1BarTime = currBar.getTime();
+				}
+				if (goodMove2 / atr > maxFavourableChangeATR2Bar) {
 					maxFavourableChangeATR2Bar = goodMove2 / atr;
-				if (goodMove3 / atr > maxFavourableChangeATR3Bar)
+					maxFavourableChangeATR2BarTime = currBar.getTime();
+				}
+				if (goodMove3 / atr > maxFavourableChangeATR3Bar) {
 					maxFavourableChangeATR3Bar = goodMove3 / atr;
+					maxFavourableChangeATR3BarTime = currBar.getTime();
+				}
 				double barHighChannelPos = tradeTrigger.priceChannelPos(instrument, usedTimeFrame, OfferSide.ASK, currBar.getTime(), currBar.getHigh(), 0);				
 				// check adverse price moves, counting from last close. Only from upper channel half of start bar
 				if (barHighChannelPos > 50.0) {
@@ -140,12 +146,18 @@ public class SimpleMAsIDCrossTrendFollow extends BasicTAStrategy implements IStr
 					goodMove1 = last3Bars.get(2).getHigh() - last3Bars.get(2).getClose() , // current bar
 					goodMove2 = last3Bars.get(1).getHigh() - last3Bars.get(2).getClose(),
 					goodMove3 = last3Bars.get(0).getHigh() - last3Bars.get(2).getClose();
-				if (goodMove1 / atr > maxFavourableChangeATR1Bar)
+				if (goodMove1 / atr > maxFavourableChangeATR1Bar) {
 					maxFavourableChangeATR1Bar = goodMove1 / atr; 
-				if (goodMove2 / atr > maxFavourableChangeATR2Bar)
+					maxFavourableChangeATR1BarTime = currBar.getTime();
+				}
+				if (goodMove2 / atr > maxFavourableChangeATR2Bar) {
 					maxFavourableChangeATR2Bar = goodMove2 / atr;
-				if (goodMove3 / atr > maxFavourableChangeATR3Bar)
+					maxFavourableChangeATR2BarTime = currBar.getTime();
+				}
+				if (goodMove3 / atr > maxFavourableChangeATR3Bar) {
 					maxFavourableChangeATR3Bar = goodMove3 / atr;
+					maxFavourableChangeATR3BarTime = currBar.getTime();
+				}
 				// check adverse price moves, counting from last close. Only from lower channel half
 				double barHighChannelPos = tradeTrigger.priceChannelPos(instrument, usedTimeFrame, OfferSide.ASK, currBar.getTime(), currBar.getHigh(), 0);				
 				if (barHighChannelPos < 50.0) {
@@ -284,7 +296,7 @@ public class SimpleMAsIDCrossTrendFollow extends BasicTAStrategy implements IStr
 					tradeTrigger.priceChannelPos(instrument, usedTimeFrame, OfferSide.ASK, bidBar.getTime(), askBar.getHigh(), 0),
 					channelPosition.consequitiveBarsAbove(instrument, usedTimeFrame, OfferSide.ASK, askBar.getTime(), 5),
 					channelPosition.consequitiveBarsBelow(instrument, usedTimeFrame, OfferSide.BID, bidBar.getTime(), 5),
-					trendStateForBull);
+					prevTrendState);
 
 		}
 		else if (bearishSignal) {
@@ -315,7 +327,7 @@ public class SimpleMAsIDCrossTrendFollow extends BasicTAStrategy implements IStr
 					tradeTrigger.priceChannelPos(instrument, usedTimeFrame, OfferSide.BID, bidBar.getTime(), bidBar.getHigh(), 0),
 					channelPosition.consequitiveBarsAbove(instrument, usedTimeFrame, OfferSide.ASK, askBar.getTime(), 5),
 					channelPosition.consequitiveBarsBelow(instrument, usedTimeFrame, OfferSide.BID, bidBar.getTime(), 5),
-					trendStateForBull);
+					prevTrendState);
 		}		
 	}
 
