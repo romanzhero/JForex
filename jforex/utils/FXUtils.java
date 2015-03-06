@@ -708,6 +708,35 @@ public class FXUtils {
 		}		
 	}
 	
+	public static String dbGetTradeLogInsert(List<FlexLogEntry> fields, String bt_run, String order_label, String direction, String event)
+	{
+		String 
+			dbFieldNamesStr = new String(" (bt_run, order_label, direction, event"),
+			dbValuesStr = new String(" VALUES ('" 
+					+ bt_run + "', '" 
+					+ order_label + "', '" 
+					+ direction + "', '" 
+					+ event + "'");
+		
+		for (int i = 0; i < fields.size() && i < 50; i++) {
+			FlexLogEntry field = fields.get(i);
+			dbFieldNamesStr += ", ValueName" + (i + 1);
+			if (field.isDouble()) {
+				dbFieldNamesStr += ", ValueD" + (i + 1);
+				dbValuesStr += ", '" + field.getLabel() + "', " + field.getFormattedValue();
+			}
+			else {
+				dbFieldNamesStr += ", ValueS" + (i + 1) + "Text";
+				dbValuesStr += ", '" + field.getLabel() + "', '" + field.getFormattedValue() + "'";
+			}
+		}
+		// close the brackets
+		dbFieldNamesStr += ") ";
+		dbValuesStr += ")";
+		String statementStr = "INSERT INTO " + dbToUse + ".tabstradelog " + dbFieldNamesStr + dbValuesStr;
+		return new String(statementStr);
+	}	
+	
 	public static void dbExecSQL(Connection logDB, String sql) {
 		try {
 			Statement insert = logDB.createStatement();
@@ -995,5 +1024,31 @@ public class FXUtils {
                 + df1.format(missedProfitPerc(instrument)));
                
          }
+
+		public List<FlexLogEntry> exportToFlexLogs(Instrument instrument, int noOfBarsInTrade) {
+			List<FlexLogEntry> l = new ArrayList<FlexLogEntry>();
+			l.add(new FlexLogEntry("signalTime", FXUtils.getFormatedTimeGMT(signalTime)));
+			l.add(new FlexLogEntry("fillTime", FXUtils.getFormatedTimeGMT(fillTime)));
+			l.add(new FlexLogEntry("exitTime", FXUtils.getFormatedTimeGMT(exitTime)));
+			l.add(new FlexLogEntry("exitReason", exitReason));
+			l.add(new FlexLogEntry("entryPrice", new Double(entryPrice), instrument.getPipScale() == 2 ? FXUtils.df2 : FXUtils.df5));
+			l.add(new FlexLogEntry("fillPrice", new Double(fillPrice), instrument.getPipScale() == 2 ? FXUtils.df2 : FXUtils.df5));
+			l.add(new FlexLogEntry("SL", new Double(SL), instrument.getPipScale() == 2 ? FXUtils.df2 : FXUtils.df5));
+			l.add(new FlexLogEntry("initialRisk", new Double(initialRisk * Math.pow(10, instrument.getPipScale())), FXUtils.df1));
+			l.add(new FlexLogEntry("maxRisk", new Double(maxRisk * Math.pow(10, instrument.getPipScale())), FXUtils.df1));
+			l.add(new FlexLogEntry("maxLoss", new Double(maxLoss * Math.pow(10, instrument.getPipScale())), FXUtils.df1));
+			l.add(new FlexLogEntry("maxLossATR", new Double(maxLossATR * Math.pow(10, instrument.getPipScale())), FXUtils.df1));
+			l.add(new FlexLogEntry("maxLossTime", FXUtils.getFormatedTimeGMT(maxLossTime)));
+			l.add(new FlexLogEntry("maxDD", new Double(maxDD * Math.pow(10, instrument.getPipScale())), FXUtils.df1));
+			l.add(new FlexLogEntry("maxDDATR", new Double(maxDDATR), FXUtils.df1));
+			l.add(new FlexLogEntry("maxDDTime", FXUtils.getFormatedTimeGMT(maxDDTime)));
+			l.add(new FlexLogEntry("maxProfit", new Double(maxProfit * Math.pow(10, instrument.getPipScale())), FXUtils.df1));
+			l.add(new FlexLogEntry("maxProfitPrice", new Double(maxProfitPrice), instrument.getPipScale() == 2 ? FXUtils.df2 : FXUtils.df5));
+			l.add(new FlexLogEntry("maxProfitTime", FXUtils.getFormatedTimeGMT(maxProfitTime)));
+			l.add(new FlexLogEntry("PnL", new Double(maxDDATR), FXUtils.df1));
+			l.add(new FlexLogEntry("missedProfit", new Double(missedProfit(instrument)), FXUtils.df1));
+			l.add(new FlexLogEntry("missedProfitPerc", new Double(missedProfitPerc(instrument)), FXUtils.df1));
+			return l;
+		}
     }
  }

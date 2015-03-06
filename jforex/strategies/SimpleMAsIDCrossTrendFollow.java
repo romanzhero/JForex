@@ -28,6 +28,7 @@ import jforex.techanalysis.Trend;
 import jforex.techanalysis.Trend.TREND_STATE;
 import jforex.utils.FXUtils;
 import jforex.utils.FXUtils.TradeLog;
+import jforex.utils.FlexLogEntry;
 
 public class SimpleMAsIDCrossTrendFollow extends BasicTAStrategy implements IStrategy {
 	
@@ -92,6 +93,33 @@ public class SimpleMAsIDCrossTrendFollow extends BasicTAStrategy implements IStr
 					 + ";" + FXUtils.if1.format(noOfBarsInTrade));
 		}
 		
+		@Override
+		public List<FlexLogEntry> exportToFlexLogs(Instrument instrument,int noOfBarsInTrade) {
+			List<FlexLogEntry> l = super.exportToFlexLogs(instrument, noOfBarsInTrade);
+			l.add(new FlexLogEntry("isMA200Highest", isMA200Highest ? "yes" : "no"));
+			l.add(new FlexLogEntry("isMA200Lowest", isMA200Lowest ? "yes" : "no"));
+			l.add(new FlexLogEntry("reEntry", reEntry ? "yes" : "no"));
+			l.add(new FlexLogEntry("entryTrendState", entryTrendState.toString()));
+			l.add(new FlexLogEntry("entryBarBottomChPos", new Double(entryBarBottomChPos), FXUtils.df1));
+			l.add(new FlexLogEntry("entryBarTopChPos", new Double(entryBarTopChPos), FXUtils.df1));
+			l.add(new FlexLogEntry("bBandsWalkDown5", new Double(bBandsWalkDown5), FXUtils.df1));
+			l.add(new FlexLogEntry("bBandsWalk5Up", new Double(bBandsWalk5Up), FXUtils.df1));
+			l.add(new FlexLogEntry("maxAdverseChangeATR1Bar", new Double(maxAdverseChangeATR1Bar), FXUtils.df1));
+			l.add(new FlexLogEntry("maxAdverseChangeATR1BarTime", FXUtils.getFormatedTimeGMT(maxAdverseChangeATR1BarTime)));
+			l.add(new FlexLogEntry("maxAdverseChangeATR2Bar", new Double(maxAdverseChangeATR2Bar), FXUtils.df1));
+			l.add(new FlexLogEntry("maxAdverseChangeATR2BarTime", FXUtils.getFormatedTimeGMT(maxAdverseChangeATR2BarTime)));
+			l.add(new FlexLogEntry("maxAdverseChangeATR3Bar", new Double(maxAdverseChangeATR3Bar), FXUtils.df1));
+			l.add(new FlexLogEntry("maxAdverseChangeATR3BarTime", FXUtils.getFormatedTimeGMT(maxAdverseChangeATR3BarTime)));
+			l.add(new FlexLogEntry("maxFavourableChangeATR1Bar", new Double(maxFavourableChangeATR1Bar), FXUtils.df1));
+			l.add(new FlexLogEntry("maxFavourableChangeATR1BarTime", FXUtils.getFormatedTimeGMT(maxFavourableChangeATR1BarTime)));
+			l.add(new FlexLogEntry("maxFavourableChangeATR2Bar", new Double(maxFavourableChangeATR2Bar), FXUtils.df1));
+			l.add(new FlexLogEntry("maxFavourableChangeATR2BarTime", FXUtils.getFormatedTimeGMT(maxFavourableChangeATR2BarTime)));
+			l.add(new FlexLogEntry("maxFavourableChangeATR3Bar", new Double(maxFavourableChangeATR3Bar), FXUtils.df1));
+			l.add(new FlexLogEntry("maxFavourableChangeATR3BarTime", FXUtils.getFormatedTimeGMT(maxFavourableChangeATR3BarTime)));
+			l.add(new FlexLogEntry("noOfBarsInTrade", new Double(noOfBarsInTrade), FXUtils.df1));
+			return l;
+		}
+
 		public void updatePriceMoves(Instrument instrument, boolean isLong, List<IBar> last3Bars, double atr) throws JFException {
 			if (isLong) {
 				// check favourable price moves, counting from last close
@@ -220,6 +248,8 @@ public class SimpleMAsIDCrossTrendFollow extends BasicTAStrategy implements IStr
 	@Override
 	public void onStart(IContext context) throws JFException {
 		onStartExec(context);		
+		if (conf.getProperty("barStatsToDB", "no").equals("yes"))
+			dbLogOnStart();
         StringTokenizer st = new StringTokenizer(conf.getProperty("pairsToCheck"), ";");
         Set<Instrument> instruments = new HashSet<Instrument>();
         while(st.hasMoreTokens()) {
@@ -436,8 +466,12 @@ public class SimpleMAsIDCrossTrendFollow extends BasicTAStrategy implements IStr
 		            currPair.tradeLog.exitReason = reasonsStr;
 	            currPair.tradeLog.PnL = currPair.positionOrder.getProfitLossInPips();
 	            log.print(currPair.tradeLog.exitReport(message.getOrder().getInstrument(), currPair.noOfBarsInTrade));
-            }
-			
+	    		if (conf.getProperty("barStatsToDB", "no").equals("yes")) {
+		            List<FlexLogEntry> l = currPair.tradeLog.exportToFlexLogs(message.getOrder().getInstrument(), currPair.noOfBarsInTrade);
+		            String insSQL = FXUtils.dbGetTradeLogInsert(l, conf.getProperty("backTestRunID", getReportFileName()), message.getOrder().getLabel(), message.getOrder().isLong() ? "LONG" : "SHORT", "ER");
+		            FXUtils.dbUpdateInsert(logDB, insSQL);
+	    		}
+            }			
 			currPair.resetVars();
 			return;
 		}
