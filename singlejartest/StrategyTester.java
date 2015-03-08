@@ -113,6 +113,7 @@ public class StrategyTester {
         
         long startTime = System.currentTimeMillis();
         properties.validate(LOGGER);
+        FXUtils.setDbToUse(properties.getProperty("dbToUse"));
         
         LOGGER.info("Connecting...");
         //connect to the server using jnlp, user name and password

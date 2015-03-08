@@ -726,7 +726,7 @@ public class FXUtils {
 				dbValuesStr += ", '" + field.getLabel() + "', " + field.getFormattedValue();
 			}
 			else {
-				dbFieldNamesStr += ", ValueS" + (i + 1) + "Text";
+				dbFieldNamesStr += ", ValueS" + (i + 1);
 				dbValuesStr += ", '" + field.getLabel() + "', '" + field.getFormattedValue() + "'";
 			}
 		}
@@ -1037,7 +1037,7 @@ public class FXUtils {
 			l.add(new FlexLogEntry("initialRisk", new Double(initialRisk * Math.pow(10, instrument.getPipScale())), FXUtils.df1));
 			l.add(new FlexLogEntry("maxRisk", new Double(maxRisk * Math.pow(10, instrument.getPipScale())), FXUtils.df1));
 			l.add(new FlexLogEntry("maxLoss", new Double(maxLoss * Math.pow(10, instrument.getPipScale())), FXUtils.df1));
-			l.add(new FlexLogEntry("maxLossATR", new Double(maxLossATR * Math.pow(10, instrument.getPipScale())), FXUtils.df1));
+			l.add(new FlexLogEntry("maxLossATR", new Double(maxLossATR), FXUtils.df1));
 			l.add(new FlexLogEntry("maxLossTime", FXUtils.getFormatedTimeGMT(maxLossTime)));
 			l.add(new FlexLogEntry("maxDD", new Double(maxDD * Math.pow(10, instrument.getPipScale())), FXUtils.df1));
 			l.add(new FlexLogEntry("maxDDATR", new Double(maxDDATR), FXUtils.df1));
