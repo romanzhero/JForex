@@ -1045,7 +1045,7 @@ public class FXUtils {
 			l.add(new FlexLogEntry("maxProfit", new Double(maxProfit * Math.pow(10, instrument.getPipScale())), FXUtils.df1));
 			l.add(new FlexLogEntry("maxProfitPrice", new Double(maxProfitPrice), instrument.getPipScale() == 2 ? FXUtils.df2 : FXUtils.df5));
 			l.add(new FlexLogEntry("maxProfitTime", FXUtils.getFormatedTimeGMT(maxProfitTime)));
-			l.add(new FlexLogEntry("PnL", new Double(maxDDATR), FXUtils.df1));
+			l.add(new FlexLogEntry("PnL", new Double(PnL), FXUtils.df1));
 			l.add(new FlexLogEntry("missedProfit", new Double(missedProfit(instrument)), FXUtils.df1));
 			l.add(new FlexLogEntry("missedProfitPerc", new Double(missedProfitPerc(instrument)), FXUtils.df1));
 			return l;
