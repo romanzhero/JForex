@@ -1,6 +1,8 @@
 package jforex.utils;
 
 import java.io.BufferedReader;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.InputStreamReader;
 import java.io.PrintStream;
 import java.math.BigDecimal;
@@ -702,8 +704,15 @@ public class FXUtils {
 		} catch (SQLException ex) {
 			   System.out.println("Problem when inserting into the DB: " + ex.getMessage());
 			   System.out.println(sql);
+			   try {
+				System.setErr(new PrintStream(new FileOutputStream("d:\\temp\\system.err.txt")));
+			   } catch (FileNotFoundException e) {
+				e.printStackTrace();
+			   }
 			   System.err.println("Problem when inserting into the DB: " + ex.getMessage());
 			   System.err.println(sql);
+			   System.err.flush();
+			   System.err.close();
 	           System.exit(1);
 		}		
 	}
@@ -927,7 +936,7 @@ public class FXUtils {
          
          public double missedProfitPerc(Instrument instrument) {
              // PnL taken from IOrder and already in pips
-             return PnL > 0.0 ? 100 * missedProfit(instrument) / (maxProfit * Math.pow(10, instrument.getPipScale())) : 0.0;
+             return PnL > 0.0 && maxProfit != 0.0 ? 100 * missedProfit(instrument) / (maxProfit * Math.pow(10, instrument.getPipScale())) : 0.0;
          }
          
          public void updateMaxRisk(double newSL) {
