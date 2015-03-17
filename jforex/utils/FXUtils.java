@@ -68,6 +68,13 @@ public class FXUtils {
 		FILTER_ENTRY_BAR_LOW,
 		FILTER_4H
 	}
+	
+	public enum PreviousTrade { 
+		NONE, // for the first trade in backtest run
+		LOSS,
+		WIN
+	};
+
     private static Currency baseCurrency;
     private static IHistory history;
     private static BigDecimal DukaLotSize = BigDecimal.valueOf(1000000);

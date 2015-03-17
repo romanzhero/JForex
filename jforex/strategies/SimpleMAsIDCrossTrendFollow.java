@@ -1,8 +1,11 @@
 package jforex.strategies;
 
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
@@ -27,6 +30,7 @@ import jforex.BasicTAStrategy;
 import jforex.techanalysis.Trend;
 import jforex.techanalysis.Trend.TREND_STATE;
 import jforex.utils.FXUtils;
+import jforex.utils.FXUtils.PreviousTrade;
 import jforex.utils.FXUtils.TradeLog;
 import jforex.utils.FlexLogEntry;
 
@@ -37,6 +41,7 @@ public class SimpleMAsIDCrossTrendFollow extends BasicTAStrategy implements IStr
 	protected class LocalTradeLog extends FXUtils.TradeLog {
 		boolean 
 			isMA200Highest = false, isMA200Lowest = false,
+			signalBarHighAboveAllMAs = false, signalBarLowBelowAllMAs = false,  
 			reEntry = false;
 		
 		double 
@@ -62,12 +67,16 @@ public class SimpleMAsIDCrossTrendFollow extends BasicTAStrategy implements IStr
 		
 		Trend.TREND_STATE entryTrendState;
 		
+		PreviousTrade prevTrade = PreviousTrade.NONE;
+				
 		public LocalTradeLog(String pOrderLabel, boolean pIsLong, long pSignalTime, double pEntryPrice, double pSL, double pInitialRisk,
 							 boolean isMA200Highest, boolean isMA200Lowest, 
 							 boolean reEntry,
 							 double entryBarBottomChPos, double entryBarTopChPos,
 							 int bBandsWalk5Up, int bBandsWalkDown5,
-							 TREND_STATE entryTrendState) {
+							 TREND_STATE entryTrendState,
+							 boolean signalBarHighAboveAllMAs, boolean signalBarLowBelowAllMAs,
+							 PreviousTrade prevTrade) {
 			super(pOrderLabel, pIsLong, pSignalTime, pEntryPrice, pSL, pInitialRisk);
 			this.isMA200Highest = isMA200Highest;
 			this.isMA200Lowest = isMA200Lowest;
@@ -77,9 +86,19 @@ public class SimpleMAsIDCrossTrendFollow extends BasicTAStrategy implements IStr
 			this.bBandsWalk5Up = bBandsWalk5Up;
 			this.bBandsWalkDown5 = bBandsWalkDown5;
 			this.entryTrendState = entryTrendState;
+			this.signalBarHighAboveAllMAs = signalBarHighAboveAllMAs;
+			this.signalBarLowBelowAllMAs= signalBarLowBelowAllMAs;
+			this.prevTrade = prevTrade;
 		}
 		
 		public String exitReport(Instrument instrument, int noOfBarsInTrade) {
+			// EEE gives short day names, EEEE would be full length.
+			SimpleDateFormat dateFormat = new SimpleDateFormat("EEE", Locale.US); 
+			String 
+				asWeekSignal = dateFormat.format(new Date(signalTime)),
+				asWeekFill = dateFormat.format(new Date(fillTime)),
+				asWeekExit = dateFormat.format(new Date(exitTime));
+			
 			return new String(super.exitReport(instrument) + ";" + isMA200Highest + ";" + isMA200Lowest
 					 + ";" + reEntry + ";" + entryTrendState
 					 + ";" + FXUtils.df1.format(entryBarBottomChPos)  + ";" + FXUtils.df1.format(entryBarTopChPos)
@@ -90,7 +109,10 @@ public class SimpleMAsIDCrossTrendFollow extends BasicTAStrategy implements IStr
 					 + ";" + FXUtils.df1.format(this.maxFavourableChangeATR1Bar) + ";" + FXUtils.getFormatedTimeGMT(maxFavourableChangeATR1BarTime)  
 					 + ";" + FXUtils.df1.format(this.maxFavourableChangeATR2Bar) + ";" + FXUtils.getFormatedTimeGMT(maxFavourableChangeATR2BarTime)  
 					 + ";" + FXUtils.df1.format(this.maxFavourableChangeATR3Bar) + ";" + FXUtils.getFormatedTimeGMT(maxFavourableChangeATR3BarTime)  
-					 + ";" + FXUtils.if1.format(noOfBarsInTrade));
+					 + ";" + FXUtils.if1.format(noOfBarsInTrade)
+					 + ";" + signalBarHighAboveAllMAs + ";" + signalBarLowBelowAllMAs
+					 + ";" + prevTrade
+					 + ";" + asWeekSignal + ";" + asWeekFill + ";" + asWeekExit);
 		}
 		
 		@Override
@@ -117,6 +139,17 @@ public class SimpleMAsIDCrossTrendFollow extends BasicTAStrategy implements IStr
 			l.add(new FlexLogEntry("maxFavourableChangeATR3Bar", new Double(maxFavourableChangeATR3Bar), FXUtils.df1));
 			l.add(new FlexLogEntry("maxFavourableChangeATR3BarTime", FXUtils.getFormatedTimeGMT(maxFavourableChangeATR3BarTime)));
 			l.add(new FlexLogEntry("noOfBarsInTrade", new Double(noOfBarsInTrade), FXUtils.df1));
+			l.add(new FlexLogEntry("signalBarAboveAllMAs", signalBarHighAboveAllMAs ? "yes" : "no"));
+			l.add(new FlexLogEntry("signalBarBelowAllMAs", signalBarLowBelowAllMAs ? "yes" : "no"));
+			l.add(new FlexLogEntry("prevTrade", prevTrade.toString()));
+			// EEE gives short day names, EEEE would be full length.
+			SimpleDateFormat dateFormat = new SimpleDateFormat("EEE", Locale.US); 
+			String asWeek = dateFormat.format(new Date(signalTime));
+			l.add(new FlexLogEntry("signalDay", asWeek));
+			asWeek = dateFormat.format(new Date(fillTime));
+			l.add(new FlexLogEntry("fillDay", asWeek));
+			asWeek = dateFormat.format(new Date(exitTime));
+			l.add(new FlexLogEntry("exitDay", asWeek));
 			return l;
 		}
 
@@ -224,7 +257,8 @@ public class SimpleMAsIDCrossTrendFollow extends BasicTAStrategy implements IStr
 			openPosition = false;
 		public int 
 			orderCounter = 0,
-			noOfBarsInTrade = 0;		
+			noOfBarsInTrade = 0;
+		PreviousTrade prevTrade = PreviousTrade.NONE;
 
 		public PairTradeData(Instrument pair) {
 			super();
@@ -310,6 +344,8 @@ public class SimpleMAsIDCrossTrendFollow extends BasicTAStrategy implements IStr
 			
 			placeBullishOrder(instrument, currPairData, askBar, bidBar);
 			boolean 
+				isBarHighAboveAll = trendDetector.isBarHighAboveAllMAs(instrument, period, OfferSide.ASK, AppliedPrice.CLOSE, askBar),
+				isBarLowBelowAll = trendDetector.isBarLowBelowAllMAs(instrument, period, OfferSide.BID, AppliedPrice.CLOSE, bidBar),				
 				isMA200Highest = trendDetector.isMA200Highest(instrument, period, OfferSide.ASK, AppliedPrice.CLOSE, askBar.getTime()),
 				isMA200Lowest = trendDetector.isMA200Lowest(instrument, period, OfferSide.BID, AppliedPrice.CLOSE, bidBar.getTime());
 			Trend.TREND_STATE prevTrendState = trendDetector.getTrendState(instrument, usedTimeFrame, OfferSide.ASK, AppliedPrice.CLOSE, history.getPreviousBarStart(usedTimeFrame, bidBar.getTime()));
@@ -326,7 +362,9 @@ public class SimpleMAsIDCrossTrendFollow extends BasicTAStrategy implements IStr
 					tradeTrigger.priceChannelPos(instrument, usedTimeFrame, OfferSide.ASK, bidBar.getTime(), askBar.getHigh(), 0),
 					channelPosition.consequitiveBarsAbove(instrument, usedTimeFrame, OfferSide.ASK, askBar.getTime(), 5),
 					channelPosition.consequitiveBarsBelow(instrument, usedTimeFrame, OfferSide.BID, bidBar.getTime(), 5),
-					prevTrendState);
+					prevTrendState, 
+					isBarHighAboveAll, isBarLowBelowAll,
+					currPairData.prevTrade);
 
 		}
 		else if (bearishSignal) {
@@ -342,6 +380,8 @@ public class SimpleMAsIDCrossTrendFollow extends BasicTAStrategy implements IStr
 			
 			placeBearishOrder(instrument, currPairData, bidBar, askBar);
 			boolean 
+				isBarHighAboveAll = trendDetector.isBarHighAboveAllMAs(instrument, period, OfferSide.ASK, AppliedPrice.CLOSE, askBar),
+				isBarLowBelowAll = trendDetector.isBarLowBelowAllMAs(instrument, period, OfferSide.BID, AppliedPrice.CLOSE, bidBar),				
 				isMA200Highest = trendDetector.isMA200Highest(instrument, period, OfferSide.ASK, AppliedPrice.CLOSE, askBar.getTime()),
 				isMA200Lowest = trendDetector.isMA200Lowest(instrument, period, OfferSide.BID, AppliedPrice.CLOSE, bidBar.getTime());
 			Trend.TREND_STATE prevTrendState = trendDetector.getTrendState(instrument, usedTimeFrame, OfferSide.BID, AppliedPrice.CLOSE, history.getPreviousBarStart(usedTimeFrame, bidBar.getTime()));
@@ -357,7 +397,9 @@ public class SimpleMAsIDCrossTrendFollow extends BasicTAStrategy implements IStr
 					tradeTrigger.priceChannelPos(instrument, usedTimeFrame, OfferSide.BID, bidBar.getTime(), bidBar.getHigh(), 0),
 					channelPosition.consequitiveBarsAbove(instrument, usedTimeFrame, OfferSide.ASK, askBar.getTime(), 5),
 					channelPosition.consequitiveBarsBelow(instrument, usedTimeFrame, OfferSide.BID, bidBar.getTime(), 5),
-					prevTrendState);
+					prevTrendState, 
+					isBarHighAboveAll, isBarLowBelowAll,
+					currPairData.prevTrade);
 		}		
 	}
 
@@ -471,8 +513,15 @@ public class SimpleMAsIDCrossTrendFollow extends BasicTAStrategy implements IStr
 		            String insSQL = FXUtils.dbGetTradeLogInsert(l, conf.getProperty("backTestRunID", getReportFileName()), message.getOrder().getLabel(), message.getOrder().isLong() ? "LONG" : "SHORT", "ER");
 		            FXUtils.dbUpdateInsert(logDB, insSQL);
 	    		}
-            }			
+            }
+            if (!currPair.tradeLog.exitReason.contains("cancelled")) {
+	            if (currPair.positionOrder.getProfitLossInPips() > 0)
+	            	currPair.prevTrade = PreviousTrade.WIN;
+	            else
+	            	currPair.prevTrade = PreviousTrade.LOSS;
+            }
 			currPair.resetVars();
+			
 			return;
 		}
 		if (message.getType().equals(IMessage.Type.ORDER_SUBMIT_OK)) {

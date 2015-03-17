@@ -213,6 +213,30 @@ public class Trend {
 		return MA200 > MA20 && MA200 > MA50 && MA200 > MA100;
     }
     
+    public boolean isBarHighAboveAllMAs(Instrument instrument, Period pPeriod, OfferSide side, IIndicators.AppliedPrice appliedPrice, IBar bar) throws JFException
+    {
+        double MA20 = indicators.sma(instrument, pPeriod, side, appliedPrice, 20, 
+        		Filter.WEEKENDS, 1, bar.getTime(), 0)[0];
+        double MA50 = indicators.sma(instrument, pPeriod, side, appliedPrice, 50, 
+        		Filter.WEEKENDS, 1, bar.getTime(), 0)[0];
+        double MA100 = indicators.sma(instrument, pPeriod, side, appliedPrice, 100, 
+        		Filter.WEEKENDS, 1, bar.getTime(), 0)[0];
+        
+		return bar.getHigh() > MA20 && bar.getHigh() > MA50 && bar.getHigh() > MA100;
+    }
+    
+    public boolean isBarLowBelowAllMAs(Instrument instrument, Period pPeriod, OfferSide side, IIndicators.AppliedPrice appliedPrice, IBar bar) throws JFException
+    {
+        double MA20 = indicators.sma(instrument, pPeriod, side, appliedPrice, 20, 
+        		Filter.WEEKENDS, 1, bar.getTime(), 0)[0];
+        double MA50 = indicators.sma(instrument, pPeriod, side, appliedPrice, 50, 
+        		Filter.WEEKENDS, 1, bar.getTime(), 0)[0];
+        double MA100 = indicators.sma(instrument, pPeriod, side, appliedPrice, 100, 
+        		Filter.WEEKENDS, 1, bar.getTime(), 0)[0];
+        
+		return bar.getLow() < MA20 && bar.getLow() < MA50 && bar.getLow() < MA100;
+    }
+    
     /*
      * Algorhytm:
      * 1. fetch three MAs for desired lookback period (for 30' 1000 is a month)
