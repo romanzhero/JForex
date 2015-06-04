@@ -37,8 +37,11 @@ import jforex.utils.FlexLogEntry;
 public class SimpleMAsIDCrossTrendFollow extends BasicTAStrategy implements IStrategy {
 	
 	protected Period usedTimeFrame = Period.FOUR_HOURS;
+	final static double	BREAK_EVEN_TRESHOLD = 2.0; // in ATRs
 	
 	protected class LocalTradeLog extends FXUtils.TradeLog {
+		final static double BIG_PRICE_MOVE_DEF = 2.0; // in ATRs
+		
 		boolean 
 			isMA200Highest = false, isMA200Lowest = false,
 			signalBarHighAboveAllMAs = false, signalBarLowBelowAllMAs = false,  
@@ -63,7 +66,16 @@ public class SimpleMAsIDCrossTrendFollow extends BasicTAStrategy implements IStr
 			maxFavourableChangeATR3BarTime = -1,
 			maxAdverseChangeATR3BarTime = -1;
 		
-		int bBandsWalk5Up = -1, bBandsWalkDown5 = -1;
+		int 
+			noOfFavourableChangeATR1Bar = 0,
+			noOfAdverseChangeATR1Bar = 0,
+			noOfFavourableChangeATR2Bar = 0,
+			noOfAdverseChangeATR2Bar = 0,
+			noOfFavourableChangeATR3Bar = 0,
+			noOfAdverseChangeATR3Bar = 0,
+		
+			bBandsWalk5Up = -1, 
+			bBandsWalkDown5 = -1;
 		
 		Trend.TREND_STATE entryTrendState;
 		
@@ -448,21 +460,33 @@ public class SimpleMAsIDCrossTrendFollow extends BasicTAStrategy implements IStr
 		IOrder positionOrder = currPairData.positionOrder;
 		if (positionOrder != null && positionOrder.getState().equals(IOrder.State.FILLED)) {
 			// already in position
+			double atr = indicators.atr(instrument, period, OfferSide.BID, 14, Filter.WEEKENDS, 1, bidBar.getTime(), 0)[0];
 			if (positionOrder.isLong()) {
 				double ma100 = indicators.sma(instrument, usedTimeFrame, OfferSide.BID, AppliedPrice.CLOSE, 100, Filter.WEEKENDS, 1, bidBar.getTime(), 0)[0];
+				// move SL to break even after position is profitable for more then 2 ATRs
+				if (positionOrder.getProfitLossInPips() > BREAK_EVEN_TRESHOLD * atr * Math.pow(10, instrument.getPipScale())
+					&& ma100 < positionOrder.getOpenPrice()) {
+					// check all the posibilities of MA100 position at position opening ??!!
+					positionOrder.setStopLossPrice(positionOrder.getOpenPrice());
+				}
 				if (ma100 > positionOrder.getStopLossPrice()) {
 					positionOrder.setStopLossPrice(ma100);
 					tradeLog.updateMaxRisk(ma100);
 				}
 			} else {
 				double ma100 = indicators.sma(instrument, usedTimeFrame, OfferSide.ASK, AppliedPrice.CLOSE, 100, Filter.WEEKENDS, 1, bidBar.getTime(), 0)[0];
+				// move SL to break even after position is profitable for more then 2 ATRs
+				if (positionOrder.getProfitLossInPips() > BREAK_EVEN_TRESHOLD * atr * Math.pow(10, instrument.getPipScale())
+					&& ma100 > positionOrder.getOpenPrice()) {
+					// check all the posibilities of MA100 position at position opening ??!!
+					positionOrder.setStopLossPrice(positionOrder.getOpenPrice());
+				}
 				if (ma100 < positionOrder.getStopLossPrice()) {	
 					positionOrder.setStopLossPrice(ma100);
 					tradeLog.updateMaxRisk(ma100);
 				}
 			}
             // update trade logs too
-			double atr = indicators.atr(instrument, period, OfferSide.BID, 14, Filter.WEEKENDS, 1, bidBar.getTime(), 0)[0];
 			List<IBar> last3Bars = positionOrder.isLong() ? history.getBars(instrument, usedTimeFrame, OfferSide.BID, Filter.WEEKENDS, 3, bidBar.getTime(), 0) : history.getBars(instrument, usedTimeFrame, OfferSide.ASK, Filter.WEEKENDS, 3, bidBar.getTime(), 0);
 
 			if (currPairData.noOfBarsInTrade++ > 0) {
@@ -470,6 +494,7 @@ public class SimpleMAsIDCrossTrendFollow extends BasicTAStrategy implements IStr
 	            tradeLog.updateMaxProfit(bidBar);
 	            tradeLog.updateMaxDD(bidBar, atr);
 	            tradeLog.updatePriceMoves(instrument, positionOrder.isLong(), last3Bars, atr);
+	            // now data needed to start trailing more aggressively is calculated !
 			}
 			return true;
 		} else
