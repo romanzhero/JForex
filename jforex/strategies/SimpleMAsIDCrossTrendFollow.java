@@ -121,6 +121,12 @@ public class SimpleMAsIDCrossTrendFollow extends BasicTAStrategy implements IStr
 					 + ";" + FXUtils.df1.format(this.maxFavourableChangeATR1Bar) + ";" + FXUtils.getFormatedTimeGMT(maxFavourableChangeATR1BarTime)  
 					 + ";" + FXUtils.df1.format(this.maxFavourableChangeATR2Bar) + ";" + FXUtils.getFormatedTimeGMT(maxFavourableChangeATR2BarTime)  
 					 + ";" + FXUtils.df1.format(this.maxFavourableChangeATR3Bar) + ";" + FXUtils.getFormatedTimeGMT(maxFavourableChangeATR3BarTime)  
+					 + ";" + FXUtils.if1.format(noOfFavourableChangeATR1Bar)
+					 + ";" + FXUtils.if1.format(noOfFavourableChangeATR2Bar)
+					 + ";" + FXUtils.if1.format(noOfFavourableChangeATR3Bar)
+					 + ";" + FXUtils.if1.format(noOfAdverseChangeATR1Bar)
+					 + ";" + FXUtils.if1.format(noOfAdverseChangeATR2Bar)
+					 + ";" + FXUtils.if1.format(noOfAdverseChangeATR3Bar)
 					 + ";" + FXUtils.if1.format(noOfBarsInTrade)
 					 + ";" + signalBarHighAboveAllMAs + ";" + signalBarLowBelowAllMAs
 					 + ";" + prevTrade
@@ -150,6 +156,12 @@ public class SimpleMAsIDCrossTrendFollow extends BasicTAStrategy implements IStr
 			l.add(new FlexLogEntry("maxFavourableChangeATR2BarTime", FXUtils.getFormatedTimeGMT(maxFavourableChangeATR2BarTime)));
 			l.add(new FlexLogEntry("maxFavourableChangeATR3Bar", new Double(maxFavourableChangeATR3Bar), FXUtils.df1));
 			l.add(new FlexLogEntry("maxFavourableChangeATR3BarTime", FXUtils.getFormatedTimeGMT(maxFavourableChangeATR3BarTime)));
+			l.add(new FlexLogEntry("noOfFavourableChangeATR1Bar", new Double(noOfFavourableChangeATR1Bar), FXUtils.df1));
+			l.add(new FlexLogEntry("noOfFavourableChangeATR2Bar", new Double(noOfFavourableChangeATR2Bar), FXUtils.df1));
+			l.add(new FlexLogEntry("noOfFavourableChangeATR3Bar", new Double(noOfFavourableChangeATR3Bar), FXUtils.df1));
+			l.add(new FlexLogEntry("noOfAdverseChangeATR1Bar", new Double(noOfAdverseChangeATR1Bar), FXUtils.df1));
+			l.add(new FlexLogEntry("noOfAdverseChangeATR2Bar", new Double(noOfAdverseChangeATR2Bar), FXUtils.df1));
+			l.add(new FlexLogEntry("noOfAdverseChangeATR3Bar", new Double(noOfAdverseChangeATR3Bar), FXUtils.df1));
 			l.add(new FlexLogEntry("noOfBarsInTrade", new Double(noOfBarsInTrade), FXUtils.df1));
 			l.add(new FlexLogEntry("signalBarAboveAllMAs", signalBarHighAboveAllMAs ? "yes" : "no"));
 			l.add(new FlexLogEntry("signalBarBelowAllMAs", signalBarLowBelowAllMAs ? "yes" : "no"));
@@ -177,14 +189,21 @@ public class SimpleMAsIDCrossTrendFollow extends BasicTAStrategy implements IStr
 					maxFavourableChangeATR1Bar = goodMove1 / atr; 
 					maxFavourableChangeATR1BarTime = currBar.getTime();
 				}
+				if (goodMove1 / atr > BIG_PRICE_MOVE_DEF)
+					noOfFavourableChangeATR1Bar++;
 				if (goodMove2 / atr > maxFavourableChangeATR2Bar) {
 					maxFavourableChangeATR2Bar = goodMove2 / atr;
 					maxFavourableChangeATR2BarTime = currBar.getTime();
 				}
+				if (goodMove2 / atr > BIG_PRICE_MOVE_DEF)
+					noOfFavourableChangeATR2Bar++;
 				if (goodMove3 / atr > maxFavourableChangeATR3Bar) {
 					maxFavourableChangeATR3Bar = goodMove3 / atr;
 					maxFavourableChangeATR3BarTime = currBar.getTime();
 				}
+				if (goodMove3 / atr > BIG_PRICE_MOVE_DEF)
+					noOfFavourableChangeATR3Bar++;
+
 				double barHighChannelPos = tradeTrigger.priceChannelPos(instrument, usedTimeFrame, OfferSide.ASK, currBar.getTime(), currBar.getHigh(), 0);				
 				// check adverse price moves, counting from last close. Only from upper channel half of start bar
 				if (barHighChannelPos > 50.0) {
@@ -194,6 +213,8 @@ public class SimpleMAsIDCrossTrendFollow extends BasicTAStrategy implements IStr
 						maxAdverseChangeATR1Bar = badMove1 / atr;
 						maxAdverseChangeATR1BarTime = currBar.getTime();
 					}
+					if (badMove1 / atr > BIG_PRICE_MOVE_DEF)
+						noOfAdverseChangeATR1Bar++;
 				}
 				barHighChannelPos = tradeTrigger.priceChannelPos(instrument, usedTimeFrame, OfferSide.ASK, last3Bars.get(1).getTime(), last3Bars.get(1).getHigh(), 0);				
 				if (barHighChannelPos > 50.0) {
@@ -202,6 +223,8 @@ public class SimpleMAsIDCrossTrendFollow extends BasicTAStrategy implements IStr
 						maxAdverseChangeATR2Bar = badMove2 / atr;
 						maxAdverseChangeATR2BarTime = currBar.getTime();
 					}
+					if (badMove2 / atr > BIG_PRICE_MOVE_DEF)
+						noOfAdverseChangeATR2Bar++;
 				}
 				barHighChannelPos = tradeTrigger.priceChannelPos(instrument, usedTimeFrame, OfferSide.ASK, last3Bars.get(2).getTime(), last3Bars.get(2).getHigh(), 0);				
 				if (barHighChannelPos > 50.0) {
@@ -210,6 +233,9 @@ public class SimpleMAsIDCrossTrendFollow extends BasicTAStrategy implements IStr
 						maxAdverseChangeATR3Bar = badMove3 / atr;
 						maxAdverseChangeATR3BarTime = currBar.getTime();
 					}
+					if (badMove3 / atr > BIG_PRICE_MOVE_DEF)
+						noOfAdverseChangeATR3Bar++;
+
 				}
 
 			} else {
@@ -223,14 +249,21 @@ public class SimpleMAsIDCrossTrendFollow extends BasicTAStrategy implements IStr
 					maxFavourableChangeATR1Bar = goodMove1 / atr; 
 					maxFavourableChangeATR1BarTime = currBar.getTime();
 				}
+				if (goodMove1 / atr > BIG_PRICE_MOVE_DEF)
+					noOfFavourableChangeATR1Bar++;
 				if (goodMove2 / atr > maxFavourableChangeATR2Bar) {
 					maxFavourableChangeATR2Bar = goodMove2 / atr;
 					maxFavourableChangeATR2BarTime = currBar.getTime();
 				}
+				if (goodMove2 / atr > BIG_PRICE_MOVE_DEF)
+					noOfFavourableChangeATR2Bar++;
 				if (goodMove3 / atr > maxFavourableChangeATR3Bar) {
 					maxFavourableChangeATR3Bar = goodMove3 / atr;
 					maxFavourableChangeATR3BarTime = currBar.getTime();
 				}
+				if (goodMove3 / atr > BIG_PRICE_MOVE_DEF)
+					noOfFavourableChangeATR3Bar++;
+
 				// check adverse price moves, counting from last close. Only from lower channel half
 				double barHighChannelPos = tradeTrigger.priceChannelPos(instrument, usedTimeFrame, OfferSide.ASK, currBar.getTime(), currBar.getHigh(), 0);				
 				if (barHighChannelPos < 50.0) {
@@ -239,6 +272,8 @@ public class SimpleMAsIDCrossTrendFollow extends BasicTAStrategy implements IStr
 						maxAdverseChangeATR1Bar = badMove1 / atr;
 						maxAdverseChangeATR1BarTime = currBar.getTime();
 					}
+					if (badMove1 / atr > BIG_PRICE_MOVE_DEF)
+						noOfAdverseChangeATR1Bar++;
 				}				
 				barHighChannelPos = tradeTrigger.priceChannelPos(instrument, usedTimeFrame, OfferSide.ASK, last3Bars.get(1).getTime(), last3Bars.get(1).getHigh(), 0);				
 				if (barHighChannelPos < 50.0) {
@@ -247,6 +282,8 @@ public class SimpleMAsIDCrossTrendFollow extends BasicTAStrategy implements IStr
 						maxAdverseChangeATR2Bar = badMove2 / atr;
 						maxAdverseChangeATR2BarTime = currBar.getTime();
 					}
+					if (badMove2 / atr > BIG_PRICE_MOVE_DEF)
+						noOfAdverseChangeATR2Bar++;
 				}				
 				barHighChannelPos = tradeTrigger.priceChannelPos(instrument, usedTimeFrame, OfferSide.ASK, last3Bars.get(2).getTime(), last3Bars.get(2).getHigh(), 0);				
 				if (barHighChannelPos < 50.0) {
@@ -255,6 +292,9 @@ public class SimpleMAsIDCrossTrendFollow extends BasicTAStrategy implements IStr
 						maxAdverseChangeATR3Bar = badMove3 / atr;
 						maxAdverseChangeATR3BarTime = currBar.getTime();
 					}
+					if (badMove3 / atr > BIG_PRICE_MOVE_DEF)
+						noOfAdverseChangeATR3Bar++;
+
 				}				
 			}
 		}
@@ -329,9 +369,12 @@ public class SimpleMAsIDCrossTrendFollow extends BasicTAStrategy implements IStr
 		if (openPositionProcessing(instrument, period, bidBar, currPairData))
 			return;
 		
+		long prevBarStart = history.getPreviousBarStart(period, bidBar.getTime());
 		Trend.TREND_STATE 
 			trendStateForBull = trendDetector.getTrendState(instrument, usedTimeFrame, OfferSide.ASK, AppliedPrice.CLOSE, bidBar.getTime()),
-			trendStateForBear = trendDetector.getTrendState(instrument, usedTimeFrame, OfferSide.BID, AppliedPrice.CLOSE, bidBar.getTime());
+			trendStateForBear = trendDetector.getTrendState(instrument, usedTimeFrame, OfferSide.BID, AppliedPrice.CLOSE, bidBar.getTime()),
+			prevTrendStateForBull = trendDetector.getTrendState(instrument, usedTimeFrame, OfferSide.ASK, AppliedPrice.CLOSE, prevBarStart),
+			prevTrendStateForBear = trendDetector.getTrendState(instrument, usedTimeFrame, OfferSide.BID, AppliedPrice.CLOSE, prevBarStart);
 
 		waitingOrderProcessing(period, bidBar, tradeLog, positionOrder, trendStateForBull, trendStateForBear);
 		
@@ -339,10 +382,19 @@ public class SimpleMAsIDCrossTrendFollow extends BasicTAStrategy implements IStr
 			bullishSignal = false,
 			bearishSignal = false;
 		
-		bullishSignal = trendStateForBull.equals(Trend.TREND_STATE.UP_STRONG);
+		// no entries after wins, until there is a real cross
+		bullishSignal = (trendStateForBull.equals(Trend.TREND_STATE.UP_STRONG) 
+						 && !prevTrendStateForBull.equals(Trend.TREND_STATE.UP_STRONG)) // standard cross
+						|| 
+						(trendStateForBull.equals(Trend.TREND_STATE.UP_STRONG) // re-entry after losses or at very beginning
+						&& !currPairData.prevTrade.equals(PreviousTrade.WIN));
 		
 		bearishSignal = !bullishSignal && 
-						(trendStateForBear.equals(Trend.TREND_STATE.DOWN_STRONG));
+						((trendStateForBear.equals(Trend.TREND_STATE.DOWN_STRONG) 
+						&& !prevTrendStateForBear.equals(Trend.TREND_STATE.DOWN_STRONG))
+						||
+						(trendStateForBear.equals(Trend.TREND_STATE.DOWN_STRONG) 
+						&& !currPairData.prevTrade.equals(PreviousTrade.WIN)));
 		if (bullishSignal) {
 			if (currPairData.waitingOrder && positionOrder.isLong() && askBar.getHigh() < positionOrder.getOpenPrice())
 				return;
@@ -463,12 +515,12 @@ public class SimpleMAsIDCrossTrendFollow extends BasicTAStrategy implements IStr
 			double atr = indicators.atr(instrument, period, OfferSide.BID, 14, Filter.WEEKENDS, 1, bidBar.getTime(), 0)[0];
 			if (positionOrder.isLong()) {
 				double ma100 = indicators.sma(instrument, usedTimeFrame, OfferSide.BID, AppliedPrice.CLOSE, 100, Filter.WEEKENDS, 1, bidBar.getTime(), 0)[0];
-				// move SL to break even after position is profitable for more then 2 ATRs
+/*				// move SL to break even after position is profitable for more then 2 ATRs
 				if (positionOrder.getProfitLossInPips() > BREAK_EVEN_TRESHOLD * atr * Math.pow(10, instrument.getPipScale())
 					&& ma100 < positionOrder.getOpenPrice()) {
 					// check all the posibilities of MA100 position at position opening ??!!
 					positionOrder.setStopLossPrice(positionOrder.getOpenPrice());
-				}
+				}*/
 				if (ma100 > positionOrder.getStopLossPrice()) {
 					positionOrder.setStopLossPrice(ma100);
 					tradeLog.updateMaxRisk(ma100);
@@ -476,12 +528,12 @@ public class SimpleMAsIDCrossTrendFollow extends BasicTAStrategy implements IStr
 			} else {
 				double ma100 = indicators.sma(instrument, usedTimeFrame, OfferSide.ASK, AppliedPrice.CLOSE, 100, Filter.WEEKENDS, 1, bidBar.getTime(), 0)[0];
 				// move SL to break even after position is profitable for more then 2 ATRs
-				if (positionOrder.getProfitLossInPips() > BREAK_EVEN_TRESHOLD * atr * Math.pow(10, instrument.getPipScale())
+/*				if (positionOrder.getProfitLossInPips() > BREAK_EVEN_TRESHOLD * atr * Math.pow(10, instrument.getPipScale())
 					&& ma100 > positionOrder.getOpenPrice()) {
 					// check all the posibilities of MA100 position at position opening ??!!
 					positionOrder.setStopLossPrice(positionOrder.getOpenPrice());
 				}
-				if (ma100 < positionOrder.getStopLossPrice()) {	
+*/				if (ma100 < positionOrder.getStopLossPrice()) {	
 					positionOrder.setStopLossPrice(ma100);
 					tradeLog.updateMaxRisk(ma100);
 				}
