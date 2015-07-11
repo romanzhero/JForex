@@ -383,18 +383,18 @@ public class SimpleMAsIDCrossTrendFollow extends BasicTAStrategy implements IStr
 			bearishSignal = false;
 		
 		// no entries after wins, until there is a real cross
-		bullishSignal = (trendStateForBull.equals(Trend.TREND_STATE.UP_STRONG) 
-						 && !prevTrendStateForBull.equals(Trend.TREND_STATE.UP_STRONG)) // standard cross
+		bullishSignal = trendStateForBull.equals(Trend.TREND_STATE.UP_STRONG); 
+/*						 && !prevTrendStateForBull.equals(Trend.TREND_STATE.UP_STRONG)) // standard cross
 						|| 
 						(trendStateForBull.equals(Trend.TREND_STATE.UP_STRONG) // re-entry after losses or at very beginning
-						&& !currPairData.prevTrade.equals(PreviousTrade.WIN));
+						&& !currPairData.prevTrade.equals(PreviousTrade.WIN));*/
 		
 		bearishSignal = !bullishSignal && 
-						((trendStateForBear.equals(Trend.TREND_STATE.DOWN_STRONG) 
-						&& !prevTrendStateForBear.equals(Trend.TREND_STATE.DOWN_STRONG))
+						trendStateForBear.equals(Trend.TREND_STATE.DOWN_STRONG);
+/*						&& !prevTrendStateForBear.equals(Trend.TREND_STATE.DOWN_STRONG))
 						||
 						(trendStateForBear.equals(Trend.TREND_STATE.DOWN_STRONG) 
-						&& !currPairData.prevTrade.equals(PreviousTrade.WIN)));
+						&& !currPairData.prevTrade.equals(PreviousTrade.WIN)));*/
 		if (bullishSignal) {
 			if (currPairData.waitingOrder && positionOrder.isLong() && askBar.getHigh() < positionOrder.getOpenPrice())
 				return;
