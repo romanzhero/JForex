@@ -180,6 +180,15 @@ public class FXUtils {
 		sdf.setTimeZone(TimeZone.getTimeZone("GMT"));
 		return sdf.format(time);        
     }
+    
+    public static String getFormatedTimeGMTforID(long time)
+    {
+		final SimpleDateFormat sdf;
+        sdf = new SimpleDateFormat("yyyyMMddHHmm");
+		sdf.setTimeZone(TimeZone.getTimeZone("GMT"));
+		return sdf.format(time);        
+    }
+   
 
     public static String getFormatedTimeWithSecsGMT(long time)
     {

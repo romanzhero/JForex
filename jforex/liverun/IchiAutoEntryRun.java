@@ -27,13 +27,17 @@
  * OF LIABILITY, ARISING OUT OF THE USE OF OR INABILITY TO USE THIS SOFTWARE,
  * EVEN IF DUKASCOPY HAS BEEN ADVISED OF THE POSSIBILITY OF SUCH DAMAGES.
  */
-package singlejartest;
+package jforex.liverun;
 
 import com.dukascopy.api.Instrument;
 import com.dukascopy.api.system.ClientFactory;
 import com.dukascopy.api.system.IClient;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import singlejartest.ForceReconnectListener;
+import singlejartest.Main;
 
 import java.io.File;
 import java.io.FileInputStream;

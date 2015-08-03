@@ -27,7 +27,7 @@
  * OF LIABILITY, ARISING OUT OF THE USE OF OR INABILITY TO USE THIS SOFTWARE, 
  * EVEN IF DUKASCOPY HAS BEEN ADVISED OF THE POSSIBILITY OF SUCH DAMAGES.
  */
-package singlejartest;
+package jforex.liverun;
 
 import com.dukascopy.api.system.ISystemListener;
 import com.dukascopy.api.system.IClient;
@@ -41,16 +41,14 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.StringTokenizer;
 
-import jforex.OrderChecker;
+import jforex.strategies.SimpleMAsIDCrossTrendFollow;
 import jforex.utils.ClimberProperties;
+
 import org.slf4j.LoggerFactory;
 import org.slf4j.Logger;
 
-/**
- * This small program demonstrates how to initialize Dukascopy client and start a strategy
- */
-public class RunOrderChecker {
-    private static final Logger LOGGER = LoggerFactory.getLogger(RunOrderChecker.class);
+public class TrendIDFollowLiveRun {
+    private static final Logger LOGGER = LoggerFactory.getLogger(TrendIDFollowLiveRun.class);
 
     //url of the DEMO jnlp
     private static String jnlpUrl = "https://www.dukascopy.com/client/demo/jclient/jforex.jnlp";
@@ -148,7 +146,6 @@ public class RunOrderChecker {
         
         //start the strategy
         LOGGER.info("Starting strategy");
-        client.startStrategy(new OrderChecker(properties));
-        //now it's running
+        client.startStrategy(new SimpleMAsIDCrossTrendFollow(properties));
     }
 }

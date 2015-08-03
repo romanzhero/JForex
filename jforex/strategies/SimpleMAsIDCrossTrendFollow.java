@@ -555,16 +555,16 @@ public class SimpleMAsIDCrossTrendFollow extends BasicTAStrategy implements IStr
 
 	private void placeBearishOrder(Instrument instrument, PairTradeData currPair, IBar bidBar, IBar askBar) throws JFException {
 		double twoAtrAbs = FXUtils.roundToPip(2 * indicators.atr(instrument, usedTimeFrame, OfferSide.ASK, 14, Filter.WEEKENDS, 1, bidBar.getTime(), 0)[0] / Math.pow(10, instrument.getPipValue()), instrument);
-		currPair.positionOrder = engine.submitOrder(getOrderLabel(instrument, currPair), instrument, OrderCommand.SELLSTOP, 0.1, bidBar.getLow(), 5.0, askBar.getLow() + twoAtrAbs, 0.0);		
+		currPair.positionOrder = engine.submitOrder(getOrderLabel(instrument, currPair, bidBar.getTime()), instrument, OrderCommand.SELLSTOP, 0.1, bidBar.getLow(), 5.0, askBar.getLow() + twoAtrAbs, 0.0);		
 	}
 
 	private void placeBullishOrder(Instrument instrument, PairTradeData currPair, IBar askBar, IBar bidBar) throws JFException {
 		double twoAtrAbs = FXUtils.roundToPip(2 * indicators.atr(instrument, usedTimeFrame, OfferSide.BID, 14, Filter.WEEKENDS, 1, bidBar.getTime(), 0)[0] / Math.pow(10, instrument.getPipValue()), instrument);
-		currPair.positionOrder = engine.submitOrder(getOrderLabel(instrument, currPair), instrument, OrderCommand.BUYSTOP, 0.1, askBar.getHigh(), 5.0, bidBar.getHigh() - twoAtrAbs, 0.0);		
+		currPair.positionOrder = engine.submitOrder(getOrderLabel(instrument, currPair, bidBar.getTime()), instrument, OrderCommand.BUYSTOP, 0.1, askBar.getHigh(), 5.0, bidBar.getHigh() - twoAtrAbs, 0.0);		
 	}
 
-	private String getOrderLabel(Instrument instrument, PairTradeData currPair) {
-		String res = new String(getStrategyName() + "_" + instrument.name() + "_" + FXUtils.if3.format(++currPair.orderCounter));
+	private String getOrderLabel(Instrument instrument, PairTradeData currPair, long barTime) {
+		String res = new String(getStrategyName() + "_" + instrument.name() + "_" + FXUtils.getFormatedTimeGMTforID(barTime));
 		return res;
 	}
 
@@ -622,10 +622,10 @@ public class SimpleMAsIDCrossTrendFollow extends BasicTAStrategy implements IStr
 	}
 	
 	@Override
-	protected String getStrategyName() { return "SimpleMAsIDCrossTrendFollow";	}
+	protected String getStrategyName() { return "SMAsIDCrossTrendFollow";	}
 
 	@Override
-	protected String getReportFileName() { return "SimpleMAsIDCrossTrendFollow_Report_"; }
+	protected String getReportFileName() { return "SMAsIDCrossTrendFollow_Report_"; }
 
 
 }
