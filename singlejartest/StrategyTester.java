@@ -111,7 +111,6 @@ public class StrategyTester {
             System.exit(1);
         }
         
-        long startTime = System.currentTimeMillis();
         properties.validate(LOGGER);
         FXUtils.setDbToUse(properties.getProperty("dbToUse"));
         
@@ -142,7 +141,7 @@ public class StrategyTester {
         LOGGER.info("Subscribing instruments...");
         client.setSubscribedInstruments(instruments);
         //setting initial deposit
-        client.setInitialDeposit(Instrument.EURUSD.getSecondaryCurrency(), Double.parseDouble(properties.getProperty("initialdeposit", "100000.0")));
+        client.setInitialDeposit(Instrument.EURUSD.getSecondaryJFCurrency(), Double.parseDouble(properties.getProperty("initialdeposit", "100000.0")));
         client.setCacheDirectory(new File(properties.getProperty("cachedir")));
         client.setDataInterval(Period.TICK, null, null, properties.getTestIntervalStart().getMillis(), properties.getTestIntervalEnd().getMillis());
         //load data

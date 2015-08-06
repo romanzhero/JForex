@@ -43,7 +43,6 @@ import com.dukascopy.api.JFException;
 import com.dukascopy.api.OfferSide;
 import com.dukascopy.api.Period;
 import com.dukascopy.api.IIndicators.AppliedPrice;
-import com.dukascopy.transport.common.msg.news.Currency;
 
 public class PaceStatsCollector extends AdvancedMailCreator implements IStrategy {
 	
