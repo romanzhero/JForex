@@ -350,6 +350,28 @@ public class SimpleMAsIDCrossTrendFollow extends BasicTAStrategy implements IStr
 			else
 				instrumentsToIgnore.add(i);
 		}
+		// now re-create control data for all open positions
+		for (IOrder o : engine.getOrders()) {
+			if (!o.getState().equals(IOrder.State.CLOSED) && !o.getState().equals(IOrder.State.CANCELED)) {
+				PairTradeData pairData = new PairTradeData(o.getInstrument());
+				pairData.positionOrder = o;
+				pairData.openPosition = o.getState().equals(IOrder.State.FILLED);
+				pairData.waitingOrder = o.getState().equals(IOrder.State.OPENED);
+				pairData.tradeLog = new LocalTradeLog(o.getLabel(), o.isLong(), o.getCreationTime(), 
+						o.getOpenPrice(), o.getStopLossPrice(), o.getStopLossPrice() - o.getOpenPrice(), 
+						dbLogging, dbLogging, dbLogging, 0, 0, 0, 0, null, dbLogging, dbLogging, null);
+				
+				this.pairsTradeData.put(o.getInstrument().toString(), pairData);
+				log.print("Order log re-created for " + o.getInstrument().toString() 
+						+ " (" + (o.isLong() ? "LONG" : "SHORT") + "), label " + o.getLabel(), 
+						conf.getProperty("liveRun", "no").equalsIgnoreCase("yes"));
+			}
+		}
+		if (conf.getProperty("liveRun", "no").equalsIgnoreCase("yes")) {
+			
+			log.print("Strategy " + getStrategyName() + " started at " + FXUtils.getFormatedTimeCET(System.currentTimeMillis()) 
+					  + " with pairs " + conf.getProperty("pairsToCheck"), true);
+		}
 	}
 
 	@Override
@@ -482,7 +504,8 @@ public class SimpleMAsIDCrossTrendFollow extends BasicTAStrategy implements IStr
 							+ positionOrder.getLabel() 
 							+ " not yet submitted, can not be closed ! Created: " 
 							+ FXUtils.getFormatedTimeGMT(positionOrder.getCreationTime()) + "; Happened at " + period.toString() + " time frame bar " 
-							+ FXUtils.getFormatedTimeGMT(bidBar.getTime()));
+							+ FXUtils.getFormatedTimeGMT(bidBar.getTime()),
+							conf.getProperty("liveRun", "no").equalsIgnoreCase("yes"));
 					log.close();
 					System.exit(1);
 				}
@@ -499,7 +522,8 @@ public class SimpleMAsIDCrossTrendFollow extends BasicTAStrategy implements IStr
 							+ positionOrder.getLabel() 
 							+ " not yet submitted, can not be closed ! Created: " 
 							+ FXUtils.getFormatedTimeGMT(positionOrder.getCreationTime()) + "; Happened at " + period.toString() + " time frame bar " 
-							+ FXUtils.getFormatedTimeGMT(bidBar.getTime()));
+							+ FXUtils.getFormatedTimeGMT(bidBar.getTime()),
+							conf.getProperty("liveRun", "no").equalsIgnoreCase("yes"));
 					log.close();
 					System.exit(1);
 				}
@@ -522,8 +546,9 @@ public class SimpleMAsIDCrossTrendFollow extends BasicTAStrategy implements IStr
 					positionOrder.setStopLossPrice(positionOrder.getOpenPrice());
 				}*/
 				if (ma100 > positionOrder.getStopLossPrice()) {
-					positionOrder.setStopLossPrice(ma100);
-					tradeLog.updateMaxRisk(ma100);
+					double rounded = FXUtils.roundToPip(ma100, instrument);
+					positionOrder.setStopLossPrice(rounded);
+					tradeLog.updateMaxRisk(rounded);
 				}
 			} else {
 				double ma100 = indicators.sma(instrument, usedTimeFrame, OfferSide.ASK, AppliedPrice.CLOSE, 100, Filter.WEEKENDS, 1, bidBar.getTime(), 0)[0];
@@ -534,8 +559,9 @@ public class SimpleMAsIDCrossTrendFollow extends BasicTAStrategy implements IStr
 					positionOrder.setStopLossPrice(positionOrder.getOpenPrice());
 				}
 */				if (ma100 < positionOrder.getStopLossPrice()) {	
-					positionOrder.setStopLossPrice(ma100);
-					tradeLog.updateMaxRisk(ma100);
+					double rounded = FXUtils.roundToPip(ma100, instrument);
+					positionOrder.setStopLossPrice(rounded);
+					tradeLog.updateMaxRisk(rounded);
 				}
 			}
             // update trade logs too
@@ -584,7 +610,8 @@ public class SimpleMAsIDCrossTrendFollow extends BasicTAStrategy implements IStr
 	            if (currPair.tradeLog.exitReason == null)
 		            currPair.tradeLog.exitReason = reasonsStr;
 	            currPair.tradeLog.PnL = currPair.positionOrder.getProfitLossInPips();
-	            log.print(currPair.tradeLog.exitReport(message.getOrder().getInstrument(), currPair.noOfBarsInTrade));
+	            log.print(currPair.tradeLog.exitReport(message.getOrder().getInstrument(), currPair.noOfBarsInTrade),
+						  conf.getProperty("liveRun", "no").equalsIgnoreCase("yes"));
 	    		if (conf.getProperty("barStatsToDB", "no").equals("yes")) {
 		            List<FlexLogEntry> l = currPair.tradeLog.exportToFlexLogs(message.getOrder().getInstrument(), currPair.noOfBarsInTrade);
 		            String insSQL = FXUtils.dbGetTradeLogInsert(l, conf.getProperty("backTestRunID", getReportFileName()), message.getOrder().getLabel(), message.getOrder().isLong() ? "LONG" : "SHORT", "ER");
