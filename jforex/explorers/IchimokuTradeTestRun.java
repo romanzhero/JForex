@@ -32,9 +32,11 @@ import java.sql.Statement;
 import java.text.DecimalFormat;
 
 import jforex.BasicTAStrategy;
+import jforex.logging.TradeLog;
 import jforex.techanalysis.TradeTrigger.TriggerDesc;
 import jforex.techanalysis.Trend.IchiDesc;
 import jforex.utils.FXUtils;
+import jforex.utils.Logger;
 import jforex.utils.MultiDDLog;
 
 // 1 full ATR from cloud as SL
@@ -47,30 +49,9 @@ public class IchimokuTradeTestRun extends BasicTAStrategy implements IStrategy {
     public static final DecimalFormat df2 = new DecimalFormat("0.00");
     public static final DecimalFormat df1 = new DecimalFormat("0.0");
 
-    private class TradeLog {
-        public String orderLabel;
-        public boolean 
-            isLong;
-        public long 
-            signalTime,
-            fillTime,
-            maxProfitTime,
-            maxDDTime,
-            exitTime;
+    private class IchiTradeLog extends TradeLog {
         public double 
-            entryPrice,
-            fillPrice,
-            SL,
-            initialRisk,
             ratioCloudATR,
-            maxRisk,
-            maxLoss,
-            maxLossATR,
-            maxDD,
-            maxDDATR,
-            maxProfit,
-            maxProfitPrice,
-            PnL,
             PnLAtLastKijun,
             currPnLWhenRSIExtreme, // only working variable
             PnLAtFirstRSIStayExtreme, // only for first block of 3 or more bars in extreme
@@ -89,29 +70,16 @@ public class IchimokuTradeTestRun extends BasicTAStrategy implements IStrategy {
              FirstRSIStayExtremeBars, // only first entry into 3+ bars in extreme will be recorded
              RSIExtremeEntries; // needed for correct counting and final report
          
-         public TradeLog(String pOrderLabel, boolean pIsLong, long pSignalTime, 
+         public IchiTradeLog(String pOrderLabel, boolean pIsLong, long pSignalTime, 
              double pEntryPrice, double pSL, double pInitialRisk, double pRatioCloudATR, boolean pEntryTenkanBullish,
              String pEntryBorderTopDirection, String pEntryBorderBottomDirection, boolean pEntryIsBullishCloud) {
-                orderLabel = pOrderLabel;
-                isLong = pIsLong;
-                signalTime = pSignalTime;
-                entryPrice = pEntryPrice;
-                fillPrice = entryPrice; // needed for risk calc of unfilled orders, which can get new SL while waiting due to changes in the clould borders !
-                SL = pSL;
-                initialRisk = pInitialRisk;
-                maxRisk = initialRisk;
+        	 	super(pOrderLabel, pIsLong, pSignalTime, pEntryPrice, pSL, pInitialRisk);
                 ratioCloudATR = pRatioCloudATR;
                 entryTenkanBullish = pEntryTenkanBullish;
                 entryBorderTopDirection = pEntryBorderTopDirection;
                 entryBorderBottomDirection = pEntryBorderBottomDirection;
                 entryIsBullishCloud = pEntryIsBullishCloud;
                 
-                exitReason = null;
-                PnL = 0.0;
-                maxLossATR = maxLoss = 0.0;
-                maxDD = maxDDATR = 0.0;
-                maxProfit = 0.0;
-                maxProfitPrice = 0.0;
                 PnLAtLastKijun = 0.0;
                 
                 currRSIExtremeBars = 0;                
@@ -123,7 +91,6 @@ public class IchimokuTradeTestRun extends BasicTAStrategy implements IStrategy {
                 MaxPnLWhenRSIExtreme = 0.0;
                 
                 cloudDistStDev = 0.0;
-                maxProfitTime = maxDDTime = 0;
      }
          
          public double missedProfit(Instrument instrument) {
@@ -287,44 +254,22 @@ public class IchimokuTradeTestRun extends BasicTAStrategy implements IStrategy {
              }
          }
 
-         public void exitReport(Instrument instrument) {
-            log.print("ER;" 
-                + orderLabel + ";" 
-                + (isLong ? "LONG" : "SHORT") + ";" 
-                + DateUtils.format(signalTime) + ";" 
-                + DateUtils.format(fillTime) + ";"
-                + DateUtils.format(exitTime) + ";"
-                + exitReason + ";" 
-                + (instrument.getPipScale() == 2 ? df2.format(entryPrice) : df5.format(entryPrice)) + ";" 
-                + (instrument.getPipScale() == 2 ? df2.format(fillPrice) : df5.format(fillPrice)) + ";" 
-                + (instrument.getPipScale() == 2 ? df2.format(SL) : df5.format(SL)) + ";" 
-                + df1.format(initialRisk * Math.pow(10, instrument.getPipScale())) + ";" 
-                + df1.format(maxRisk * Math.pow(10, instrument.getPipScale())) + ";" 
-                + df1.format(maxLoss * Math.pow(10, instrument.getPipScale())) + ";" 
-                + df2.format(maxLossATR) + ";" 
-                + df1.format(maxDD * Math.pow(10, instrument.getPipScale())) + ";" 
-                + df2.format(maxDDATR) + ";" 
-                + DateUtils.format(maxDDTime) + ";" 
-                + df1.format(maxProfit * Math.pow(10, instrument.getPipScale())) + ";" 
-                + (instrument.getPipScale() != 2 ? df5.format(maxProfitPrice) : df2.format(maxProfitPrice)) + ";"
-                + df1.format(PnL) + ";" 
-                + df1.format(missedProfit(instrument)) + ";" 
-                + df1.format(missedProfitPerc(instrument)) + ";" 
+         public void exitReport(Instrument instrument, Logger log) {
+            log.print(super.prepareExitReport(instrument) + ";" 
                 + (entryTenkanBullish ? "BULLISH " : "BEARISH") + ";" 
                 + entryBorderTopDirection  + ";" 
                 + entryBorderBottomDirection + ";" 
                 + (entryIsBullishCloud ? "BULLISH " : "BEARISH") + ";" 
-                + df1.format(PnLAtLastKijun * Math.pow(10, instrument.getPipScale())) + ";" 
-                + df1.format(ratioCloudATR) + ";" 
+                + IchimokuTradeTestRun.df1.format(PnLAtLastKijun * Math.pow(10, instrument.getPipScale())) + ";" 
+                + IchimokuTradeTestRun.df1.format(ratioCloudATR) + ";" 
                 + RSIExtremeEntries + ";" 
                 + FirstRSIStayExtremeBars + ";" 
-                + df1.format(PnLAtFirstRSIStayExtreme * Math.pow(10, instrument.getPipScale())) + ";" 
-                + df1.format(MaxPnLWhenRSIExtreme * Math.pow(10, instrument.getPipScale())));
+                + IchimokuTradeTestRun.df1.format(PnLAtFirstRSIStayExtreme * Math.pow(10, instrument.getPipScale())) + ";" 
+                + IchimokuTradeTestRun.df1.format(MaxPnLWhenRSIExtreme * Math.pow(10, instrument.getPipScale())));
                
          }
     }
-    
-    private TradeLog tradeLog = null;
+    private IchiTradeLog tradeLog = null;
     private MultiDDLog mlLog = null;
 
     private int 
@@ -449,7 +394,7 @@ public class IchimokuTradeTestRun extends BasicTAStrategy implements IStrategy {
             if (tradeLog.exitReason == null)
                 tradeLog.exitReason = reasonsStr;
             tradeLog.PnL = order.getProfitLossInPips();
-            tradeLog.exitReport(message.getOrder().getInstrument());
+            tradeLog.exitReport(message.getOrder().getInstrument(), log);
             
             dbRecordMLDrawDowns(order.getLabel(), order.getInstrument(), mlLog);
             
@@ -819,7 +764,7 @@ public class IchimokuTradeTestRun extends BasicTAStrategy implements IStrategy {
 	                    filled = false;
 	                } else {
 	                	filled = true;
-	                    tradeLog = new TradeLog(order.getLabel(), order.isLong(), bidBar.getTime(), bar.getLow() - atr_stop, cloudBottom + 4 * atr_stop, order.getStopLossPrice() - order.getOpenPrice(), 
+	                    tradeLog = new IchiTradeLog(order.getLabel(), order.isLong(), bidBar.getTime(), bar.getLow() - atr_stop, cloudBottom + 4 * atr_stop, order.getStopLossPrice() - order.getOpenPrice(), 
 	                        ratioCloudATR, currIchiSituation.isBullishTenkanLine, currIchiSituation.topBorderDirection, currIchiSituation.bottomBorderDirection, currIchiSituation.isBullishCloud);
 	                    mlLog = new MultiDDLog(3, 2, false);
 	                    orderHaveBinOpened = true;
@@ -844,7 +789,7 @@ public class IchimokuTradeTestRun extends BasicTAStrategy implements IStrategy {
                     order = null;                        
                     filled = false;
                 } else {
-                    tradeLog = new TradeLog(order.getLabel(), order.isLong(), bidBar.getTime(), bar.getHigh() + atr_stop, cloudTop - 4 * atr_stop, order.getOpenPrice() - order.getStopLossPrice(), 
+                    tradeLog = new IchiTradeLog(order.getLabel(), order.isLong(), bidBar.getTime(), bar.getHigh() + atr_stop, cloudTop - 4 * atr_stop, order.getOpenPrice() - order.getStopLossPrice(), 
                         ratioCloudATR, currIchiSituation.isBullishTenkanLine, currIchiSituation.topBorderDirection, currIchiSituation.bottomBorderDirection, currIchiSituation.isBullishCloud);
                     filled = true;
                     mlLog = new MultiDDLog(3, 2, true);

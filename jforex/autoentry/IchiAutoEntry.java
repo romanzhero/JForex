@@ -21,7 +21,7 @@ import jforex.logging.BacktestRun;
 import jforex.logging.LogUtils.LogEvents;
 import jforex.logging.PositionLog;
 import jforex.logging.RunMonitor;
-import jforex.logging.TradeLog;
+import jforex.logging.AbstTradeLog;
 import jforex.utils.FXUtils;
 import com.dukascopy.api.IAccount;
 import com.dukascopy.api.IBar;
@@ -49,7 +49,7 @@ public class IchiAutoEntry extends BasicStrategy implements IStrategy {
 	private BacktestRun btRun;
 	private RunMonitor rm;
 	private Map<String, PositionLog> positionLogs = new HashMap<String, PositionLog>();
-	private Map<String, TradeLog> tradeLogs = new HashMap<String, TradeLog>();
+	private Map<String, AbstTradeLog> tradeLogs = new HashMap<String, AbstTradeLog>();
 	
 	public IchiAutoEntry(Properties props, long period_start, long period_end, long exec_start) { 
 		super(props); 
@@ -348,7 +348,7 @@ public class IchiAutoEntry extends BasicStrategy implements IStrategy {
 	}
 
 	private void orderBookKeeping(IOrder currOrder, IBar bidBar, IBar askBar, long logTime) {
-		TradeLog currTradeLog = tradeLogs.get(currOrder.getLabel());
+		AbstTradeLog currTradeLog = tradeLogs.get(currOrder.getLabel());
 		currTradeLog.update(bidBar, askBar, logTime);		
 	}
 
@@ -626,7 +626,7 @@ public class IchiAutoEntry extends BasicStrategy implements IStrategy {
 				PositionLog pl = new PositionLog(order, btRun.getRun_id(), logDB);
 				int positionlog_id = pl.dbRecordFill(message.getCreationTime());
 				positionLogs.put(order.getLabel(), pl);
-				TradeLog tl = new TradeLog(order_id, positionlog_id, order, logDB);
+				AbstTradeLog tl = new AbstTradeLog(order_id, positionlog_id, order, logDB);
 				tradeLogs.put(order.getLabel(), tl);
 				tl.dbRecordFill(message.getCreationTime());
 			}
@@ -639,7 +639,7 @@ public class IchiAutoEntry extends BasicStrategy implements IStrategy {
 					+ btRun.getRun_id() + " AND order_label = '" + firstOrderLabel + "'");
 			try {
 				if (position != null && position.next()) {
-					TradeLog tl2ndOrder = new TradeLog(order_id, position.getInt("positionlog_id"), order, logDB);	
+					AbstTradeLog tl2ndOrder = new AbstTradeLog(order_id, position.getInt("positionlog_id"), order, logDB);	
 					tradeLogs.put(order.getLabel(), tl2ndOrder);
 					tl2ndOrder.dbRecord2ndFill(message.getCreationTime());
 					FXUtils.dbUpdateInsert(logDB, "UPDATE " + FXUtils.getDbToUse() + ".tpositionlog SET 2nd_pos_attempts = 2nd_pos_attempts + 1 WHERE positionlog_id = " 
@@ -835,7 +835,7 @@ public class IchiAutoEntry extends BasicStrategy implements IStrategy {
 	public void onAccount(IAccount account) throws JFException { }
 
 	private void record1stOrderClose(IMessage message, IOrder order, LogEvents event) throws JFException {
-		TradeLog tl = tradeLogs.get(order.getLabel());
+		AbstTradeLog tl = tradeLogs.get(order.getLabel());
 		PositionLog pl = positionLogs.get(order.getLabel());
 		// PnL of 2nd orders constantly updated in this field at their closes
 		FXUtils.dbUpdateInsert(logDB, "UPDATE " + FXUtils.getDbToUse() + ".tpositionlog SET total_PnL = total_PnL + " + order.getProfitLossInUSD()
@@ -861,7 +861,7 @@ public class IchiAutoEntry extends BasicStrategy implements IStrategy {
 	}
 	
 	private void record2ndOrderClose(IMessage message, IOrder order, LogEvents event) throws JFException {
-		TradeLog tl = tradeLogs.get(order.getLabel());
+		AbstTradeLog tl = tradeLogs.get(order.getLabel());
 		PositionLog pl = positionLogs.get(getFirstOrderLabel(order));
 		pl.updateTotalClosed2ndPosPnL(order.getProfitLossInUSD());
 		

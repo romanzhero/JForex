@@ -3,16 +3,10 @@ package jforex.utils;
 import java.io.BufferedWriter;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.sql.SQLException;
-import java.sql.Statement;
 import java.text.DecimalFormat;
 import java.util.List;
 
-
-
 import com.dukascopy.api.IConsole;
-import com.dukascopy.api.Instrument;
-import com.dukascopy.api.Period;
 
 public class Logger {
 	IConsole console;
