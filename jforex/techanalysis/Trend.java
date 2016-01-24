@@ -3,6 +3,8 @@ package jforex.techanalysis;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.apache.commons.math3.stat.ranking.NaturalRanking;
+
 import jforex.utils.FXUtils;
 
 import com.dukascopy.api.Filter;
@@ -254,7 +256,12 @@ public class Trend {
      */
     private double[] uptrendMAsDifferenceStDevStats(Instrument instrument, Period pPeriod, OfferSide side, IIndicators.AppliedPrice appliedPrice, long time, int lookBack) throws JFException
     {
-        double[] MAs20 = indicators.sma(instrument, pPeriod, side, appliedPrice, 20, 
+        double[] result = getRawUptrendMAsDifferences(instrument, pPeriod, side, appliedPrice, time, lookBack);
+    	return FXUtils.sdFast(result);
+    }
+
+	protected double[] getRawUptrendMAsDifferences(Instrument instrument, Period pPeriod, OfferSide side, IIndicators.AppliedPrice appliedPrice, long time, int lookBack) throws JFException {
+		double[] MAs20 = indicators.sma(instrument, pPeriod, side, appliedPrice, 20, 
         		Filter.WEEKENDS, lookBack, time, 0);
         double[] MAs50 = indicators.sma(instrument, pPeriod, side, appliedPrice, 50, 
         		Filter.WEEKENDS, lookBack, time, 0);
@@ -275,8 +282,8 @@ public class Trend {
         {
         	result[pos++] = d.doubleValue();
         }
-    	return FXUtils.sdFast(result);
-    }
+		return result;
+	}
     
     public double getUptrendMAsMaxDifStDevPos(Instrument instrument, Period pPeriod, OfferSide side, IIndicators.AppliedPrice appliedPrice, long time, int lookback) throws JFException 
     {
@@ -354,7 +361,12 @@ public class Trend {
      */
     private double[] downtrendMAsDifferenceStDevStats(Instrument instrument, Period pPeriod, OfferSide side, IIndicators.AppliedPrice appliedPrice, long time, int lookBack) throws JFException
     {
-        double[] MAs20 = indicators.sma(instrument, pPeriod, side, appliedPrice, 20, 
+        double[] result = getRawDowntrendMAsDifferences(instrument, pPeriod, side, appliedPrice, time, lookBack);
+    	return FXUtils.sdFast(result);
+    }
+
+	protected double[] getRawDowntrendMAsDifferences(Instrument instrument,	Period pPeriod, OfferSide side,	IIndicators.AppliedPrice appliedPrice, long time, int lookBack)	throws JFException {
+		double[] MAs20 = indicators.sma(instrument, pPeriod, side, appliedPrice, 20, 
         		Filter.WEEKENDS, lookBack, time, 0);
         double[] MAs50 = indicators.sma(instrument, pPeriod, side, appliedPrice, 50, 
         		Filter.WEEKENDS, lookBack, time, 0);
@@ -375,8 +387,8 @@ public class Trend {
         {
         	result[pos++] = d.doubleValue();
         }
-    	return FXUtils.sdFast(result);
-    }
+		return result;
+	}
     
     public double getDowntrendMAsMaxDifStDevPos(Instrument instrument, Period pPeriod, OfferSide side, IIndicators.AppliedPrice appliedPrice, long time, int lookback) throws JFException 
     {
@@ -405,33 +417,57 @@ public class Trend {
      */
     public double[] MAsDifferenceStDevStats(Instrument instrument, Period pPeriod, OfferSide side, IIndicators.AppliedPrice appliedPrice, long time, int lookBack) throws JFException
     {
-        double[] MAs20 = indicators.sma(instrument, pPeriod, side, appliedPrice, 20, 
-        		Filter.WEEKENDS, lookBack, time, 0);
-        double[] MAs50 = indicators.sma(instrument, pPeriod, side, appliedPrice, 50, 
-        		Filter.WEEKENDS, lookBack, time, 0);
-        double[] MAs100 = indicators.sma(instrument, pPeriod, side, appliedPrice, 100, 
-        		Filter.WEEKENDS, lookBack, time, 0);
+        double[] result = getRawMAsDifferences(instrument, pPeriod, side, appliedPrice, time, lookBack);
+    	return FXUtils.sdFast(result);
+    }
+
+	protected double[] getRawMAsDifferences(Instrument instrument, Period pPeriod, OfferSide side, IIndicators.AppliedPrice appliedPrice, long time, int lookBack) throws JFException {
+		double[] MAs20 = indicators.sma(instrument, pPeriod, side, appliedPrice, 20, Filter.WEEKENDS, lookBack, time, 0);
+        double[] MAs50 = indicators.sma(instrument, pPeriod, side, appliedPrice, 50, Filter.WEEKENDS, lookBack, time, 0);
+        double[] MAs100 = indicators.sma(instrument, pPeriod, side, appliedPrice, 100, Filter.WEEKENDS, lookBack, time, 0);
         
         double[] result = new double[MAs20.length];
         for (int i = 0; i < MAs20.length; i++)
         {
 			result[i] = maxMAsDifference(MAs20[i], MAs50[i], MAs100[i]);
         }
-    	return FXUtils.sdFast(result);
-    }
+		return result;
+	}
     
     public double getMAsMaxDiffStDevPos(Instrument instrument, Period pPeriod, OfferSide side, IIndicators.AppliedPrice appliedPrice, long time, int lookback) throws JFException 
     {
-        double MA20 = indicators.sma(instrument, pPeriod, side, appliedPrice, 20, 
-        		Filter.WEEKENDS, 1, time, 0)[0];
-        double MA50 = indicators.sma(instrument, pPeriod, side, appliedPrice, 50, 
-        		Filter.WEEKENDS, 1, time, 0)[0];
-        double MA100 = indicators.sma(instrument, pPeriod, side, appliedPrice, 100, 
-        		Filter.WEEKENDS, 1, time, 0)[0];
+        double MA20 = indicators.sma(instrument, pPeriod, side, appliedPrice, 20, Filter.WEEKENDS, 1, time, 0)[0];
+        double MA50 = indicators.sma(instrument, pPeriod, side, appliedPrice, 50, Filter.WEEKENDS, 1, time, 0)[0];
+        double MA100 = indicators.sma(instrument, pPeriod, side, appliedPrice, 100,	Filter.WEEKENDS, 1, time, 0)[0];
         
     	double[] stDevStats = MAsDifferenceStDevStats(instrument, pPeriod, side, appliedPrice, time, lookback);
     	return (maxMAsDifference(MA20, MA50, MA100) - stDevStats[0]) / stDevStats[1];
 	}
+    
+    public double getMAsMaxDiffPercentile(Instrument instrument, Period pPeriod, OfferSide side, IIndicators.AppliedPrice appliedPrice, long time, int lookback) throws JFException {
+    	double[] rawData = getRawMAsDifferences(instrument, pPeriod, side, appliedPrice, time, lookback);
+    	double[] rank = new NaturalRanking().rank(rawData);
+    	
+    	// the last in rawData should be the latest bar. Rank 1 means it is the biggest etc. Percentile is simply rank / array size * 100
+    	return rank[rank.length - 1] / rank.length * 100.0;
+    }
+    
+    public double getUptrendMAsMaxDiffPercentile(Instrument instrument, Period pPeriod, OfferSide side, IIndicators.AppliedPrice appliedPrice, long time, int lookback) throws JFException {
+    	double[] rawData = getRawUptrendMAsDifferences(instrument, pPeriod, side, appliedPrice, time, lookback);
+    	double[] rank = new NaturalRanking().rank(rawData);
+    	
+    	// the last in rawData should be the latest bar. Rank 1 means it is the biggest etc. Percentile is simply rank / array size * 100
+    	return rank[rank.length - 1] / rank.length * 100.0;
+    }
+    
+    public double getDowntrendMAsMaxDiffPercentile(Instrument instrument, Period pPeriod, OfferSide side, IIndicators.AppliedPrice appliedPrice, long time, int lookback) throws JFException {
+    	double[] rawData = getRawDowntrendMAsDifferences(instrument, pPeriod, side, appliedPrice, time, lookback);
+    	double[] rank = new NaturalRanking().rank(rawData);
+    	
+    	// the last in rawData should be the latest bar. Rank 1 means it is the biggest etc. Percentile is simply rank / array size * 100
+    	return rank[rank.length - 1] / rank.length * 100.0;
+    }    
+    
     
 
     public double[] getADXs(Instrument instrument, Period pPeriod, OfferSide side, long time) throws JFException

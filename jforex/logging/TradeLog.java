@@ -1,11 +1,14 @@
 package jforex.logging;
 
-import jforex.explorers.IchimokuTradeTestRun;
+import java.util.ArrayList;
+import java.util.List;
+
+import jforex.utils.FXUtils;
+import jforex.utils.FlexLogEntry;
 import jforex.utils.Logger;
 
 import com.dukascopy.api.IBar;
 import com.dukascopy.api.Instrument;
-import com.dukascopy.api.util.DateUtils;
 
 public class TradeLog {
 	public String orderLabel;
@@ -33,6 +36,8 @@ public class TradeLog {
     
      public String
          exitReason = null;
+     
+     protected List<FlexLogEntry> entryData = new ArrayList<FlexLogEntry>();
      
      public TradeLog(String pOrderLabel, boolean pIsLong, long pSignalTime, double pEntryPrice, double pSL, double pInitialRisk) {
 			orderLabel = pOrderLabel;
@@ -127,6 +132,10 @@ public class TradeLog {
              }
          }             
      }     
+     
+     public void addLogEntry(FlexLogEntry e) {
+    	 entryData.add(e);
+     }
 
      public void exitReport(Instrument instrument, Logger log) {
         log.print(prepareExitReport(instrument));
@@ -134,27 +143,31 @@ public class TradeLog {
      }
      
      public String prepareExitReport(Instrument instrument) {
-    	 return new String("ER;" 
+    	 String result = new String("ER;" 
     	            + orderLabel + ";" 
     	            + (isLong ? "LONG" : "SHORT") + ";" 
-    	            + DateUtils.format(signalTime) + ";" 
-    	            + DateUtils.format(fillTime) + ";"
-    	            + DateUtils.format(exitTime) + ";"
+    	            + FXUtils.getFileTimeStamp(signalTime) + ";" 
+    	            + FXUtils.getFileTimeStamp(fillTime) + ";"
+    	            + FXUtils.getFileTimeStamp(exitTime) + ";"
     	            + exitReason + ";" 
-    	            + (instrument.getPipScale() == 2 ? IchimokuTradeTestRun.df2.format(entryPrice) : IchimokuTradeTestRun.df5.format(entryPrice)) + ";" 
-    	            + (instrument.getPipScale() == 2 ? IchimokuTradeTestRun.df2.format(fillPrice) : IchimokuTradeTestRun.df5.format(fillPrice)) + ";" 
-    	            + (instrument.getPipScale() == 2 ? IchimokuTradeTestRun.df2.format(SL) : IchimokuTradeTestRun.df5.format(SL)) + ";" 
-    	            + IchimokuTradeTestRun.df1.format(initialRisk * Math.pow(10, instrument.getPipScale())) + ";" 
-    	            + IchimokuTradeTestRun.df1.format(maxRisk * Math.pow(10, instrument.getPipScale())) + ";" 
-    	            + IchimokuTradeTestRun.df1.format(maxLoss * Math.pow(10, instrument.getPipScale())) + ";" 
-    	            + IchimokuTradeTestRun.df2.format(maxLossATR) + ";" 
-    	            + IchimokuTradeTestRun.df1.format(maxDD * Math.pow(10, instrument.getPipScale())) + ";" 
-    	            + IchimokuTradeTestRun.df2.format(maxDDATR) + ";" 
-    	            + DateUtils.format(maxDDTime) + ";" 
-    	            + IchimokuTradeTestRun.df1.format(maxProfit * Math.pow(10, instrument.getPipScale())) + ";" 
-    	            + (instrument.getPipScale() != 2 ? IchimokuTradeTestRun.df5.format(maxProfitPrice) : IchimokuTradeTestRun.df2.format(maxProfitPrice)) + ";"
-    	            + IchimokuTradeTestRun.df1.format(PnL) + ";" 
-    	            + IchimokuTradeTestRun.df1.format(missedProfit(instrument)) + ";" 
-    	            + IchimokuTradeTestRun.df1.format(missedProfitPerc(instrument)));
+    	            + (instrument.getPipScale() == 2 ? FXUtils.df2.format(entryPrice) : FXUtils.df5.format(entryPrice)) + ";" 
+    	            + (instrument.getPipScale() == 2 ? FXUtils.df2.format(fillPrice) : FXUtils.df5.format(fillPrice)) + ";" 
+    	            + (instrument.getPipScale() == 2 ? FXUtils.df2.format(SL) : FXUtils.df5.format(SL)) + ";" 
+    	            + FXUtils.df1.format(initialRisk * Math.pow(10, instrument.getPipScale())) + ";" 
+    	            + FXUtils.df1.format(maxRisk * Math.pow(10, instrument.getPipScale())) + ";" 
+    	            + FXUtils.df1.format(maxLoss * Math.pow(10, instrument.getPipScale())) + ";" 
+    	            + FXUtils.df2.format(maxLossATR) + ";" 
+    	            + FXUtils.df1.format(maxDD * Math.pow(10, instrument.getPipScale())) + ";" 
+    	            + FXUtils.df2.format(maxDDATR) + ";" 
+    	            + FXUtils.getFileTimeStamp(maxDDTime) + ";" 
+    	            + FXUtils.df1.format(maxProfit * Math.pow(10, instrument.getPipScale())) + ";" 
+    	            + (instrument.getPipScale() != 2 ? FXUtils.df5.format(maxProfitPrice) : FXUtils.df2.format(maxProfitPrice)) + ";"
+    	            + FXUtils.df1.format(PnL) + ";" 
+    	            + FXUtils.df1.format(missedProfit(instrument)) + ";" 
+    	            + FXUtils.df1.format(missedProfitPerc(instrument)));
+    	 for (FlexLogEntry e : entryData)
+    		 result += ";" + e.getFormattedValue();
+    	 return result;
+    	 
      }
 }
