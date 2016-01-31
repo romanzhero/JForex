@@ -15,6 +15,7 @@ import com.dukascopy.api.Instrument;
 import com.dukascopy.api.JFException;
 import com.dukascopy.api.OfferSide;
 import com.dukascopy.api.Period;
+import com.dukascopy.api.IIndicators.MaType;
 
 public class Trend {
 	
@@ -31,6 +32,12 @@ public class Trend {
 	public enum ICHI_CLOUD_CROSS {
 		BULLISH,
 		BEARISH,
+		NONE
+	}
+	
+	public enum FLAT_REGIME_CAUSE {
+		MAs_WITHIN_CHANNEL,
+		MAs_CLOSE,
 		NONE
 	}
 	
@@ -754,5 +761,30 @@ public class Trend {
          double[] stDevRes = FXUtils.sdFast(nonEmptyDistances);          
          return (currDistance - stDevRes[0]) / stDevRes[1];
      }
+
+	public FLAT_REGIME_CAUSE isFlatRegime(Instrument instrument, Period pPeriod, OfferSide side, IIndicators.AppliedPrice appliedPrice, Filter filter, long time, 
+			int lookBack, double MAsDistancePercThreshold) throws JFException {
+		double
+				ma20 = indicators.sma(instrument, pPeriod, side, appliedPrice, 20, filter, 1, time, 0)[0],
+				ma50 = indicators.sma(instrument, pPeriod, side, appliedPrice, 50, filter, 1, time, 0)[0],
+				ma100 = indicators.sma(instrument, pPeriod, side, appliedPrice, 100, filter, 1, time, 0)[0];
+    	double[][] bBands = indicators.bbands(instrument, pPeriod, side, appliedPrice, 20, 2.0, 2.0, MaType.SMA, filter, 1, time, 0);
+    	double 
+    		bBandsTop = bBands[0][0],
+    		bBandsBottom = bBands[2][0];
+
+        
+		// all MAs within channel > FLAT !
+    	if (bBandsTop > ma20 && bBandsTop > ma50 && bBandsTop > ma100
+    		&& bBandsBottom < ma20 && bBandsBottom < ma50 && bBandsBottom < ma100)
+    		return FLAT_REGIME_CAUSE.MAs_WITHIN_CHANNEL;
+    	
+    	// MAs very tight together
+    	if (getMAsMaxDiffPercentile(instrument, pPeriod, side, appliedPrice, time, lookBack) < MAsDistancePercThreshold)
+    		return FLAT_REGIME_CAUSE.MAs_CLOSE;
+    	
+    	//TODO: third criteria should be contradictory position of basic 3 MAs against MA200. For example MA200 highest but any of three uptrends. Study !!!
+    	return FLAT_REGIME_CAUSE.NONE;
+	}
     
 }
