@@ -46,6 +46,7 @@ public class TradeTrigger {
 			srLevel, // support-resistance defined by this candle pattern
 			reversalSize,
 			channelPosition,
+			bBandsTop, bBandsBottom, bBandsWidth, // bBands values at signal time
 			keltnerChannelPosition,
 			// for 2- and 3-bar triggers - total values when combined into 1 bar
 			combinedUpperHandlePerc,
@@ -64,6 +65,7 @@ public class TradeTrigger {
 							double pivotLevel, 
 							double srLevel, 
 							double channelPosition, 
+							double bBandsTop, double bBandsBottom, double bBandsWidth, 
 							double keltnerChannelPosition,
 							double pCombinedUHPerc,
 							double pCombinedRealBodyPerc,
@@ -76,6 +78,9 @@ public class TradeTrigger {
 			this.pivotLevel = pivotLevel;
 			this.srLevel = srLevel;
 			this.channelPosition = channelPosition;
+			this.bBandsBottom = bBandsBottom;
+			this.bBandsTop = bBandsTop;
+			this.bBandsWidth = bBandsWidth;
 			this.keltnerChannelPosition = keltnerChannelPosition;
 			combinedUpperHandlePerc = pCombinedUHPerc;
 			combinedRealBodyPerc = pCombinedRealBodyPerc;
@@ -215,12 +220,13 @@ public class TradeTrigger {
     			range = pivotLowBar.getHigh() - pivotLowBar.getLow(),
     			bodyTop = Math.max(pivotLowBar.getOpen(), pivotLowBar.getClose()),
     			bodyBottom = Math.min(pivotLowBar.getOpen(), pivotLowBar.getClose());
+    		double[] bBandsDesc = priceChannelPos(instrument, pPeriod, side, time, pivotLowBar.getLow(), 0);
     		
     		return new TriggerDesc(TriggerType.BULLISH_1_BAR,
     				1, patternBars,
     				pivotLowBar.getLow(), 
     				getLowerHandleMiddle(pivotLowBar),
-    				priceChannelPos(instrument, pPeriod, side, time, pivotLowBar.getLow(), 0),
+    				bBandsDesc[0], bBandsDesc[1], bBandsDesc[2], bBandsDesc[3],
     				priceKeltnerChannelPos(instrument, pPeriod, side, time, pivotLowBar.getLow(), 0),
     				(pivotLowBar.getHigh() - bodyTop) / range * 100.0,
     				(bodyTop - bodyBottom) / range * 100.0,
@@ -243,6 +249,7 @@ public class TradeTrigger {
     			range = h - l,
     			bodyTop = Math.max(o, c),
     			bodyBottom = Math.min(o, c);
+			double[] bBandsDesc = priceChannelPos(instrument, pPeriod, side, time, pivotLowBar.getLow(), prevBar.getLow() < currBar.getLow() ? 1 : 0);
 
             lastBullishTrigger = TriggerType.BULLISH_2_BARS;
     		return new TriggerDesc(TriggerType.BULLISH_2_BARS,
@@ -250,7 +257,7 @@ public class TradeTrigger {
     				pivotLowBar.getLow(), 
     				// srLevel is simply last bar middle. Maybe something more precise (with handles) can be done...
     				currBar.getLow() + (currBar.getHigh() - currBar.getLow()) / 2,
-    				priceChannelPos(instrument, pPeriod, side, time, pivotLowBar.getLow(), prevBar.getLow() < currBar.getLow() ? 1 : 0),
+    				bBandsDesc[0], bBandsDesc[1], bBandsDesc[2], bBandsDesc[3],
     				priceKeltnerChannelPos(instrument, pPeriod, side, time, pivotLowBar.getLow(), prevBar.getLow() < currBar.getLow() ? 1 : 0),
     				(h - bodyTop) / range * 100.0,
     				(bodyTop - bodyBottom) / range * 100.0,
@@ -276,12 +283,13 @@ public class TradeTrigger {
     			range = h - l,
     			bodyTop = Math.max(o, c),
     			bodyBottom = Math.min(o, c);
+    		double[] bBandsDesc = priceChannelPos(instrument, pPeriod, side, time, pivotLowBar.getLow(), 1);
 
     		return new TriggerDesc(TriggerType.BULLISH_3_BARS,
     				3, patternBars,
     				pivotLowBar.getLow(), 
     				getBullishPivotalThreeBarsSRLevel(middleBar),
-    				priceChannelPos(instrument, pPeriod, side, time, pivotLowBar.getLow(), 1),
+    				bBandsDesc[0], bBandsDesc[1], bBandsDesc[2], bBandsDesc[3],
     				priceKeltnerChannelPos(instrument, pPeriod, side, time, pivotLowBar.getLow(), 1),
     				(h - bodyTop) / range * 100.0,
     				(bodyTop - bodyBottom) / range * 100.0,
@@ -297,12 +305,13 @@ public class TradeTrigger {
     			range = pivotLowBar.getHigh() - pivotLowBar.getLow(),
     			bodyTop = Math.max(pivotLowBar.getOpen(), pivotLowBar.getClose()),
     			bodyBottom = Math.min(pivotLowBar.getOpen(), pivotLowBar.getClose());
+    		double[] bBandsDesc = priceChannelPos(instrument, pPeriod, side, time, pivotLowBar.getLow(), 0);
     		
     		return new TriggerDesc(TriggerType.BULLISH_1_BAR,
     				1, patternBars,
     				pivotLowBar.getLow(), 
     				getLowerHandleMiddle(pivotLowBar),
-    				priceChannelPos(instrument, pPeriod, side, time, pivotLowBar.getLow(), 0),
+    				bBandsDesc[0], bBandsDesc[1], bBandsDesc[2], bBandsDesc[3],
     				priceKeltnerChannelPos(instrument, pPeriod, side, time, pivotLowBar.getLow(), 0),
     				(pivotLowBar.getHigh() - bodyTop) / range * 100.0,
     				(bodyTop - bodyBottom) / range * 100.0,
@@ -800,12 +809,13 @@ public class TradeTrigger {
     			range = patternBars[0].getHigh() - patternBars[0].getLow(),
     			bodyTop = Math.max(patternBars[0].getOpen(), patternBars[0].getClose()),
     			bodyBottom = Math.min(patternBars[0].getOpen(), patternBars[0].getClose());
+    		double[] bBandsDesc = priceChannelPos(instrument, pPeriod, side, time, pivotHigh, 0);
 
     		return new TriggerDesc(TriggerType.BEARISH_1_BAR,
     				1, patternBars,
     				pivotHigh, 
     				getUpperHandleMiddle(history.getBars(instrument, pPeriod, side, Filter.WEEKENDS, 1, time, 0).get(0)),
-    				priceChannelPos(instrument, pPeriod, side, time, pivotHigh, 0),
+    				bBandsDesc[0], bBandsDesc[1], bBandsDesc[2], bBandsDesc[3],
     				priceKeltnerChannelPos(instrument, pPeriod, side, time, pivotHigh, 0),
     				(patternBars[0].getHigh() - bodyTop) / range * 100.0,
     				(bodyTop - bodyBottom) / range * 100.0,
@@ -828,6 +838,7 @@ public class TradeTrigger {
     			range = h - l,
     			bodyTop = Math.max(o, c),
     			bodyBottom = Math.min(o, c);
+    		double[] bBandsDesc = priceChannelPos(instrument, pPeriod, side, time, pivotHigh, prevBar.getHigh() > currBar.getHigh() ? 1 : 0);
     		
             lastBearishTrigger = TriggerType.BEARISH_2_BARS;
     		return new TriggerDesc(TriggerType.BEARISH_2_BARS,
@@ -835,7 +846,7 @@ public class TradeTrigger {
     				pivotHigh, 
     				// srLevel is simply last bar middle. Maybe something more precise (with handles) can be done...
     				currBar.getLow() + (currBar.getHigh() - currBar.getLow()) / 2,
-    				priceChannelPos(instrument, pPeriod, side, time, pivotHigh, prevBar.getHigh() > currBar.getHigh() ? 1 : 0),
+    				bBandsDesc[0], bBandsDesc[1], bBandsDesc[2], bBandsDesc[3],
     				priceKeltnerChannelPos(instrument, pPeriod, side, time, pivotHigh, prevBar.getHigh() > currBar.getHigh() ? 1 : 0),
     				(h - bodyTop) / range * 100.0,
     				(bodyTop - bodyBottom) / range * 100.0,
@@ -861,6 +872,7 @@ public class TradeTrigger {
     			range = h - l,
     			bodyTop = Math.max(o, c),
     			bodyBottom = Math.min(o, c);
+    		double[] bBandsDesc = priceChannelPos(instrument, pPeriod, side, time, pivotHigh, 1);
 
     		lastBearishTrigger = TriggerType.BEARISH_3_BARS;
     		return new TriggerDesc(TriggerType.BEARISH_3_BARS,
@@ -868,7 +880,7 @@ public class TradeTrigger {
     				pivotHigh, 
     				// S/R level for bearish 3-bar is middle of middle bar's UPPER handle
     				getUpperHandleMiddle(middleBar),
-    				priceChannelPos(instrument, pPeriod, side, time, pivotHigh, 1),
+    				bBandsDesc[0], bBandsDesc[1], bBandsDesc[2], bBandsDesc[3],
     				priceKeltnerChannelPos(instrument, pPeriod, side, time, pivotHigh, 1),
     				(h - bodyTop) / range * 100.0,
     				(bodyTop - bodyBottom) / range * 100.0,
@@ -885,12 +897,13 @@ public class TradeTrigger {
     			range = patternBars[0].getHigh() - patternBars[0].getLow(),
     			bodyTop = Math.max(patternBars[0].getOpen(), patternBars[0].getClose()),
     			bodyBottom = Math.min(patternBars[0].getOpen(), patternBars[0].getClose());
+    		double[] bBandsDesc = priceChannelPos(instrument, pPeriod, side, time, pivotHigh, 0);
 
     		return new TriggerDesc(TriggerType.BEARISH_1_BAR,
     				1, patternBars,
     				pivotHigh, 
     				getUpperHandleMiddle(history.getBars(instrument, pPeriod, side, Filter.WEEKENDS, 1, time, 0).get(0)),
-    				priceChannelPos(instrument, pPeriod, side, time, pivotHigh, 0),
+    				bBandsDesc[0], bBandsDesc[1], bBandsDesc[2], bBandsDesc[3],
     				priceKeltnerChannelPos(instrument, pPeriod, side, time, pivotHigh, 0),
     				(patternBars[0].getHigh() - bodyTop) / range * 100.0,
     				(bodyTop - bodyBottom) / range * 100.0,
@@ -1101,13 +1114,17 @@ public class TradeTrigger {
  
     }
 
-    public double priceChannelPos(Instrument instrument, Period pPeriod, OfferSide side, long time, double price, int backBars) throws JFException
+    public double[] priceChannelPos(Instrument instrument, Period pPeriod, OfferSide side, long time, double price, int backBars) throws JFException
     {
-    	double[][] bBands = indicators.bbands(instrument, pPeriod, side, AppliedPrice.CLOSE, 20, 2.0, 2.0, MaType.SMA, 
-    			Filter.WEEKENDS, 2, time, 0);
+    	double[][] bBands = indicators.bbands(instrument, pPeriod, side, AppliedPrice.CLOSE, 20, 2.0, 2.0, MaType.SMA, Filter.WEEKENDS, 2, time, 0);
     	double bBandsWidth = bBands[0][1 - backBars] - bBands[2][1 - backBars];    
     	double bBandsBottom = bBands[2][backBars];
-        return (price - bBandsBottom) / bBandsWidth * 100;
+    	double[] results = new double[4];
+    	results[0] = (price - bBandsBottom) / bBandsWidth * 100;
+    	results[1] = bBands[0][backBars];
+    	results[2] = bBandsBottom;
+    	results[3] = bBandsWidth;
+        return results;
     }
 
     public String[] parseCandleTriggers(String valueToShow) {

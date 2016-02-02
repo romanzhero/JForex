@@ -457,7 +457,7 @@ public class TAEventsSource {
 		// flat 1d regime
 		long prev1dBarTime = history.getPreviousBarStart(Period.DAILY_SUNDAY_IN_MONDAY, bidBar.getTime());
 		double
-			channelPos1d = tradeTrigger.priceChannelPos(instrument, Period.DAILY_SUNDAY_IN_MONDAY, OfferSide.BID, prev1dBarTime, pivotLevel4h, 0),
+			channelPos1d = tradeTrigger.priceChannelPos(instrument, Period.DAILY_SUNDAY_IN_MONDAY, OfferSide.BID, prev1dBarTime, pivotLevel4h, 0)[0],
 			keltnerPos1d = tradeTrigger.priceKeltnerChannelPos(instrument, Period.DAILY_SUNDAY_IN_MONDAY, OfferSide.BID, prev1dBarTime, pivotLevel4h, 0);
 		// OK to enter position #1 at 4h channel half in case of 1d bullish triggers:
 		// 1: 1d flat and bullish candle trigger on channel bottom
@@ -524,7 +524,7 @@ public class TAEventsSource {
 		// flat 1d regime
 		long prev1dBarTime = history.getPreviousBarStart(Period.DAILY_SUNDAY_IN_MONDAY, bidBar.getTime());
 		double
-			channelPos1d = tradeTrigger.priceChannelPos(instrument, Period.DAILY_SUNDAY_IN_MONDAY, OfferSide.BID, prev1dBarTime, pivotLevel4h, 0),
+			channelPos1d = tradeTrigger.priceChannelPos(instrument, Period.DAILY_SUNDAY_IN_MONDAY, OfferSide.BID, prev1dBarTime, pivotLevel4h, 0)[0],
 			keltnerPos1d = tradeTrigger.priceKeltnerChannelPos(instrument, Period.DAILY_SUNDAY_IN_MONDAY, OfferSide.BID, prev1dBarTime, pivotLevel4h, 0);
 		// OK to enter position #1 at 4h channel half in case of 1d bullish triggers:
 		// 1: 1d flat and bullish candle trigger on channel bottom
@@ -720,7 +720,7 @@ public class TAEventsSource {
 		long prev1dBarTime = history.getPreviousBarStart(Period.DAILY_SUNDAY_IN_MONDAY, bidBar.getTime());
 		double
 			pivotLevel4h = mailValuesMap.get("bearishPivotLevel4h").getDoubleValue(),
-			channelPos1d = tradeTrigger.priceChannelPos(instrument, Period.DAILY_SUNDAY_IN_MONDAY, OfferSide.BID, prev1dBarTime, pivotLevel4h, 0),
+			channelPos1d = tradeTrigger.priceChannelPos(instrument, Period.DAILY_SUNDAY_IN_MONDAY, OfferSide.BID, prev1dBarTime, pivotLevel4h, 0)[0],
 			keltnerPos1d = tradeTrigger.priceKeltnerChannelPos(instrument, Period.DAILY_SUNDAY_IN_MONDAY, OfferSide.BID, prev1dBarTime, pivotLevel4h, 0),
 			candleTriggerChannelPos4h = mailValuesMap.get("bearishCandleTriggerChannelPos4h").getDoubleValue(),
 			candleTriggerKChannelPos4h = mailValuesMap.get("bearishCandleTriggerKChannelPos4h").getDoubleValue(),
@@ -756,7 +756,7 @@ public class TAEventsSource {
 		long prev1dBarTime = history.getPreviousBarStart(Period.DAILY_SUNDAY_IN_MONDAY, bidBar.getTime());
 		double
 			pivotLevel4h = mailValuesMap.get("bullishPivotLevel4h").getDoubleValue(),
-			channelPos1d = tradeTrigger.priceChannelPos(instrument, Period.DAILY_SUNDAY_IN_MONDAY, OfferSide.BID, prev1dBarTime, pivotLevel4h, 0),
+			channelPos1d = tradeTrigger.priceChannelPos(instrument, Period.DAILY_SUNDAY_IN_MONDAY, OfferSide.BID, prev1dBarTime, pivotLevel4h, 0)[0],
 			keltnerPos1d = tradeTrigger.priceKeltnerChannelPos(instrument, Period.DAILY_SUNDAY_IN_MONDAY, OfferSide.BID, prev1dBarTime, pivotLevel4h, 0),
 			candleTriggerChannelPos4h = mailValuesMap.get("bullishCandleTriggerChannelPos4h").getDoubleValue(),
 			candleTriggerKChannelPos4h = mailValuesMap.get("bullishCandleTriggerKChannelPos4h").getDoubleValue(),
@@ -808,7 +808,7 @@ public class TAEventsSource {
 		// flat 1d regime
 		long prev1dBarTime = history.getPreviousBarStart(Period.DAILY_SUNDAY_IN_MONDAY, bidBar.getTime());
 		double
-			channelPos1d = tradeTrigger.priceChannelPos(instrument, Period.DAILY_SUNDAY_IN_MONDAY, OfferSide.BID, prev1dBarTime, pivotLevel4h, 0),
+			channelPos1d = tradeTrigger.priceChannelPos(instrument, Period.DAILY_SUNDAY_IN_MONDAY, OfferSide.BID, prev1dBarTime, pivotLevel4h, 0)[0],
 			keltnerPos1d = tradeTrigger.priceKeltnerChannelPos(instrument, Period.DAILY_SUNDAY_IN_MONDAY, OfferSide.BID, prev1dBarTime, pivotLevel4h, 0),
 			candleTriggerChannelPos = mailValuesMap.get("bearishCandleTriggerChannelPos4h").getDoubleValue();
 
@@ -868,7 +868,7 @@ public class TAEventsSource {
 		// flat 1d regime
 		long prev1dBarTime = history.getPreviousBarStart(Period.DAILY_SUNDAY_IN_MONDAY, bidBar.getTime());
 		double
-			channelPos1d = tradeTrigger.priceChannelPos(instrument, Period.DAILY_SUNDAY_IN_MONDAY, OfferSide.BID, prev1dBarTime, pivotLevel4h, 0),
+			channelPos1d = tradeTrigger.priceChannelPos(instrument, Period.DAILY_SUNDAY_IN_MONDAY, OfferSide.BID, prev1dBarTime, pivotLevel4h, 0)[0],
 			keltnerPos1d = tradeTrigger.priceKeltnerChannelPos(instrument, Period.DAILY_SUNDAY_IN_MONDAY, OfferSide.BID, prev1dBarTime, pivotLevel4h, 0),
 			candleTriggerChannelPos = mailValuesMap.get("bearishCandleTriggerChannelPos4h").getDoubleValue();
 
@@ -1157,7 +1157,7 @@ public class TAEventsSource {
 		        logLine.add(new FlexLogEntry("bullishCandleTriggerKChannelPos30min", new Double(bullishTriggerDesc.keltnerChannelPosition), FXUtils.df1));
 		
 				double
-					channelPos4h = tradeTrigger.priceChannelPos(instrument, Period.FOUR_HOURS, OfferSide.BID, bidBar.getTime(), bullishTriggerDesc.pivotLevel, 0),
+					channelPos4h = tradeTrigger.priceChannelPos(instrument, Period.FOUR_HOURS, OfferSide.BID, bidBar.getTime(), bullishTriggerDesc.pivotLevel, 0)[0],
 					keltnerPos4h = tradeTrigger.priceKeltnerChannelPos(instrument, Period.FOUR_HOURS, OfferSide.BID, bidBar.getTime(), bullishTriggerDesc.pivotLevel, 0);
 		        logLine.add(new FlexLogEntry("bullishPivotLevelHigherTFChannelPos30min", new Double(channelPos4h), FXUtils.df1));
 		        logLine.add(new FlexLogEntry("bullishPivotLevelHigherTFKChannelPos30min", new Double(keltnerPos4h), FXUtils.df1));
@@ -1184,7 +1184,7 @@ public class TAEventsSource {
 		        logLine.add(new FlexLogEntry("bearishCandleTriggerKChannelPos30min", new Double(bearishTriggerDesc.keltnerChannelPosition), FXUtils.df1));
 		
 				double
-					channelPos4h = tradeTrigger.priceChannelPos(instrument, Period.FOUR_HOURS, OfferSide.BID, bidBar.getTime(), bearishTriggerDesc.pivotLevel, 0),
+					channelPos4h = tradeTrigger.priceChannelPos(instrument, Period.FOUR_HOURS, OfferSide.BID, bidBar.getTime(), bearishTriggerDesc.pivotLevel, 0)[0],
 					keltnerPos4h = tradeTrigger.priceKeltnerChannelPos(instrument, Period.FOUR_HOURS, OfferSide.BID, bidBar.getTime(), bearishTriggerDesc.pivotLevel, 0);
 		        logLine.add(new FlexLogEntry("bearishPivotLevelHigherTFChannelPos30min", new Double(channelPos4h), FXUtils.df1));
 		        logLine.add(new FlexLogEntry("bearishPivotLevelHigherTFKChannelPos30min", new Double(keltnerPos4h), FXUtils.df1));
@@ -1245,7 +1245,7 @@ public class TAEventsSource {
 		
 		        long prev1dBarTime = history.getPreviousBarStart(Period.DAILY_SUNDAY_IN_MONDAY, bidBar.getTime());
 				double
-					channelPos1d = tradeTrigger.priceChannelPos(instrument, Period.DAILY_SUNDAY_IN_MONDAY, OfferSide.BID, prev1dBarTime, bullishCandleTriggerDesc4h.pivotLevel, 0),
+					channelPos1d = tradeTrigger.priceChannelPos(instrument, Period.DAILY_SUNDAY_IN_MONDAY, OfferSide.BID, prev1dBarTime, bullishCandleTriggerDesc4h.pivotLevel, 0)[0],
 					keltnerPos1d = tradeTrigger.priceKeltnerChannelPos(instrument, Period.DAILY_SUNDAY_IN_MONDAY, OfferSide.BID, prev1dBarTime, bullishCandleTriggerDesc4h.pivotLevel, 0);
 		        logLine.add(new FlexLogEntry("bullishPivotLevelHigherTFChannelPos4h", new Double(channelPos1d), FXUtils.df1));
 		        logLine.add(new FlexLogEntry("bullishPivotLevelHigherTFKChannelPos4h", new Double(keltnerPos1d), FXUtils.df1));
@@ -1286,7 +1286,7 @@ public class TAEventsSource {
 		
 		        long prev1dBarTime = history.getPreviousBarStart(Period.DAILY_SUNDAY_IN_MONDAY, bidBar.getTime());
 				double
-					channelPos1d = tradeTrigger.priceChannelPos(instrument, Period.DAILY_SUNDAY_IN_MONDAY, OfferSide.BID, prev1dBarTime, bearishCandleTriggerDesc4h.pivotLevel, 0),
+					channelPos1d = tradeTrigger.priceChannelPos(instrument, Period.DAILY_SUNDAY_IN_MONDAY, OfferSide.BID, prev1dBarTime, bearishCandleTriggerDesc4h.pivotLevel, 0)[0],
 					keltnerPos1d = tradeTrigger.priceKeltnerChannelPos(instrument, Period.DAILY_SUNDAY_IN_MONDAY, OfferSide.BID, prev1dBarTime, bearishCandleTriggerDesc4h.pivotLevel, 0);
 		        logLine.add(new FlexLogEntry("bearishPivotLevelHigherTFChannelPos4h", new Double(channelPos1d), FXUtils.df1));
 		        logLine.add(new FlexLogEntry("bearishPivotLevelHigherTFKChannelPos4h", new Double(keltnerPos1d), FXUtils.df1));

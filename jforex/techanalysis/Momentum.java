@@ -380,9 +380,7 @@ public class Momentum {
         MaType slowKMaType = MaType.SMA;
         int slowDPeriod = 3;
         MaType slowDMaType = MaType.SMA;
-		double[][] stoch2 = indicators.stoch(instrument, pPeriod, side, 
-				fastKPeriod, slowKPeriod, slowKMaType, slowDPeriod, slowDMaType, 
-				Filter.WEEKENDS, 1, time, 0);
+		double[][] stoch2 = indicators.stoch(instrument, pPeriod, side,	fastKPeriod, slowKPeriod, slowKMaType, slowDPeriod, slowDMaType, Filter.WEEKENDS, 1, time, 0);
 		double fastStoch = stoch2[0][0];
 		double slowStoch = stoch2[1][0];
 
@@ -398,9 +396,7 @@ public class Momentum {
         MaType slowKMaType = MaType.SMA;
         int slowDPeriod = 3;
         MaType slowDMaType = MaType.SMA;
-		return indicators.stoch(instrument, pPeriod, side, 
-				fastKPeriod, slowKPeriod, slowKMaType, slowDPeriod, slowDMaType, 
-				Filter.WEEKENDS, lookBack, time, 0);
+		return indicators.stoch(instrument, pPeriod, side, fastKPeriod, slowKPeriod, slowKMaType, slowDPeriod, slowDMaType,	Filter.WEEKENDS, lookBack, time, 0);
     }
     
     public STOCH_STATE getStochState(Instrument instrument, Period pPeriod, OfferSide side, long time) throws JFException {

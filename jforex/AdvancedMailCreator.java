@@ -496,7 +496,7 @@ public abstract class AdvancedMailCreator extends BasicTAStrategy {
 						long prev1dBarTime = history.getPreviousBarStart(Period.DAILY_SUNDAY_IN_MONDAY, bidBar.getTime());
 						double
 							pivotLevel4h = mailValuesMap.get("bullishPivotLevel4h").getDoubleValue(),
-							channelPos1d = tradeTrigger.priceChannelPos(instrument, Period.DAILY_SUNDAY_IN_MONDAY, OfferSide.BID, prev1dBarTime, pivotLevel4h, 0),
+							channelPos1d = tradeTrigger.priceChannelPos(instrument, Period.DAILY_SUNDAY_IN_MONDAY, OfferSide.BID, prev1dBarTime, pivotLevel4h, 0)[0],
 							keltnerPos1d = tradeTrigger.priceKeltnerChannelPos(instrument, Period.DAILY_SUNDAY_IN_MONDAY, OfferSide.BID, prev1dBarTime, pivotLevel4h, 0);
 						candles += "1d BBands channel pivot position: " + FXUtils.df1.format(channelPos1d) + "% / 1d Keltner channel position: "
 							+ FXUtils.df1.format(keltnerPos1d)
@@ -546,7 +546,7 @@ public abstract class AdvancedMailCreator extends BasicTAStrategy {
 						long prev1dBarTime = history.getPreviousBarStart(Period.DAILY_SUNDAY_IN_MONDAY, bidBar.getTime());
 						double
 							pivotLevel4h = mailValuesMap.get("bearishPivotLevel4h").getDoubleValue(),
-							channelPos1d = tradeTrigger.priceChannelPos(instrument, Period.DAILY_SUNDAY_IN_MONDAY, OfferSide.BID, prev1dBarTime, pivotLevel4h, 0),
+							channelPos1d = tradeTrigger.priceChannelPos(instrument, Period.DAILY_SUNDAY_IN_MONDAY, OfferSide.BID, prev1dBarTime, pivotLevel4h, 0)[0],
 							keltnerPos1d = tradeTrigger.priceKeltnerChannelPos(instrument, Period.DAILY_SUNDAY_IN_MONDAY, OfferSide.BID, prev1dBarTime, pivotLevel4h, 0);
 						candles += "1d BBands channel pivot position: " + FXUtils.df1.format(channelPos1d) + "% / 1d Keltner channel position: "
 							+ FXUtils.df1.format(keltnerPos1d)
