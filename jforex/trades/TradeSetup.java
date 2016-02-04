@@ -44,11 +44,6 @@ public abstract class TradeSetup implements ITradeSetup {
 	@Override
 	public void afterTradeReset(Instrument instrument) { }
 
-	@Override
-	public IOrder submitOrder() {
-		// TODO Auto-generated method stub
-		return null;
-	}
 
 	@Override
 	public EntryDirection checkExit(Instrument instrument, Period period, IBar askBar, IBar bidBar, Filter filter, IOrder order) throws JFException {
@@ -61,9 +56,13 @@ public abstract class TradeSetup implements ITradeSetup {
 	}
 
 	@Override
-	public boolean isTradeLocked(Instrument instrument, Period period, IBar askBar,
-			IBar bidBar, Filter filter, IOrder order) throws JFException {
+	public boolean isTradeLocked(Instrument instrument, Period period, IBar askBar,	IBar bidBar, Filter filter, IOrder order) throws JFException {
 				return false;
 			}
+
+	@Override
+	public IOrder submitOrder(String label, Instrument instrument,	boolean isLong, double amount) throws JFException {
+        return engine.submitOrder(label, instrument, isLong ? IEngine.OrderCommand.BUY : IEngine.OrderCommand.SELL, amount);
+	}
 
 }
