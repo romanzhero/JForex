@@ -68,7 +68,7 @@ public class FlatTradeSetup extends TradeSetup implements ITradeSetup {
 		else
 			barToCheck = askBar;
 		if (order.getState().equals(IOrder.State.OPENED)) {
-			// still waiting. Cancel if price already exceeded SL level without triggering
+			// still waiting. Cancel if price already exceeded SL level without triggering entry stop
 			if ((order.isLong() && barToCheck.getClose() < order.getStopLossPrice())
 				|| (!order.isLong() && barToCheck.getClose() > order.getStopLossPrice())) {
 				order.close();
@@ -76,6 +76,14 @@ public class FlatTradeSetup extends TradeSetup implements ITradeSetup {
 				afterTradeReset(instrument);
 			}
 		} else if (order.getState().equals(IOrder.State.FILLED)) {
+			// check whether to unlock the trade - price exceeded opposite channel border at the time of the signal
+			if ((order.isLong() && askBar.getClose() > lastSignal.bBandsTop)
+				|| (!order.isLong() && bidBar.getClose() < lastSignal.bBandsBottom)) {
+				locked = false;
+				// do not reset trade completely ! Keep control over order until other setups take over !
+				return;
+			}
+				
 			// check for opposite signal. Depending on the configuration either set break even or close the trade
 			TradeTrigger.TriggerDesc oppositeSignal = cmd.checkEntry(instrument, period, OfferSide.BID, filter, bidBar, askBar);
 			if (aggressive) {

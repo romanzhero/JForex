@@ -6,6 +6,7 @@ import com.dukascopy.api.IEngine;
 import com.dukascopy.api.IHistory;
 import com.dukascopy.api.IIndicators;
 import com.dukascopy.api.IOrder;
+import com.dukascopy.api.ITimedData;
 import com.dukascopy.api.Instrument;
 import com.dukascopy.api.JFException;
 import com.dukascopy.api.OfferSide;
@@ -23,6 +24,25 @@ public class SmiTradeSetup extends TradeSetup {
 	@Override
 	public String getName() {
 		return new String("SMI");
+	}
+
+	@Override
+	public void inTradeProcessing(Instrument instrument, Period period,	IBar askBar, IBar bidBar, Filter filter, IOrder order) throws JFException {
+		// put on break even if opposite signal occurs
+		ITradeSetup.EntryDirection signal = checkEntry(instrument, period, askBar, bidBar, filter);
+		if (order.isLong() && signal.equals(ITradeSetup.EntryDirection.SHORT)) {
+			if (bidBar.getClose() > order.getOpenPrice())
+				order.setStopLossPrice(order.getOpenPrice());
+			else if (bidBar.getLow() > order.getStopLossPrice())
+				order.setStopLossPrice(bidBar.getLow());
+			order.waitForUpdate(null);			
+		} else if (!order.isLong() && signal.equals(ITradeSetup.EntryDirection.LONG))  {
+			if (askBar.getClose() < order.getOpenPrice())
+				order.setStopLossPrice(order.getOpenPrice());
+			else if (bidBar.getHigh() < order.getStopLossPrice())
+				order.setStopLossPrice(askBar.getHigh());
+			order.waitForUpdate(null);						
+		}
 	}
 
 	@Override
@@ -49,9 +69,9 @@ public class SmiTradeSetup extends TradeSetup {
 			slowSMI = indicators.smi(instrument, period, OfferSide.BID, 50, 15, 5, 3, filter, 2, bidBar.getTime(), 0), 
 			fastSMI = indicators.smi(instrument, period, OfferSide.BID, 10, 3, 5, 3, filter, 2,	bidBar.getTime(), 0);
 
-		if (exitLong(slowSMI, fastSMI))
+		if (exitLong(slowSMI, fastSMI, instrument, period, filter, bidBar))
 			return ITradeSetup.EntryDirection.LONG;
-		else if (exitShort(slowSMI, fastSMI))
+		else if (exitShort(slowSMI, fastSMI, instrument, period, filter, askBar))
 			return ITradeSetup.EntryDirection.SHORT;
 		return ITradeSetup.EntryDirection.NONE;
 	}
@@ -89,26 +109,28 @@ public class SmiTradeSetup extends TradeSetup {
                && prevFast > currFast;
     }
     
-    boolean exitLong(double[][] slowSMI, double[][] fastSMI) {
+    boolean exitLong(double[][] slowSMI, double[][] fastSMI, Instrument instrument, Period period, Filter filter, IBar currBar) throws JFException {
         double
             currSlow = slowSMI[0][1],
             prevFast = fastSMI[0][0],
-            currFast = fastSMI[0][1];
+            currFast = fastSMI[0][1],
+            ma20 = indicators.sma(instrument, period, OfferSide.BID, IIndicators.AppliedPrice.CLOSE, 20, filter, 1, currBar.getTime(), 0)[0];
         
         return (!(currFast > 60.0 && currSlow > 60.0) // no need to exit long while heavily overbought !
-               && currFast < currSlow && prevFast > currFast) // probably no need to exit if slow overbought and still raising !!
+               && currFast < currSlow && prevFast > currFast && currBar.getClose() < ma20) // probably no need to exit if slow overbought and still raising !!
                || (currFast < -60.0 && currSlow < -60.0) // also exit if both lines heavily overSOLD, clearly strong downtrend !
                || (currSlow < -60.0 && currFast < prevFast); // also if slow oversold (even if raising !) and fast starts falling               
     }
     
-    boolean exitShort(double[][] slowSMI, double[][] fastSMI) {
+    boolean exitShort(double[][] slowSMI, double[][] fastSMI, Instrument instrument, Period period, Filter filter, IBar currBar) throws JFException {
         double
             currSlow = slowSMI[0][1],
             prevFast = fastSMI[0][0],
-            currFast = fastSMI[0][1];
+            currFast = fastSMI[0][1],
+            ma20 = indicators.sma(instrument, period, OfferSide.ASK, IIndicators.AppliedPrice.CLOSE, 20, filter, 1, currBar.getTime(), 0)[0];
         
         return (!(currFast < -60.0 && currSlow < -60.0) // no need to exixt short while heavily oversold !
-               && currFast > currSlow && prevFast < currFast)
+               && currFast > currSlow && prevFast < currFast && currBar.getClose() > ma20)
                || (currFast > 60.0 && currSlow > 60.0)
                || (currSlow > 60.0 && currFast > prevFast);
     }
