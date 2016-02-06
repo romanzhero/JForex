@@ -46,15 +46,24 @@ import javax.swing.JFrame;
 import javax.swing.JPanel;
 import javax.swing.SwingUtilities;
 
+import jforex.strategies.FlatCascTest;
+import jforex.utils.FXUtils;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.dukascopy.api.Filter;
 import com.dukascopy.api.IChart;
 import com.dukascopy.api.Instrument;
 import com.dukascopy.api.LoadingProgressListener;
+import com.dukascopy.api.OfferSide;
+import com.dukascopy.api.Period;
+import com.dukascopy.api.feed.IFeedDescriptor;
+import com.dukascopy.api.feed.util.TimePeriodAggregationFeedDescriptor;
 import com.dukascopy.api.system.ISystemListener;
 import com.dukascopy.api.system.ITesterClient;
 import com.dukascopy.api.system.TesterFactory;
+import com.dukascopy.api.system.ITesterClient.InterpolationMethod;
 import com.dukascopy.api.system.tester.ITesterExecution;
 import com.dukascopy.api.system.tester.ITesterExecutionControl;
 import com.dukascopy.api.system.tester.ITesterGui;
@@ -81,11 +90,13 @@ public class TesterMainGUIMode extends JFrame implements ITesterUserInterface, I
     private JButton cancelButton = null;
     
 	//url of the DEMO jnlp
-    private static String jnlpUrl = "https://www.dukascopy.com/client/demo/jclient/jforex.jnlp";
+    private static String jnlpUrl = "http://platform.dukascopy.com/demo/jforex.jnlp";
     //user name
-    private static String userName = "username";
+    private static String userName = "SmiSma";
     //password
-    private static String password = "password";
+    private static String password = "SmiSmaTest";
+    
+    private Instrument instrument = Instrument.EURUSD;
     
     public TesterMainGUIMode(){
     	setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
@@ -93,17 +104,24 @@ public class TesterMainGUIMode extends JFrame implements ITesterUserInterface, I
     }
     
     @Override
-	public void setChartPanels(Map<IChart, ITesterGui> chartPanels) {
-		if(chartPanels != null && chartPanels.size() > 0){
-			
-			IChart chart = chartPanels.keySet().iterator().next();
-			Instrument instrument = chart.getInstrument();
-			setTitle(instrument.toString() + " " + chart.getSelectedOfferSide() + " " + chart.getSelectedPeriod());
-			
-			JPanel chartPanel = chartPanels.get(chart).getChartPanel();
-			addChartPanel(chartPanel);
-		}
-	}
+    public void setChartPanels(Map<IChart, ITesterGui> chartPanels) {
+        for(Map.Entry<IChart, ITesterGui> entry : chartPanels.entrySet()){
+            IChart chart = entry.getKey();
+            ITesterGui gui = entry.getValue(); 
+            gui.getTesterChartController().addOHLCInformer();
+            gui.getTesterChartController().setFilter(Filter.WEEKENDS);
+            IFeedDescriptor fd = new TimePeriodAggregationFeedDescriptor(null, Period.FOUR_HOURS, null);
+            fd.setFilter(Filter.WEEKENDS);
+            gui.getTesterChartController().setFeedDescriptor(fd);
+            JPanel chartPanel = gui.getChartPanel();
+            if(chart.getFeedDescriptor().getInstrument().equals(instrument)){
+            	IFeedDescriptor fd2 = chart.getFeedDescriptor(); 
+                setTitle(fd2.toString());   
+                addChartPanel(chartPanel);
+                break;
+            }
+        }
+    }
 
 	@Override
 	public void setExecutionControl(ITesterExecutionControl executionControl) {
@@ -165,13 +183,14 @@ public class TesterMainGUIMode extends JFrame implements ITesterUserInterface, I
         }
 
         //set instruments that will be used in testing
-        final Set<Instrument> instruments = new HashSet<Instrument>();
-        instruments.add(Instrument.EURUSD);
+        final Set<Instrument> instruments = new HashSet<>();
+        instruments.add(instrument);
         
         LOGGER.info("Subscribing instruments...");
         client.setSubscribedInstruments(instruments);
         //setting initial deposit
-        client.setInitialDeposit(Instrument.EURUSD.getSecondaryCurrency(), 50000);
+        client.setInitialDeposit(Instrument.EURUSD.getSecondaryJFCurrency(), 1000000);
+        client.setDataInterval(Period.ONE_MIN, OfferSide.BID, InterpolationMethod.CUBIC_SPLINE, FXUtils.getDateTimeFromStringGMT("05.01.2015 00:00").getTime(), FXUtils.getDateTimeFromStringGMT("04.04.2015 00:00").getTime());
         //load data
         LOGGER.info("Downloading data");
         Future<?> future = client.downloadData(null);
@@ -181,7 +200,8 @@ public class TesterMainGUIMode extends JFrame implements ITesterUserInterface, I
         LOGGER.info("Starting strategy");
 
         client.startStrategy(
-    		new MA_Play(),
+    		new FlatCascTest(),
+    		//new MA_Play(),
     		new LoadingProgressListener() {
     			@Override
     			public void dataLoaded(long startTime, long endTime, long currentTime, String information) {
@@ -198,7 +218,7 @@ public class TesterMainGUIMode extends JFrame implements ITesterUserInterface, I
     			}
     		}, this, this
         );
-      //now it's running
+        //now it's running
     }
     
 	/**
@@ -215,9 +235,8 @@ public class TesterMainGUIMode extends JFrame implements ITesterUserInterface, I
 	
 	/**
 	 * Add chart panel to the frame
-	 * @param panel
 	 */
-	private void addChartPanel(JPanel chartPanel){
+	private void addChartPanel(JPanel chartPanel) {
 		removecurrentChartPanel();
 		
 		this.currentChartPanel = chartPanel;
@@ -232,8 +251,7 @@ public class TesterMainGUIMode extends JFrame implements ITesterUserInterface, I
 	/**
 	 * Add buttons to start/pause/continue/cancel actions 
 	 */
-	private void addControlPanel(){
-		
+	private void addControlPanel() {
 		controlPanel = new JPanel();
 		FlowLayout flowLayout = new FlowLayout(FlowLayout.LEFT);
 		controlPanel.setLayout(flowLayout);

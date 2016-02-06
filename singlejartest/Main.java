@@ -47,11 +47,11 @@ public class Main {
     private static final Logger LOGGER = LoggerFactory.getLogger(Main.class);
 
     //url of the DEMO jnlp
-    private static String jnlpUrl = "https://www.dukascopy.com/client/demo/jclient/jforex.jnlp";
+    private static String jnlpUrl = "http://platform.dukascopy.com/demo/jforex.jnlp";
     //user name
-    private static String userName = "DEMO1234";
+    private static String userName = "username";
     //password
-    private static String password = "mypassword";
+    private static String password = "password";
 
     public static void main(String[] args) throws Exception {
         //get the instance of the IClient interface
@@ -81,23 +81,32 @@ public class Main {
 
 			@Override
 			public void onDisconnect() {
-                LOGGER.warn("Disconnected");
-                if (lightReconnects > 0) {
-                    client.reconnect();
-                    --lightReconnects;
-                } else {
-                    try {
-                        //sleep for 10 seconds before attempting to reconnect
-                        Thread.sleep(10000);
-                    } catch (InterruptedException e) {
-                        //ignore
+                Runnable runnable = new Runnable() {
+                    @Override
+                    public void run() {
+                        if (lightReconnects > 0) {
+                            client.reconnect();
+                            --lightReconnects;
+                        } else {
+                            do {
+                                try {
+                                    Thread.sleep(60 * 1000);
+                                } catch (InterruptedException e) {
+                                }
+                                try {
+                                    if(client.isConnected()) {
+                                        break;
+                                    }
+                                    client.connect(jnlpUrl, userName, password);
+
+                                } catch (Exception e) {
+                                    LOGGER.error(e.getMessage(), e);
+                                }
+                            } while(!client.isConnected());
+                        }
                     }
-                    try {
-                        client.connect(jnlpUrl, userName, password);
-                    } catch (Exception e) {
-                        LOGGER.error(e.getMessage(), e);
-                    }
-                }
+                };
+                new Thread(runnable).start();
 			}
 		});
 
@@ -117,10 +126,11 @@ public class Main {
         }
 
         //subscribe to the instruments
-        Set<Instrument> instruments = new HashSet<Instrument>();
+        Set<Instrument> instruments = new HashSet<>();
         instruments.add(Instrument.EURUSD);
         LOGGER.info("Subscribing instruments...");
         client.setSubscribedInstruments(instruments);
+                
         //start the strategy
         LOGGER.info("Starting strategy");
         client.startStrategy(new MA_Play());

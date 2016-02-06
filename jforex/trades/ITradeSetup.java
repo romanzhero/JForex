@@ -16,7 +16,7 @@ public interface ITradeSetup {
 	
 	public EntryDirection checkEntry(Instrument instrument, Period period, IBar askBar, IBar bidBar, Filter filter) throws JFException;
 	public EntryDirection checkTakeOver(Instrument instrument, Period period, IBar askBar, IBar bidBar, Filter filter) throws JFException;
-	public IOrder submitOrder(String label, Instrument instrument, boolean isLong, double amount) throws JFException;
+	public IOrder submitOrder(String label, Instrument instrument, boolean isLong, double amount, IBar bidBar, IBar askBar) throws JFException;
 	
 	public EntryDirection checkCancel(Instrument instrument, Period period, IBar askBar, IBar bidBar, Filter filter) throws JFException;
 	public EntryDirection checkExit(Instrument instrument, Period period, IBar askBar, IBar bidBar, Filter filter, IOrder order) throws JFException;

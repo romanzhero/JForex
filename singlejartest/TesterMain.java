@@ -49,7 +49,7 @@ public class TesterMain {
     private static final Logger LOGGER = LoggerFactory.getLogger(Main.class);
 
     //url of the DEMO jnlp
-    private static String jnlpUrl = "https://www.dukascopy.com/client/demo/jclient/jforex.jnlp";
+    private static String jnlpUrl = "http://platform.dukascopy.com/demo/jforex.jnlp";
     //user name
     private static String userName = "username";
     //password
@@ -107,17 +107,18 @@ public class TesterMain {
         }
 
         //set instruments that will be used in testing
-        Set<Instrument> instruments = new HashSet<Instrument>();
+        Set<Instrument> instruments = new HashSet<>();
         instruments.add(Instrument.EURUSD);
         LOGGER.info("Subscribing instruments...");
         client.setSubscribedInstruments(instruments);
         //setting initial deposit
-        client.setInitialDeposit(Instrument.EURUSD.getSecondaryCurrency(), 50000);
+        client.setInitialDeposit(Instrument.EURUSD.getSecondaryJFCurrency(), 50000);
         //load data
         LOGGER.info("Downloading data");
         Future<?> future = client.downloadData(null);
         //wait for downloading to complete
         future.get();
+                
         //start the strategy
         LOGGER.info("Starting strategy");
         client.startStrategy(new MA_Play(), new LoadingProgressListener() {

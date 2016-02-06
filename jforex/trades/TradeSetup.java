@@ -61,7 +61,7 @@ public abstract class TradeSetup implements ITradeSetup {
 			}
 
 	@Override
-	public IOrder submitOrder(String label, Instrument instrument,	boolean isLong, double amount) throws JFException {
+	public IOrder submitOrder(String label, Instrument instrument,	boolean isLong, double amount, IBar bidBar, IBar askBar) throws JFException {
         return engine.submitOrder(label, instrument, isLong ? IEngine.OrderCommand.BUY : IEngine.OrderCommand.SELL, amount);
 	}
 

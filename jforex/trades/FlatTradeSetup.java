@@ -2,6 +2,7 @@ package jforex.trades;
 
 import jforex.techanalysis.Momentum;
 import jforex.techanalysis.TradeTrigger;
+import jforex.techanalysis.Trend;
 import jforex.techanalysis.Volatility;
 import jforex.utils.FXUtils;
 
@@ -25,6 +26,7 @@ public class FlatTradeSetup extends TradeSetup implements ITradeSetup {
 		aggressive = false,
 		locked = false;
 	Volatility vola = null;
+	protected Trend trend = null;
 	
 
 	public FlatTradeSetup(IIndicators indicators, IHistory history,	IEngine engine, boolean aggressive) {
@@ -33,6 +35,7 @@ public class FlatTradeSetup extends TradeSetup implements ITradeSetup {
 		oppositeCmd = new CandleAndMomentumDetector(new TradeTrigger(indicators, history, null), new Momentum(history, indicators));
 		this.aggressive = aggressive;
 		vola = new Volatility(indicators);
+		trend = new Trend(indicators);
 	}
 
 	@Override
@@ -41,15 +44,34 @@ public class FlatTradeSetup extends TradeSetup implements ITradeSetup {
 	}
 
 	@Override
-	public EntryDirection checkEntry(Instrument instrument, Period period, IBar askBar, IBar bidBar, Filter filter) throws JFException {
-		double bBandsSquezeePerc = vola.getBBandsSqueezePercentile(instrument, period, OfferSide.BID, IIndicators.AppliedPrice.CLOSE, filter, bidBar.getTime(), 20, FXUtils.YEAR_WORTH_OF_4H_BARS);
-		if (bBandsSquezeePerc > 75.0)
-			return EntryDirection.NONE; // per definition no flat exists in high volatility. But check ! Maybe only if plus strong trend !!
-		
+	public EntryDirection checkEntry(Instrument instrument, Period period, IBar askBar, IBar bidBar, Filter filter) throws JFException {		
 		lastSignal = cmd.checkEntry(instrument, period, OfferSide.BID, filter, bidBar, askBar);
 		locked = lastSignal != null;
 		if (lastSignal == null)
 			return EntryDirection.NONE;
+		
+		Trend.FLAT_REGIME_CAUSE currBarFlat = trend.isFlatRegime(instrument, period, OfferSide.BID, IIndicators.AppliedPrice.CLOSE, filter, bidBar.getTime(), FXUtils.YEAR_WORTH_OF_4H_BARS, 30.0);
+		if (currBarFlat.equals(Trend.FLAT_REGIME_CAUSE.NONE)) 
+			return EntryDirection.NONE;
+		
+		Trend.TREND_STATE trendState = trend.getTrendState(instrument, period, OfferSide.BID, IIndicators.AppliedPrice.CLOSE, bidBar.getTime());
+		boolean
+			isMA200Highest = trend.isMA200Highest(instrument, period, OfferSide.BID, IIndicators.AppliedPrice.CLOSE, bidBar.getTime()),
+			isMA200Lowest = trend.isMA200Lowest(instrument, period, OfferSide.BID, IIndicators.AppliedPrice.CLOSE, bidBar.getTime());
+		double
+			trendStrengthPerc = trend.getMAsMaxDiffPercentile(instrument, period, OfferSide.BID, IIndicators.AppliedPrice.CLOSE, bidBar.getTime(), FXUtils.YEAR_WORTH_OF_4H_BARS),
+			bBandsSquezeePerc = vola.getBBandsSqueezePercentile(instrument, period, OfferSide.BID, IIndicators.AppliedPrice.CLOSE, filter, bidBar.getTime(), 20, FXUtils.YEAR_WORTH_OF_4H_BARS);
+		if (bBandsSquezeePerc > 75.0 &&
+			((trendState.equals(Trend.TREND_STATE.UP_STRONG) && isMA200Lowest)
+			|| (trendState.equals(Trend.TREND_STATE.UP_STRONG) && trendStrengthPerc > 30.0)
+			|| (trendState.equals(Trend.TREND_STATE.DOWN_STRONG) && isMA200Highest)
+			|| (trendState.equals(Trend.TREND_STATE.DOWN_STRONG) && trendStrengthPerc > 30.0))) {
+			// mind to reset both signal detectors, so they can start searching again !!!
+			cmd.reset();
+			oppositeCmd.reset();
+			return EntryDirection.NONE; // per definition no flat exists in high volatility and at least decent trend !!
+		}
+		
 		if (lastSignal.type.toString().contains("BULLISH")) {
 			oppositeCmd.reset();
 			return EntryDirection.LONG;
@@ -85,7 +107,7 @@ public class FlatTradeSetup extends TradeSetup implements ITradeSetup {
 			}
 				
 			// check for opposite signal. Depending on the configuration either set break even or close the trade
-			TradeTrigger.TriggerDesc oppositeSignal = cmd.checkEntry(instrument, period, OfferSide.BID, filter, bidBar, askBar);
+			TradeTrigger.TriggerDesc oppositeSignal = oppositeCmd.checkEntry(instrument, period, OfferSide.BID, filter, bidBar, askBar);
 			if (aggressive) {
 				if (oppositeSignal != null &&
 					((order.isLong() && oppositeSignal.type.toString().contains("BEARISH")) 
@@ -132,8 +154,9 @@ public class FlatTradeSetup extends TradeSetup implements ITradeSetup {
 	}
 
 	@Override
-	public IOrder submitOrder(String label, Instrument instrument,	boolean isLong, double amount) throws JFException {
-        return engine.submitOrder(label, instrument, isLong ? IEngine.OrderCommand.BUYSTOP : IEngine.OrderCommand.SELLSTOP, amount);
+	public IOrder submitOrder(String label, Instrument instrument,	boolean isLong, double amount, IBar bidBar, IBar askBar) throws JFException {
+        return engine.submitOrder(label, instrument, isLong ? IEngine.OrderCommand.BUYSTOP : IEngine.OrderCommand.SELLSTOP, amount,
+        		isLong ? askBar.getHigh() : bidBar.getLow(), -1.0, lastSignal.pivotLevel, 0.0);
 	}
 
 }
