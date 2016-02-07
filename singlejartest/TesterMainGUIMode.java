@@ -82,12 +82,17 @@ public class TesterMainGUIMode extends JFrame implements ITesterUserInterface, I
     
     private JPanel currentChartPanel = null;
     private ITesterExecutionControl executionControl = null;
+    private ITesterGui gui = null;
     
     private JPanel controlPanel = null;
-    private JButton startStrategyButton = null;
-    private JButton pauseButton = null;
-    private JButton continueButton = null;
-    private JButton cancelButton = null;
+    private JButton 
+    	startStrategyButton = null,
+    	pauseButton = null,
+    	continueButton = null,
+    	cancelButton = null,
+    	zoomInButton = null,
+    	zoomOutButton = null,
+    	indisButton = null;
     
 	//url of the DEMO jnlp
     private static String jnlpUrl = "http://platform.dukascopy.com/demo/jforex.jnlp";
@@ -107,16 +112,19 @@ public class TesterMainGUIMode extends JFrame implements ITesterUserInterface, I
     public void setChartPanels(Map<IChart, ITesterGui> chartPanels) {
         for(Map.Entry<IChart, ITesterGui> entry : chartPanels.entrySet()){
             IChart chart = entry.getKey();
-            ITesterGui gui = entry.getValue(); 
-            gui.getTesterChartController().addOHLCInformer();
-            gui.getTesterChartController().setFilter(Filter.WEEKENDS);
+            ITesterGui currGui = entry.getValue(); 
+            currGui.getTesterChartController().addOHLCInformer();
+            currGui.getTesterChartController().setFilter(Filter.WEEKENDS);
             IFeedDescriptor fd = new TimePeriodAggregationFeedDescriptor(null, Period.FOUR_HOURS, null);
             fd.setFilter(Filter.WEEKENDS);
-            gui.getTesterChartController().setFeedDescriptor(fd);
-            JPanel chartPanel = gui.getChartPanel();
+            currGui.getTesterChartController().setFeedDescriptor(fd);
+            JPanel chartPanel = currGui.getChartPanel();
             if(chart.getFeedDescriptor().getInstrument().equals(instrument)){
-            	IFeedDescriptor fd2 = chart.getFeedDescriptor(); 
-                setTitle(fd2.toString());   
+                gui = currGui;
+                //chart.add(new BollingerBands());
+
+                IFeedDescriptor fd2 = chart.getFeedDescriptor(); 
+                setTitle(fd2.toString() + ", showing " + chart.getBarsCount() + " bars");   
                 addChartPanel(chartPanel);
                 break;
             }
@@ -144,7 +152,7 @@ public class TesterMainGUIMode extends JFrame implements ITesterUserInterface, I
                 LOGGER.info("Strategy stopped: " + processId);
                 resetButtons();
                 
-                File reportFile = new File("C:\\report.html");
+                File reportFile = new File("D://Users//Leteci macak//Documents//dropbox//Trading//SMI//logs//FlatCasc_report_" + FXUtils.getFileTimeStamp(System.currentTimeMillis()) + ".html");               
                 try {
                     client.createReport(processId, reportFile);
                 } catch (Exception e) {
@@ -313,10 +321,49 @@ public class TesterMainGUIMode extends JFrame implements ITesterUserInterface, I
 			}
 		});
 		
+		zoomInButton = new JButton("Zoom in (3x)");
+		zoomInButton.addActionListener(new ActionListener() {
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				if(executionControl != null){
+					for (int i = 0; i < 3; i++)
+						gui.getTesterChartController().zoomIn();
+					updateButtons();
+				}
+			}
+		});
+		
+		zoomOutButton = new JButton("Zoom out (3x)");
+		zoomOutButton.addActionListener(new ActionListener() {
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				if(executionControl != null){
+					for (int i = 0; i < 3; i++)
+						gui.getTesterChartController().zoomOut();
+					updateButtons();
+				}
+			}
+		});
+		
+		indisButton = new JButton("Show f(x)");
+		indisButton.addActionListener(new ActionListener() {
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				if(executionControl != null){
+					for (int i = 0; i < 3; i++)
+						gui.getTesterChartController().addIndicators();
+					updateButtons();
+				}
+			}
+		});
+		
 		controlPanel.add(startStrategyButton);
 		controlPanel.add(pauseButton);
 		controlPanel.add(continueButton);
 		controlPanel.add(cancelButton);
+		controlPanel.add(zoomInButton);
+		controlPanel.add(zoomOutButton);
+		controlPanel.add(indisButton);
 		getContentPane().add(controlPanel);
 		
 		pauseButton.setEnabled(false);

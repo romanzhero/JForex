@@ -93,6 +93,19 @@ public class CandleAndMomentumDetector {
 					momentumConfired = fastStoch < slowStoch && fastStoch < 80.0;
 			}
 		}
+		if (candleSignalAppeared && momentumConfired) {
+			// signal is valid until momentum confirms it. Opposite signals are ignored for the time being, strategies / setups should take care about them
+			double stochs[] = momentum.getStochs(instrument, pPeriod, side, bidBar.getTime());
+			double
+				fastStoch = stochs[0],
+				slowStoch = stochs[1];
+			if (candleSignalDesc.type.toString().contains("BULLISH") 
+				&& (!(fastStoch > slowStoch && fastStoch > 20.0) || (fastStoch > 80 && slowStoch > 80)))
+				reset();
+			else if (candleSignalDesc.type.toString().contains("BEARISH")
+					&& (!(fastStoch < slowStoch && fastStoch < 80.0) || (fastStoch < 20 && slowStoch < 20)))
+				reset();			
+		}
 		return candleSignalAppeared && momentumConfired ? candleSignalDesc : null;
 	}
 	

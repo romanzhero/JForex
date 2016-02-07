@@ -10,8 +10,8 @@ import com.dukascopy.api.Period;
 
 public interface ITradeSetup {
 	
-	public enum EntryDirection {NONE, LONG, SHORT};
-	
+	public enum EntryDirection {NONE, LONG, SHORT}
+
 	public String getName();
 	
 	public EntryDirection checkEntry(Instrument instrument, Period period, IBar askBar, IBar bidBar, Filter filter) throws JFException;

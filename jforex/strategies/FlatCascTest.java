@@ -1,12 +1,20 @@
 package jforex.strategies;
 
+import java.awt.Color;
 import java.util.*;
+
 import com.dukascopy.api.*;
+import com.dukascopy.api.IIndicators.AppliedPrice;
+import com.dukascopy.api.IIndicators.MaType;
+import com.dukascopy.api.drawings.IChartObjectFactory;
+import com.dukascopy.api.indicators.IIndicator;
+import com.dukascopy.api.indicators.IIndicatorAppearanceInfo;
+import com.dukascopy.api.indicators.IndicatorInfo;
+import com.dukascopy.api.indicators.OutputParameterInfo;
 
 import jforex.utils.FXUtils;
 import jforex.utils.FlexLogEntry;
 import jforex.utils.Logger;
-
 import jforex.logging.TradeLog;
 import jforex.techanalysis.Trend;
 import jforex.techanalysis.Volatility;
@@ -22,13 +30,17 @@ public class FlatCascTest implements IStrategy {
     public Filter selectedFilter = Filter.WEEKENDS;
     
     @Configurable(value = "Amount" , stepSize = 0.0001, description = "Choose amount (step size 0.0001)")
-    public double selectedAmount = 0.0001;
+    public double selectedAmount = 0.1;
     
     private IEngine engine;
     private IConsole console;
     private IHistory history;
     private IIndicators indicators;
     private IDataService dataService;
+    
+    private IUserInterface userInterface = null;
+    private IChart chart = null;
+    private IChartObjectFactory factory = null;    
     
     private Map<String, IOrder> orderPerPair = new HashMap<String, IOrder>();
     private long orderCnt = 1;
@@ -50,7 +62,7 @@ public class FlatCascTest implements IStrategy {
         this.console = context.getConsole();
         this.history = context.getHistory();
         this.indicators = context.getIndicators();
-        context.getUserInterface();
+        this.userInterface = context.getUserInterface();
         
         dataService = context.getDataService();
         
@@ -67,8 +79,42 @@ public class FlatCascTest implements IStrategy {
         }  
         tradeSetups.add(new FlatTradeSetup(indicators, history, engine, true)); 
         // tradeSetups.add(new SmiTradeSetup(indicators, history, engine, true));        
-        // tradeSetups.add(new SmaTradeSetup(indicators, history, engine, context.getSubscribedInstruments(), true, true));        
+        // tradeSetups.add(new SmaTradeSetup(indicators, history, engine, context.getSubscribedInstruments(), true, true));
+        
+        chart = context.getChart(Instrument.EURUSD);
+        if (chart == null) {
+            //chart is not opened, we can't plot an object
+            console.getOut().println("Can't open the chart for EURUSD, stop !");
+            context.stop();
+        } 
+        factory = chart.getChartObjectFactory();
+        chart.add(indicators.getIndicator("BBands"), new Object[]{20, 2.0, 2.0, MaType.SMA.ordinal()}, new Color[]{Color.MAGENTA, Color.RED, Color.MAGENTA}, null, null);
+        chart.add(indicators.getIndicator("STOCH"), new Object[]{14, 3, MaType.SMA.ordinal(), 3, MaType.SMA.ordinal()}, new Color[]{Color.RED, Color.BLUE}, new OutputParameterInfo.DrawingStyle[]{OutputParameterInfo.DrawingStyle.LINE, OutputParameterInfo.DrawingStyle.LINE}, null);
+        chart.add(indicators.getIndicator("SMA"), new Object[]{50}, new Color[]{Color.BLUE}, null, null);
+        chart.add(indicators.getIndicator("SMA"), new Object[]{100}, new Color[]{Color.GREEN}, null, null);
+        chart.add(indicators.getIndicator("SMA"), new Object[]{200}, new Color[]{Color.YELLOW}, null, null);
+        //printIndicatorInfos(indicators.getIndicator("STOCH"));
+        //printIndicatorInfos(indicators.getIndicator("SMA"));
     }
+    
+    private void printIndicatorInfos(IIndicator ind){
+        IndicatorInfo info = ind.getIndicatorInfo();
+        print(String.format("%s: input count=%s, optional input count=%s, output count=%s", 
+            info.getTitle(), info.getNumberOfInputs(), info.getNumberOfOptionalInputs(), info.getNumberOfOutputs()));
+        for (int i = 0; i < ind.getIndicatorInfo().getNumberOfInputs(); i++){
+             print(String.format("Input %s: %s - %s", i, ind.getInputParameterInfo(i).getName(), ind.getInputParameterInfo(i).getType()));
+        }
+        for (int i = 0; i < ind.getIndicatorInfo().getNumberOfOptionalInputs(); i++){
+            print(String.format("Opt Input %s: %s - %s", i, ind.getOptInputParameterInfo(i).getName(), ind.getOptInputParameterInfo(i).getType()));
+        }
+        for (int i = 0; i < ind.getIndicatorInfo().getNumberOfOutputs(); i++){
+            print(String.format("Output %s: %s - %s", i, ind.getOutputParameterInfo(i).getName(), ind.getOutputParameterInfo(i).getType()));
+        }
+    }
+        
+    private void print(Object o){
+        console.getOut().println(o);
+    }    
     
     public void onBar(Instrument instrument, Period period, IBar askBar, IBar bidBar) throws JFException {
         if (!period.equals(selectedPeriod)
@@ -111,8 +157,9 @@ public class FlatCascTest implements IStrategy {
             }
             if (!takeOver) {
                 currentSetup.inTradeProcessing(instrument, period, askBar, bidBar, selectedFilter, order);
+                // inTradeProcessing might CLOSE the order, onMessage will set it to null !
+                order = orderPerPair.get(instrument.name());
                 if (order != null) {
-                    // inTradeProcessing might CLOSE the order, onMessage will set it to null !
                     if (order.getStopLossPrice() != 0.0)
                         tradeLog.updateMaxRisk(order.getStopLossPrice());
                     tradeLog.updateMaxLoss(bidBar, atr);
@@ -141,7 +188,8 @@ public class FlatCascTest implements IStrategy {
                 signal = setup.checkEntry(instrument, period, askBar, bidBar, selectedFilter);
                 if (!signal.equals(ITradeSetup.EntryDirection.NONE)) {
                     order = setup.submitOrder(getOrderLabel(instrument, bidBar.getTime(), signal.equals(ITradeSetup.EntryDirection.LONG) ? "BUY" : "SELL"), instrument, signal.equals(ITradeSetup.EntryDirection.LONG), selectedAmount, bidBar, askBar);
-                                 
+                    order.waitForUpdate(null);
+                    
                     createTradeLog(instrument, period, askBar, OfferSide.ASK, order, slowSMI[0][1], fastSMI[0][1], ma200 > ma100 && ma200 > ma50 && ma200 > ma20, ma200 < ma100 && ma200 < ma50 && ma200 < ma20);                                      
                     orderPerPair.put(instrument.name(), order);                    
                     currentSetup = setup;

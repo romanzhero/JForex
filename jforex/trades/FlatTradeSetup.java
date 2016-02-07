@@ -18,36 +18,39 @@ import com.dukascopy.api.OfferSide;
 import com.dukascopy.api.Period;
 
 public class FlatTradeSetup extends TradeSetup implements ITradeSetup {
-	protected CandleAndMomentumDetector 
-		cmd = null,
-		oppositeCmd = null;
-	protected TradeTrigger.TriggerDesc lastSignal = null;
-	protected boolean
-		aggressive = false,
-		locked = false;
-	Volatility vola = null;
-	protected Trend trend = null;
+	// Trade simply generates all long and short canlde-momentum signals. The newest one wins
+	// therefore it must be ensured that their check methods are called for each bar while strategy is running !
+	// Should be OK with successive calls to checkEntry and inTradeProcessing
+	protected LongCandleAndMomentumDetector	longCmd = null;
+	protected ShortCandleAndMomentumDetector shortCmd = null;
 	
+	protected TradeTrigger.TriggerDesc 
+		lastLongSignal = null,
+		lastShortSignal = null;
+	protected boolean
+		aggressive = false;
+	protected Volatility vola = null;
+	protected Trend trend = null;
 
 	public FlatTradeSetup(IIndicators indicators, IHistory history,	IEngine engine, boolean aggressive) {
 		super(indicators, history, engine);
-		cmd = new CandleAndMomentumDetector(new TradeTrigger(indicators, history, null), new Momentum(history, indicators));
-		oppositeCmd = new CandleAndMomentumDetector(new TradeTrigger(indicators, history, null), new Momentum(history, indicators));
+		longCmd = new LongCandleAndMomentumDetector(new TradeTrigger(indicators, history, null), new Momentum(history, indicators));
+		shortCmd = new ShortCandleAndMomentumDetector(new TradeTrigger(indicators, history, null), new Momentum(history, indicators));
 		this.aggressive = aggressive;
 		vola = new Volatility(indicators);
 		trend = new Trend(indicators);
 	}
 
 	@Override
-	public String getName() {
-		return new String("Flat");
-	}
+	public String getName() { return new String("Flat"); }
 
 	@Override
 	public EntryDirection checkEntry(Instrument instrument, Period period, IBar askBar, IBar bidBar, Filter filter) throws JFException {		
-		lastSignal = cmd.checkEntry(instrument, period, OfferSide.BID, filter, bidBar, askBar);
-		locked = lastSignal != null;
-		if (lastSignal == null)
+		TradeTrigger.TriggerDesc 
+			currLongSignal = longCmd.checkEntry(instrument, period, OfferSide.BID, filter, bidBar, askBar),
+			currShortSignal = shortCmd.checkEntry(instrument, period, OfferSide.BID, filter, bidBar, askBar);
+		
+		if (currLongSignal == null && currShortSignal == null)
 			return EntryDirection.NONE;
 		
 		Trend.FLAT_REGIME_CAUSE currBarFlat = trend.isFlatRegime(instrument, period, OfferSide.BID, IIndicators.AppliedPrice.CLOSE, filter, bidBar.getTime(), FXUtils.YEAR_WORTH_OF_4H_BARS, 30.0);
@@ -58,7 +61,7 @@ public class FlatTradeSetup extends TradeSetup implements ITradeSetup {
 		boolean
 			isMA200Highest = trend.isMA200Highest(instrument, period, OfferSide.BID, IIndicators.AppliedPrice.CLOSE, bidBar.getTime()),
 			isMA200Lowest = trend.isMA200Lowest(instrument, period, OfferSide.BID, IIndicators.AppliedPrice.CLOSE, bidBar.getTime());
-		double
+		double 
 			trendStrengthPerc = trend.getMAsMaxDiffPercentile(instrument, period, OfferSide.BID, IIndicators.AppliedPrice.CLOSE, bidBar.getTime(), FXUtils.YEAR_WORTH_OF_4H_BARS),
 			bBandsSquezeePerc = vola.getBBandsSqueezePercentile(instrument, period, OfferSide.BID, IIndicators.AppliedPrice.CLOSE, filter, bidBar.getTime(), 20, FXUtils.YEAR_WORTH_OF_4H_BARS);
 		if (bBandsSquezeePerc > 75.0 &&
@@ -66,29 +69,40 @@ public class FlatTradeSetup extends TradeSetup implements ITradeSetup {
 			|| (trendState.equals(Trend.TREND_STATE.UP_STRONG) && trendStrengthPerc > 30.0)
 			|| (trendState.equals(Trend.TREND_STATE.DOWN_STRONG) && isMA200Highest)
 			|| (trendState.equals(Trend.TREND_STATE.DOWN_STRONG) && trendStrengthPerc > 30.0))) {
-			// mind to reset both signal detectors, so they can start searching again !!!
-			cmd.reset();
-			oppositeCmd.reset();
 			return EntryDirection.NONE; // per definition no flat exists in high volatility and at least decent trend !!
 		}
-		
-		if (lastSignal.type.toString().contains("BULLISH")) {
-			oppositeCmd.reset();
+		// there is a signal !
+		locked = currLongSignal != null || currShortSignal != null;
+		if (currLongSignal != null) {
+			lastLongSignal = currLongSignal;
 			return EntryDirection.LONG;
 		}
-		else {
-			oppositeCmd.reset();
+		else if (currShortSignal != null) {
+			lastShortSignal = currShortSignal;
 			return EntryDirection.SHORT;
-		}
+		} else
+			return EntryDirection.NONE;
 	}
 
 	@Override
 	public void inTradeProcessing(Instrument instrument, Period period,	IBar askBar, IBar bidBar, Filter filter, IOrder order) throws JFException {
 		IBar barToCheck = null;
-		if (lastSignal.type.toString().contains("BULLISH"))
+/*		if ((lastLongSignal != null && lastShortSignal != null && lastLongSignal.getLastBar().getTime() > lastShortSignal.getLastBar().getTime())
+			|| (lastLongSignal != null && lastShortSignal == null))
+			barToCheck = bidBar;
+		else if ((lastLongSignal != null && lastShortSignal != null && lastShortSignal.getLastBar().getTime() > lastLongSignal.getLastBar().getTime())
+				|| (lastShortSignal != null && lastLongSignal == null))
+			barToCheck = askBar;*/
+		if (order.isLong())
 			barToCheck = bidBar;
 		else
 			barToCheck = askBar;
+		// Trade simply generates all long and short canlde-momentum signals. The newest one wins
+		// therefore it must be ensured that their check methods are called for each bar while strategy is running !
+		// Should be OK with successive calls to checkEntry and inTradeProcessing
+		TradeTrigger.TriggerDesc 
+			currLongSignal = longCmd.checkEntry(instrument, period, OfferSide.BID, filter, bidBar, askBar),
+			currShortSignal = shortCmd.checkEntry(instrument, period, OfferSide.BID, filter, bidBar, askBar);
 		if (order.getState().equals(IOrder.State.OPENED)) {
 			// still waiting. Cancel if price already exceeded SL level without triggering entry stop
 			if ((order.isLong() && barToCheck.getClose() < order.getStopLossPrice())
@@ -99,28 +113,24 @@ public class FlatTradeSetup extends TradeSetup implements ITradeSetup {
 			}
 		} else if (order.getState().equals(IOrder.State.FILLED)) {
 			// check whether to unlock the trade - price exceeded opposite channel border at the time of the signal
-			if ((order.isLong() && askBar.getClose() > lastSignal.bBandsTop)
-				|| (!order.isLong() && bidBar.getClose() < lastSignal.bBandsBottom)) {
+			if ((order.isLong() && askBar.getClose() > lastLongSignal.bBandsTop)
+				|| (!order.isLong() && bidBar.getClose() < lastShortSignal.bBandsBottom)) {
 				locked = false;
 				// do not reset trade completely ! Keep control over order until other setups take over !
-				return;
 			}
 				
 			// check for opposite signal. Depending on the configuration either set break even or close the trade
-			TradeTrigger.TriggerDesc oppositeSignal = oppositeCmd.checkEntry(instrument, period, OfferSide.BID, filter, bidBar, askBar);
 			if (aggressive) {
-				if (oppositeSignal != null &&
-					((order.isLong() && oppositeSignal.type.toString().contains("BEARISH")) 
-					|| (!order.isLong() && oppositeSignal.type.toString().contains("BULLISH")))) {
+				if ((order.isLong() && currShortSignal != null) 
+					|| (!order.isLong() && currLongSignal != null)) {
 					order.close();
 					order.waitForUpdate(null);				
 					afterTradeReset(instrument);
 				}
 			} else {
 				// set to break even. However check if current price allows it ! If not set SL on extreme of the last bar (if it not already exceeded the SL !)
-				if (oppositeSignal != null &&
-						((order.isLong() && oppositeSignal.type.toString().contains("BEARISH")) 
-						|| (!order.isLong() && oppositeSignal.type.toString().contains("BULLISH")))) {
+				if ((order.isLong() && currShortSignal != null) 
+					|| (!order.isLong() && currLongSignal != null)) {
 					if (order.isLong()) {
 						if (bidBar.getClose() > order.getOpenPrice()) {
 							order.setStopLossPrice(order.getOpenPrice());
@@ -136,8 +146,7 @@ public class FlatTradeSetup extends TradeSetup implements ITradeSetup {
 						} else if (askBar.getHigh() < order.getStopLossPrice()) {
 							order.setStopLossPrice(askBar.getHigh());
 							order.waitForUpdate(null);							
-						}
-						
+						}						
 					}
 				}
 			}
@@ -148,15 +157,12 @@ public class FlatTradeSetup extends TradeSetup implements ITradeSetup {
 	public void afterTradeReset(Instrument instrument) {
 		super.afterTradeReset(instrument);
 		locked = false;
-		cmd.reset();
-		oppositeCmd.reset();
-		lastSignal = null;
 	}
 
 	@Override
 	public IOrder submitOrder(String label, Instrument instrument,	boolean isLong, double amount, IBar bidBar, IBar askBar) throws JFException {
         return engine.submitOrder(label, instrument, isLong ? IEngine.OrderCommand.BUYSTOP : IEngine.OrderCommand.SELLSTOP, amount,
-        		isLong ? askBar.getHigh() : bidBar.getLow(), -1.0, lastSignal.pivotLevel, 0.0);
+        		isLong ? askBar.getHigh() : bidBar.getLow(), -1.0, isLong ? lastLongSignal.pivotLevel : lastShortSignal.pivotLevel, 0.0);
 	}
 
 }

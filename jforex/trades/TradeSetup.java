@@ -16,6 +16,8 @@ public abstract class TradeSetup implements ITradeSetup {
 	protected IHistory history = null;
 	protected IEngine engine = null;
 	protected IOrder order = null;
+	
+	protected boolean locked = false;
 
 	public TradeSetup(IIndicators indicators, IHistory history, IEngine engine) {
 		super();
@@ -57,8 +59,8 @@ public abstract class TradeSetup implements ITradeSetup {
 
 	@Override
 	public boolean isTradeLocked(Instrument instrument, Period period, IBar askBar,	IBar bidBar, Filter filter, IOrder order) throws JFException {
-				return false;
-			}
+		return locked;
+	}
 
 	@Override
 	public IOrder submitOrder(String label, Instrument instrument,	boolean isLong, double amount, IBar bidBar, IBar askBar) throws JFException {
