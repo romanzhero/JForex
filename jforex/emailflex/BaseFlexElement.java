@@ -25,68 +25,76 @@ import com.dukascopy.api.JFException;
 import com.dukascopy.api.Period;
 
 public abstract class BaseFlexElement implements IFlexEmailElement {
-	
+
 	protected List<String> parameters;
-	
+
 	@Override
-	public boolean isGeneric() { return true; }
+	public boolean isGeneric() {
+		return true;
+	}
 
 	public void setParameters(List<String> newParameters) {
 		parameters = newParameters;
 	}
 
-	protected ResultSet dbGetElementData(Instrument instrument, Period pPeriod, IBar bidBar, Connection logDB, String fieldList, boolean exact) {
-					String 
-					statementStr = new String("SELECT " + fieldList + " FROM " + FXUtils.getDbToUse() + ".tstatsentry " 
-						+ "WHERE Instrument = '" + instrument.toString() + "'" 
-						+ " AND TimeFrame = '" + pPeriod.toString() + "'"
-						+ " AND BarTime " + (exact ? "=" : "<=") + " '" + MySQLDBUtils.getFormatedTimeCET(bidBar) + "'"
-						+ (exact ? "" : " order by BarTime desc limit 1"));
-				try {
-					Statement qry = logDB.createStatement();
-					ResultSet result = qry.executeQuery(statementStr);
-					if (result.next())
-						return result;
-					else
-						return null;
-				} catch (SQLException ex) {
-					   System.out.print("Log database problem: " + ex.getMessage());
-					   System.out.print(statementStr);
-			           System.exit(1);
-				}
+	protected ResultSet dbGetElementData(Instrument instrument, Period pPeriod,
+			IBar bidBar, Connection logDB, String fieldList, boolean exact) {
+		String statementStr = new String("SELECT " + fieldList + " FROM "
+				+ FXUtils.getDbToUse() + ".tstatsentry "
+				+ "WHERE Instrument = '" + instrument.toString() + "'"
+				+ " AND TimeFrame = '" + pPeriod.toString() + "'"
+				+ " AND BarTime " + (exact ? "=" : "<=") + " '"
+				+ MySQLDBUtils.getFormatedTimeCET(bidBar) + "'"
+				+ (exact ? "" : " order by BarTime desc limit 1"));
+		try {
+			Statement qry = logDB.createStatement();
+			ResultSet result = qry.executeQuery(statementStr);
+			if (result.next())
+				return result;
+			else
 				return null;
-			}
-	
-	protected float dbGetFloat(Instrument instrument, Period pPeriod, IBar bidBar, Connection logDB, String field, boolean exact) {
-		ResultSet r = dbGetElementData(instrument, pPeriod, bidBar, logDB, field, exact);
+		} catch (SQLException ex) {
+			System.out.print("Log database problem: " + ex.getMessage());
+			System.out.print(statementStr);
+			System.exit(1);
+		}
+		return null;
+	}
+
+	protected float dbGetFloat(Instrument instrument, Period pPeriod,
+			IBar bidBar, Connection logDB, String field, boolean exact) {
+		ResultSet r = dbGetElementData(instrument, pPeriod, bidBar, logDB,
+				field, exact);
 		if (r == null)
 			return Float.NEGATIVE_INFINITY;
-		
+
 		try {
 			return r.getFloat(field);
 		} catch (SQLException e) {
-			   System.out.print("Log database problem: " + e.getMessage());
-			   System.out.print(field);
-	           System.exit(1);
+			System.out.print("Log database problem: " + e.getMessage());
+			System.out.print(field);
+			System.exit(1);
 		}
 		return Float.NEGATIVE_INFINITY;
 	}
 
-	protected String dbGetString(Instrument instrument, Period pPeriod, IBar bidBar, Connection logDB, String field, boolean exact) {
-		ResultSet r = dbGetElementData(instrument, pPeriod, bidBar, logDB, field, exact);
+	protected String dbGetString(Instrument instrument, Period pPeriod,
+			IBar bidBar, Connection logDB, String field, boolean exact) {
+		ResultSet r = dbGetElementData(instrument, pPeriod, bidBar, logDB,
+				field, exact);
 		if (r == null)
 			return null;
-		
+
 		try {
 			return r.getString(field);
 		} catch (SQLException e) {
-			   System.out.print("Log database problem: " + e.getMessage());
-			   System.out.print(field);
-	           System.exit(1);
+			System.out.print("Log database problem: " + e.getMessage());
+			System.out.print(field);
+			System.exit(1);
 		}
 		return null;
 	}
-	
+
 	@Override
 	public String print(Instrument instrument, Period pPeriod, IBar bidBar,
 			IHistory history, IIndicators indicators, Trend trendDetector,
@@ -97,25 +105,29 @@ public abstract class BaseFlexElement implements IFlexEmailElement {
 	}
 
 	@Override
-	public String print(Instrument instrument, Period pPeriod, IBar bidBar, List<FlexLogEntry> logLine, Connection logDB) {
+	public String print(Instrument instrument, Period pPeriod, IBar bidBar,
+			List<FlexLogEntry> logLine, Connection logDB) {
 		return new String("method (Duka DB) not implemented");
 	}
 
 	@Override
-	public String printHTML(Instrument instrument, Period pPeriod, IBar bidBar, Connection logDB) {
+	public String printHTML(Instrument instrument, Period pPeriod, IBar bidBar,
+			Connection logDB) {
 		return new String("method (HTML) not implemented");
 	}
-	
-	public SignalResult detectSignal(Instrument instrument, Period pPeriod, IBar bidBar,
-			IHistory history, IIndicators indicators, 
-			Trend trendDetector, Channel channelPosition, Momentum momentum, Volatility vola, TradeTrigger tradeTrigger,
-			Properties conf, List<FlexLogEntry> logLine, Connection logDB) throws JFException {
+
+	public SignalResult detectSignal(Instrument instrument, Period pPeriod,
+			IBar bidBar, IHistory history, IIndicators indicators,
+			Trend trendDetector, Channel channelPosition, Momentum momentum,
+			Volatility vola, TradeTrigger tradeTrigger, Properties conf,
+			List<FlexLogEntry> logLine, Connection logDB) throws JFException {
 		return null;
 	}
 
-	public SignalResult detectSignal(Instrument instrument, Period pPeriod, IBar bidBar, List<FlexLogEntry> logLine, Connection logDB) {
+	public SignalResult detectSignal(Instrument instrument, Period pPeriod,
+			IBar bidBar, List<FlexLogEntry> logLine, Connection logDB) {
 		return null;
-	}	
+	}
 
 	@Override
 	public abstract IFlexEmailElement cloneIt();

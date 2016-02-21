@@ -21,12 +21,13 @@ public class LongMRTrade extends AbstractTrade {
 	public void onStartExec(IContext context) throws JFException {
 		entry.onStartExec(context);
 		stopMover.onStartExec(context);
-		profitTaker.onStartExec(context);		
+		profitTaker.onStartExec(context);
 	}
 
 	@Override
-	public void onBar(Instrument instrument, Period period, IBar askBar, IBar bidBar) throws JFException {
+	public void onBar(Instrument instrument, Period period, IBar askBar,
+			IBar bidBar) throws JFException {
 		// TODO Auto-generated method stub
-		
+
 	}
 }

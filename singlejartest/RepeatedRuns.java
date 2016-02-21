@@ -56,160 +56,182 @@ import jforex.utils.ClimberProperties;
 import jforex.utils.FXUtils;
 
 /**
- * This small program demonstrates how to initialize Dukascopy tester and start a strategy
+ * This small program demonstrates how to initialize Dukascopy tester and start
+ * a strategy
  */
 public class RepeatedRuns {
-    private static final Logger LOGGER = LoggerFactory.getLogger(Main.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(Main.class);
 
-    //url of the DEMO jnlp
-    private static String jnlpUrl = "https://www.dukascopy.com/client/demo/jclient/jforex.jnlp";
-    private static File tradeTestRunningSignal = null;
+	// url of the DEMO jnlp
+	private static String jnlpUrl = "https://www.dukascopy.com/client/demo/jclient/jforex.jnlp";
+	private static File tradeTestRunningSignal = null;
 
-    public static void main(String[] args) throws Exception {
-        //get the instance of the IClient interface
-        final ITesterClient client = TesterFactory.getDefaultInstance();
-        final ClimberProperties properties = new ClimberProperties();
-        //set the listener that will receive system events
-        client.setSystemListener(new ISystemListener() {
-            @Override
-            public void onStart(long processId) {
-                LOGGER.info("Strategy started: " + processId);
-            }
+	public static void main(String[] args) throws Exception {
+		// get the instance of the IClient interface
+		final ITesterClient client = TesterFactory.getDefaultInstance();
+		final ClimberProperties properties = new ClimberProperties();
+		// set the listener that will receive system events
+		client.setSystemListener(new ISystemListener() {
+			@Override
+			public void onStart(long processId) {
+				LOGGER.info("Strategy started: " + processId);
+			}
 
-            @Override
-            public void onStop(long processId) {
-                LOGGER.info("Strategy stopped: " + processId);
-            }
+			@Override
+			public void onStop(long processId) {
+				LOGGER.info("Strategy stopped: " + processId);
+			}
 
-            @Override
-            public void onConnect() {
-                LOGGER.info("Connected");
-            }
+			@Override
+			public void onConnect() {
+				LOGGER.info("Connected");
+			}
 
-            @Override
-            public void onDisconnect() {
-                //tester doesn't disconnect
-            }
-        });
+			@Override
+			public void onDisconnect() {
+				// tester doesn't disconnect
+			}
+		});
 
-        if (args.length < 1) {
-            LOGGER.error("Argument needed: name of config file");
-            System.exit(1);        	
-        }
-        
-        try {
-            properties.load(new FileInputStream(args[0]));
-        } catch (IOException e) {
-            LOGGER.error("Can't open or can't read properties file " + args[0] + "...");
-            System.exit(1);
-        }
-        
-        properties.validate(LOGGER);
-        
-        LOGGER.info("Connecting...");
-        //connect to the server using jnlp, user name and password
-        //connection is needed for data downloading
-        client.connect(jnlpUrl, properties.getProperty("username"), properties.getProperty("password"));
+		if (args.length < 1) {
+			LOGGER.error("Argument needed: name of config file");
+			System.exit(1);
+		}
 
-        //wait for it to connect
-        int i = 10; //wait max ten seconds
-        while (i > 0 && !client.isConnected()) {
-            Thread.sleep(1000);
-            i--;
-        }
-        if (!client.isConnected()) {
-            LOGGER.error("Failed to connect to Dukascopy servers");
-            System.exit(1);
-        }      	
-        	
-        // setting initial deposit
-        client.setCacheDirectory(new File(properties.getProperty("cachedir")));
-    	
-        int runNo = 0;
-        ResultSet dbTestTradesCnt = FXUtils.dbCountTestTrades(properties);
-        while (dbTestTradesCnt.next() && dbTestTradesCnt.getInt(1) > 0) {
-        	System.out.println("Entered loop " + (runNo + 1) + "; records to process: " + dbTestTradesCnt.getInt(1));
-	        // get all trades to run through strategy
-	        
-	        ResultSet dbTestTrades = FXUtils.dbGetTestTrades(properties);
-	        while (dbTestTrades.next()) {
-	            runNo++;
-	        	String 
-	        		ticker = dbTestTrades.getString("Label").substring(0, 6),
-	        		tradeDirection = dbTestTrades.getString("Event"),
-	        		startDateStr = dbTestTrades.getString("EventStart"),
-	        		endDateStr = dbTestTrades.getString("EventEnd");
-	        	
-	        	Date startDate = FXUtils.getDateTimeFromString(startDateStr);
-	        	if (startDate == null) {
-	        		LOGGER.error("Wrong start date format: " + startDateStr + "; expecting dd.MM.yyy HH:mm");
-	        		continue;
-	        	}        	
-	        	Date endDate = FXUtils.getDateTimeFromStringGMT(endDateStr);
-	        	if (endDate == null) {
-	        		LOGGER.error("Wrong start date format: " + endDateStr + "; expecting dd.MM.yyy HH:mm");
-	        		continue;
-	        	}
-	        	
-	        	client.setInitialDeposit(Instrument.EURUSD.getSecondaryCurrency(), Double.parseDouble(properties.getProperty("initialdeposit", "1000000.0")));
-		
-		        Set<Instrument> instruments = new HashSet<Instrument>();
-		        String instrumentID = new String(ticker.substring(0, 3) + "/" + ticker.substring(3));
-		        Instrument currentInstrument = Instrument.fromString(instrumentID); 
-		        instruments.add(currentInstrument);        	        	
-		        
-		        LOGGER.info("Subscribing instruments...");
-		        client.setSubscribedInstruments(instruments);
-		        
-		        // need to widen the interval end in order to catch exit at big ATR + cloud
-		        client.setDataInterval(DataLoadingMethod.ALL_TICKS, startDate.getTime(), FXUtils.plusTradingTime(endDate.getTime(), 3 * 24 * 3600 * 1000));
-		        
-		        tradeTestRunningSignal = new File("tradeTestRunning.bin");
-		        if (tradeTestRunningSignal.exists())
-		        	tradeTestRunningSignal.delete();
-		        tradeTestRunningSignal.createNewFile();
-		        // once test run is finished this file should be deleted !
-		
-		        //load data
-		        LOGGER.info("Downloading data");
-		        Future<?> future = client.downloadData(null);
-		        //wait for downloading to complete
-		        try {
-			        Thread.sleep(20000); //this timeout helped
-		        	future.get(120, TimeUnit.SECONDS);	        	
-		        } catch (TimeoutException e) {
-		        	System.out.println("Can't get data for: " + dbTestTrades.getString("Label"));
-		        	e.printStackTrace();
-		        }
-		        //start the strategy
-		        LOGGER.info("Starting strategy");
-		        IStrategy strategyToRun = new IchimokuTradeTestRun(runNo, currentInstrument, dbTestTrades.getString("Label"), tradeDirection.equals("BUY EXIT"), endDate.getTime(), properties);
-		        client.startStrategy(strategyToRun, 
-		        	new LoadingProgressListener() {
-				        @Override
-				        public void dataLoaded(long startTime, long endTime, long currentTime, String information) {
-				            LOGGER.info(information);
-				        }
-				
-				        @Override
-				        public void loadingFinished(boolean allDataLoaded, long startTime, long endTime, long currentTime) {
-				        }
-				
-				        @Override
-				        public boolean stopJob() {
-				            return false;
-				        }
-		        	});
-		        //now it's running - wait until it finishes before starting next test trade run
-		        while (tradeTestRunningSignal != null && tradeTestRunningSignal.exists()) {
-			        //Thread.sleep(10000);	        	
-		        }
-	        }
-	        dbTestTradesCnt = FXUtils.dbCountTestTrades(properties);
-        }
-        if (client.getStartedStrategies().size() == 0) {
-            System.exit(0);
-        }        
-    }
-	
+		try {
+			properties.load(new FileInputStream(args[0]));
+		} catch (IOException e) {
+			LOGGER.error("Can't open or can't read properties file " + args[0]
+					+ "...");
+			System.exit(1);
+		}
+
+		properties.validate(LOGGER);
+
+		LOGGER.info("Connecting...");
+		// connect to the server using jnlp, user name and password
+		// connection is needed for data downloading
+		client.connect(jnlpUrl, properties.getProperty("username"),
+				properties.getProperty("password"));
+
+		// wait for it to connect
+		int i = 10; // wait max ten seconds
+		while (i > 0 && !client.isConnected()) {
+			Thread.sleep(1000);
+			i--;
+		}
+		if (!client.isConnected()) {
+			LOGGER.error("Failed to connect to Dukascopy servers");
+			System.exit(1);
+		}
+
+		// setting initial deposit
+		client.setCacheDirectory(new File(properties.getProperty("cachedir")));
+
+		int runNo = 0;
+		ResultSet dbTestTradesCnt = FXUtils.dbCountTestTrades(properties);
+		while (dbTestTradesCnt.next() && dbTestTradesCnt.getInt(1) > 0) {
+			System.out.println("Entered loop " + (runNo + 1)
+					+ "; records to process: " + dbTestTradesCnt.getInt(1));
+			// get all trades to run through strategy
+
+			ResultSet dbTestTrades = FXUtils.dbGetTestTrades(properties);
+			while (dbTestTrades.next()) {
+				runNo++;
+				String ticker = dbTestTrades.getString("Label").substring(0, 6), tradeDirection = dbTestTrades
+						.getString("Event"), startDateStr = dbTestTrades
+						.getString("EventStart"), endDateStr = dbTestTrades
+						.getString("EventEnd");
+
+				Date startDate = FXUtils.getDateTimeFromString(startDateStr);
+				if (startDate == null) {
+					LOGGER.error("Wrong start date format: " + startDateStr
+							+ "; expecting dd.MM.yyy HH:mm");
+					continue;
+				}
+				Date endDate = FXUtils.getDateTimeFromStringGMT(endDateStr);
+				if (endDate == null) {
+					LOGGER.error("Wrong start date format: " + endDateStr
+							+ "; expecting dd.MM.yyy HH:mm");
+					continue;
+				}
+
+				client.setInitialDeposit(Instrument.EURUSD
+						.getSecondaryCurrency(), Double.parseDouble(properties
+						.getProperty("initialdeposit", "1000000.0")));
+
+				Set<Instrument> instruments = new HashSet<Instrument>();
+				String instrumentID = new String(ticker.substring(0, 3) + "/"
+						+ ticker.substring(3));
+				Instrument currentInstrument = Instrument
+						.fromString(instrumentID);
+				instruments.add(currentInstrument);
+
+				LOGGER.info("Subscribing instruments...");
+				client.setSubscribedInstruments(instruments);
+
+				// need to widen the interval end in order to catch exit at big
+				// ATR + cloud
+				client.setDataInterval(DataLoadingMethod.ALL_TICKS, startDate
+						.getTime(), FXUtils.plusTradingTime(endDate.getTime(),
+						3 * 24 * 3600 * 1000));
+
+				tradeTestRunningSignal = new File("tradeTestRunning.bin");
+				if (tradeTestRunningSignal.exists())
+					tradeTestRunningSignal.delete();
+				tradeTestRunningSignal.createNewFile();
+				// once test run is finished this file should be deleted !
+
+				// load data
+				LOGGER.info("Downloading data");
+				Future<?> future = client.downloadData(null);
+				// wait for downloading to complete
+				try {
+					Thread.sleep(20000); // this timeout helped
+					future.get(120, TimeUnit.SECONDS);
+				} catch (TimeoutException e) {
+					System.out.println("Can't get data for: "
+							+ dbTestTrades.getString("Label"));
+					e.printStackTrace();
+				}
+				// start the strategy
+				LOGGER.info("Starting strategy");
+				IStrategy strategyToRun = new IchimokuTradeTestRun(runNo,
+						currentInstrument, dbTestTrades.getString("Label"),
+						tradeDirection.equals("BUY EXIT"), endDate.getTime(),
+						properties);
+				client.startStrategy(strategyToRun,
+						new LoadingProgressListener() {
+							@Override
+							public void dataLoaded(long startTime,
+									long endTime, long currentTime,
+									String information) {
+								LOGGER.info(information);
+							}
+
+							@Override
+							public void loadingFinished(boolean allDataLoaded,
+									long startTime, long endTime,
+									long currentTime) {
+							}
+
+							@Override
+							public boolean stopJob() {
+								return false;
+							}
+						});
+				// now it's running - wait until it finishes before starting
+				// next test trade run
+				while (tradeTestRunningSignal != null
+						&& tradeTestRunningSignal.exists()) {
+					// Thread.sleep(10000);
+				}
+			}
+			dbTestTradesCnt = FXUtils.dbCountTestTrades(properties);
+		}
+		if (client.getStartedStrategies().size() == 0) {
+			System.exit(0);
+		}
+	}
+
 }

@@ -15,7 +15,8 @@ public class ADXDiPlusFilter extends AbstractSimpleFilter implements IFilter {
 	}
 
 	@Override
-	protected double calcIndicator(Instrument instrument, OfferSide side, AppliedPrice appliedPrice, long time) throws JFException {
+	protected double calcIndicator(Instrument instrument, OfferSide side,
+			AppliedPrice appliedPrice, long time) throws JFException {
 		Trend trendDetector = new Trend(indicators);
 		double[] adxs = trendDetector.getADXs(instrument, period, side, time);
 		return adxs[1];

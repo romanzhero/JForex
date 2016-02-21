@@ -55,115 +55,129 @@ import jforex.utils.ClimberProperties;
 import jforex.utils.FXUtils;
 
 /**
- * This small program demonstrates how to initialize Dukascopy tester and start a strategy
+ * This small program demonstrates how to initialize Dukascopy tester and start
+ * a strategy
  */
 public class PaceExplorer {
-    private static final Logger LOGGER = LoggerFactory.getLogger(Main.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(Main.class);
 
-    public static void main(String[] args) throws Exception {
-        //get the instance of the IClient interface
-        final ITesterClient client = TesterFactory.getDefaultInstance();
-        final ClimberProperties properties = new ClimberProperties();
-        //set the listener that will receive system events
-        client.setSystemListener(new ISystemListener() {
-            @Override
-            public void onStart(long processId) {
-                LOGGER.info("Strategy started: " + processId);
-            }
+	public static void main(String[] args) throws Exception {
+		// get the instance of the IClient interface
+		final ITesterClient client = TesterFactory.getDefaultInstance();
+		final ClimberProperties properties = new ClimberProperties();
+		// set the listener that will receive system events
+		client.setSystemListener(new ISystemListener() {
+			@Override
+			public void onStart(long processId) {
+				LOGGER.info("Strategy started: " + processId);
+			}
 
-            @Override
-            public void onStop(long processId) {
-                LOGGER.info("Strategy stopped: " + processId);
-                if (client.getStartedStrategies().size() == 0) {
-                    System.exit(0);
-                }
-            }
+			@Override
+			public void onStop(long processId) {
+				LOGGER.info("Strategy stopped: " + processId);
+				if (client.getStartedStrategies().size() == 0) {
+					System.exit(0);
+				}
+			}
 
-            @Override
-            public void onConnect() {
-                LOGGER.info("Connected");
-            }
+			@Override
+			public void onConnect() {
+				LOGGER.info("Connected");
+			}
 
-            @Override
-            public void onDisconnect() {
-                //tester doesn't disconnect
-            }
-        });
+			@Override
+			public void onDisconnect() {
+				// tester doesn't disconnect
+			}
+		});
 
-        if (args.length < 1) {
-            LOGGER.error("Argument needed: name of config file");
-            System.exit(1);        	
-        }
-        
-        try {
-            properties.load(new FileInputStream(args[0]));
-        } catch (IOException e) {
-            LOGGER.error("Can't open or can't read properties file " + args[0] + "...");
-            System.exit(1);
-        }
-        
-        properties.validate(LOGGER);
-        FXUtils.setDbToUse(properties.getProperty("dbToUse"));
-        
-        LOGGER.info("Connecting...");
-        //connect to the server using jnlp, user name and password
-        //connection is needed for data downloading
-        client.connect(properties.getProperty("environment_url", "https://www.dukascopy.com/client/demo/jclient/jforex.jnlp"), 
-        				properties.getProperty("username"), properties.getProperty("password"));
+		if (args.length < 1) {
+			LOGGER.error("Argument needed: name of config file");
+			System.exit(1);
+		}
 
-        //wait for it to connect
-        int i = 10; //wait max ten seconds
-        while (i > 0 && !client.isConnected()) {
-            Thread.sleep(1000);
-            i--;
-        }
-        if (!client.isConnected()) {
-            LOGGER.error("Failed to connect to Dukascopy servers");
-            System.exit(1);
-        }      	
-        	
-        // get all instruments having a subscription
-        Set<Instrument> instruments = new HashSet<Instrument>();
-        ResultSet dbInstruments = FXUtils.dbGetAllSubscribedInstruments(properties);
-        while (dbInstruments.next()) {
-            instruments.add(Instrument.fromString(dbInstruments.getString("ticker")));        	        	
-        }
-        
-        LOGGER.info("Subscribing instruments...");
-        client.setSubscribedInstruments(instruments);
-        //setting initial deposit
-        client.setInitialDeposit(Instrument.EURUSD.getSecondaryCurrency(), Double.parseDouble(properties.getProperty("initialdeposit", "50000.0")));
-        client.setCacheDirectory(new File(properties.getProperty("cachedir")));
-        
-    	//client.setDataInterval(DataLoadingMethod.ALL_TICKS, properties.getTestIntervalStart().getMillis(), properties.getTestIntervalEnd().getMillis());
-        client.setDataInterval(Period.FIVE_MINS, OfferSide.BID, InterpolationMethod.CUBIC_SPLINE, properties.getTestIntervalStart().getMillis(), properties.getTestIntervalEnd().getMillis());
+		try {
+			properties.load(new FileInputStream(args[0]));
+		} catch (IOException e) {
+			LOGGER.error("Can't open or can't read properties file " + args[0]
+					+ "...");
+			System.exit(1);
+		}
 
-        //load data
-        LOGGER.info("Downloading data");
-        Future<?> future = client.downloadData(null);
-        //wait for downloading to complete
-        Thread.sleep(10000); //this timeout helped
-        future.get();
-        //start the strategy
-        LOGGER.info("Starting strategy");
-        IStrategy strategyToRun = new PaceStatsCollector(properties);
-        client.startStrategy(strategyToRun, 
-        	new LoadingProgressListener() {
-		        @Override
-		        public void dataLoaded(long startTime, long endTime, long currentTime, String information) {
-		            LOGGER.info(information);
-		        }
-		
-		        @Override
-		        public void loadingFinished(boolean allDataLoaded, long startTime, long endTime, long currentTime) {
-		        }
-		
-		        @Override
-		        public boolean stopJob() {
-		            return false;
-		        }
-        	});
-        //now it's running
-    }
-	
+		properties.validate(LOGGER);
+		FXUtils.setDbToUse(properties.getProperty("dbToUse"));
+
+		LOGGER.info("Connecting...");
+		// connect to the server using jnlp, user name and password
+		// connection is needed for data downloading
+		client.connect(properties.getProperty("environment_url",
+				"https://www.dukascopy.com/client/demo/jclient/jforex.jnlp"),
+				properties.getProperty("username"), properties
+						.getProperty("password"));
+
+		// wait for it to connect
+		int i = 10; // wait max ten seconds
+		while (i > 0 && !client.isConnected()) {
+			Thread.sleep(1000);
+			i--;
+		}
+		if (!client.isConnected()) {
+			LOGGER.error("Failed to connect to Dukascopy servers");
+			System.exit(1);
+		}
+
+		// get all instruments having a subscription
+		Set<Instrument> instruments = new HashSet<Instrument>();
+		ResultSet dbInstruments = FXUtils
+				.dbGetAllSubscribedInstruments(properties);
+		while (dbInstruments.next()) {
+			instruments.add(Instrument.fromString(dbInstruments
+					.getString("ticker")));
+		}
+
+		LOGGER.info("Subscribing instruments...");
+		client.setSubscribedInstruments(instruments);
+		// setting initial deposit
+		client.setInitialDeposit(Instrument.EURUSD.getSecondaryCurrency(),
+				Double.parseDouble(properties.getProperty("initialdeposit",
+						"50000.0")));
+		client.setCacheDirectory(new File(properties.getProperty("cachedir")));
+
+		// client.setDataInterval(DataLoadingMethod.ALL_TICKS,
+		// properties.getTestIntervalStart().getMillis(),
+		// properties.getTestIntervalEnd().getMillis());
+		client.setDataInterval(Period.FIVE_MINS, OfferSide.BID,
+				InterpolationMethod.CUBIC_SPLINE, properties
+						.getTestIntervalStart().getMillis(), properties
+						.getTestIntervalEnd().getMillis());
+
+		// load data
+		LOGGER.info("Downloading data");
+		Future<?> future = client.downloadData(null);
+		// wait for downloading to complete
+		Thread.sleep(10000); // this timeout helped
+		future.get();
+		// start the strategy
+		LOGGER.info("Starting strategy");
+		IStrategy strategyToRun = new PaceStatsCollector(properties);
+		client.startStrategy(strategyToRun, new LoadingProgressListener() {
+			@Override
+			public void dataLoaded(long startTime, long endTime,
+					long currentTime, String information) {
+				LOGGER.info(information);
+			}
+
+			@Override
+			public void loadingFinished(boolean allDataLoaded, long startTime,
+					long endTime, long currentTime) {
+			}
+
+			@Override
+			public boolean stopJob() {
+				return false;
+			}
+		});
+		// now it's running
+	}
+
 }

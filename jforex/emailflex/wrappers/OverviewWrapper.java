@@ -23,19 +23,20 @@ import com.dukascopy.api.Period;
 public class OverviewWrapper extends AbstractWrapper {
 
 	@Override
-	public String printHTML(Instrument instrument, Period pPeriod, IBar bidBar, Connection logDB) {
+	public String printHTML(Instrument instrument, Period pPeriod, IBar bidBar,
+			Connection logDB) {
 		String res = new String();
 		res += "<table width=\"780\" border=\"0\" cellspacing=\"2\" cellpadding=\"0\" style=\"text-align:center; vertical-align:middle; font-size:12px; line-height:20px; font-family:Arial, Helvetica, sans-serif; border:1px solid #f4f4f4;\">"
-		  + "<tr><td width=\"132\" rowspan=\"2\"><strong>Indicators</strong></td>"
-		  + "<td colspan=\"3\" style=\"background-color:#f4f4f4\"><strong>Timeframe</strong></td>"
-		  + "</tr><tr><td width=\"220\"><strong>Daily</strong></td>"
-		  + "<td width=\"220\"><strong>4 Hours</strong></td>"
-		  + "<td width=\"220\"><strong>30 Mins</strong></td></tr>";
-		
+				+ "<tr><td width=\"132\" rowspan=\"2\"><strong>Indicators</strong></td>"
+				+ "<td colspan=\"3\" style=\"background-color:#f4f4f4\"><strong>Timeframe</strong></td>"
+				+ "</tr><tr><td width=\"220\"><strong>Daily</strong></td>"
+				+ "<td width=\"220\"><strong>4 Hours</strong></td>"
+				+ "<td width=\"220\"><strong>30 Mins</strong></td></tr>";
+
 		for (IFlexEmailElement e : wrappedElements) {
 			res += e.printHTML(instrument, pPeriod, bidBar, logDB);
 		}
-		
+
 		res += "</table>";
 		return res;
 	}
@@ -84,7 +85,7 @@ public class OverviewWrapper extends AbstractWrapper {
 	@Override
 	public void setParameters(List<String> parameters) {
 		// TODO Auto-generated method stub
-		
+
 	}
 
 	@Override

@@ -1,10 +1,11 @@
 package jforex.filters;
 
-public class ConditionalFilterStochsDiffMACDsPosition extends ConditionalFilterOnMACDsPosition implements IConditionalFilter {
+public class ConditionalFilterStochsDiffMACDsPosition extends
+		ConditionalFilterOnMACDsPosition implements IConditionalFilter {
 
 	@Override
 	protected void setMainFilter() {
-		mainFilter = new StochsDiffFilter();		
+		mainFilter = new StochsDiffFilter();
 	}
 
 	@Override

@@ -1,5 +1,12 @@
 package jforex.trades;
 
+import java.util.List;
+
+import org.omg.PortableInterceptor.IORInterceptorOperations;
+
+import jforex.events.TAEventDesc;
+import jforex.utils.FXUtils;
+
 import com.dukascopy.api.Filter;
 import com.dukascopy.api.IBar;
 import com.dukascopy.api.IEngine;
@@ -16,8 +23,9 @@ public abstract class TradeSetup implements ITradeSetup {
 	protected IHistory history = null;
 	protected IEngine engine = null;
 	protected IOrder order = null;
-	
+
 	protected boolean locked = false;
+	protected String lastTradingEvent = "none";
 
 	public TradeSetup(IIndicators indicators, IHistory history, IEngine engine) {
 		super();
@@ -25,31 +33,32 @@ public abstract class TradeSetup implements ITradeSetup {
 		this.history = history;
 		this.engine = engine;
 	}
-	
+
 	@Override
-	public EntryDirection checkCancel(Instrument instrument, Period period, IBar askBar, IBar bidBar, Filter filter) throws JFException {
+	public EntryDirection checkCancel(Instrument instrument, Period period,	IBar askBar, IBar bidBar, Filter filter) throws JFException {
 		return ITradeSetup.EntryDirection.NONE;
 	}
 
-
 	@Override
-	public void inTradeProcessing(Instrument instrument, Period period,	IBar askBar, IBar bidBar, Filter filter, IOrder order) throws JFException { }
-
-	@Override
-	public void log(IMessage message) {	}
-
-	@Override
-	public void takeTradingOver(IOrder order) {
-		this.order = order;		
+	public void inTradeProcessing(Instrument instrument, Period period,	IBar askBar, IBar bidBar, Filter filter, IOrder order, List<TAEventDesc> marketEvents) throws JFException {
 	}
 
 	@Override
-	public void afterTradeReset(Instrument instrument) { }
+	public void log(IMessage message) {
+	}
 
+	@Override
+	public void takeTradingOver(IOrder order) {
+		this.order = order;
+	}
+
+	@Override
+	public void afterTradeReset(Instrument instrument) {
+	}
 
 	@Override
 	public EntryDirection checkExit(Instrument instrument, Period period, IBar askBar, IBar bidBar, Filter filter, IOrder order) throws JFException {
-			return ITradeSetup.EntryDirection.NONE;
+		return ITradeSetup.EntryDirection.NONE;
 	}
 
 	@Override
@@ -58,13 +67,36 @@ public abstract class TradeSetup implements ITradeSetup {
 	}
 
 	@Override
-	public boolean isTradeLocked(Instrument instrument, Period period, IBar askBar,	IBar bidBar, Filter filter, IOrder order) throws JFException {
+	public boolean isTradeLocked(Instrument instrument, Period period, IBar askBar, IBar bidBar, Filter filter, IOrder order) throws JFException {
 		return locked;
 	}
 
 	@Override
-	public IOrder submitOrder(String label, Instrument instrument,	boolean isLong, double amount, IBar bidBar, IBar askBar) throws JFException {
-        return engine.submitOrder(label, instrument, isLong ? IEngine.OrderCommand.BUY : IEngine.OrderCommand.SELL, amount);
+	public IOrder submitOrder(String label, Instrument instrument, boolean isLong, double amount, IBar bidBar, IBar askBar)	throws JFException {
+		return submitMktOrder(label, instrument, isLong, amount, bidBar, askBar);
 	}
+	
+	public IOrder submitMktOrder(String label, Instrument instrument, boolean isLong, double amount, IBar bidBar, IBar askBar) throws JFException {
+		IOrder order = engine.submitOrder(label, instrument, isLong ? IEngine.OrderCommand.BUY : IEngine.OrderCommand.SELL,	amount);
+		//order.waitForUpdate(IOrder.State.FILLED);
+		return order;
+	}
+	
+	public IOrder submitStpOrder(String label, Instrument instrument, boolean isLong, double amount, IBar bidBar, IBar askBar, double stopLoss) throws JFException {
+		double 
+			stpPrice = isLong ? askBar.getHigh() : bidBar.getLow(),
+			stopLossPrice = stopLoss;
+		stpPrice = FXUtils.roundToPip(stpPrice, instrument);
+		stopLossPrice = FXUtils.roundToPip(stopLossPrice, instrument);
+		IOrder order = engine.submitOrder(label, instrument, isLong ? IEngine.OrderCommand.BUYSTOP: IEngine.OrderCommand.SELLSTOP, amount,	stpPrice, -1, stopLossPrice, 0);
+		//order.waitForUpdate(IOrder.State.OPENED, IOrder.State.FILLED);
+		return order;
+	}
+
+	@Override
+	public String getLastTradingEvent() {
+		return lastTradingEvent ;
+	}
+
 
 }

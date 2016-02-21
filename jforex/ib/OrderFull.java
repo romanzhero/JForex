@@ -5,13 +5,14 @@ import com.ib.client.Order;
 import com.ib.client.OrderState;
 
 public class OrderFull {
-	
+
 	protected int orderId;
 	protected Order m_Order;
 	protected Contract m_Contract;
 	protected OrderState m_OrderState;
-	
-	public OrderFull(int pOrderId, Order pOrder, Contract pContract, OrderState pOrderState) {
+
+	public OrderFull(int pOrderId, Order pOrder, Contract pContract,
+			OrderState pOrderState) {
 		super();
 		orderId = pOrderId;
 		this.m_Order = pOrder;
@@ -29,6 +30,6 @@ public class OrderFull {
 
 	public OrderState getOrderState() {
 		return m_OrderState;
-	}	
+	}
 
 }

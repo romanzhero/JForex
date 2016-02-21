@@ -17,93 +17,86 @@ import com.dukascopy.api.util.DateUtils;
 
 @SuppressWarnings("serial")
 class StratTableModel extends AbstractTableModel {
-        
-    private final IContext context;
-    private Set<IStrategyDescriptor> stopped = new HashSet<IStrategyDescriptor>();
-    
-    public StratTableModel(IContext context){
-    	this.context = context;  
-    }    
-    
-    private final Column[] columns = new Column[]{
-         Column.newReadOnlyColumn(
-            "Name",               
-            new IGet() {
-                @Override
-                public String getValue(IStrategyDescriptor order) {
-                    return order.getName();
-                }
-            }), 
-         Column.newReadOnlyColumn(
-        	"Start time",               
-        	new IGet() {
-        		@Override
-                public String getValue(IStrategyDescriptor order) {
-                	return DateUtils.format(order.getStartTime());
-                }
-         }),
-         Column.newReadOnlyColumn(
-        	"Params",               
-        	new IGet() {
-        		@Override
-                public String getValue(IStrategyDescriptor order) {
-                	return order.getParameters().toString();
-                }
-         }), 
-         Column.newReadOnlyColumn(
-        	"Mode",               
-        	new IGet() {
-        		@Override
-                public String getValue(IStrategyDescriptor order) {
-                	return order instanceof ILocalStrategyDescriptor ? "LOCAL" : "REMOTE";
-                }
-         }), 
-    };
-    
+
+	private final IContext context;
+	private Set<IStrategyDescriptor> stopped = new HashSet<IStrategyDescriptor>();
+
+	public StratTableModel(IContext context) {
+		this.context = context;
+	}
+
+	private final Column[] columns = new Column[] {
+			Column.newReadOnlyColumn("Name", new IGet() {
+				@Override
+				public String getValue(IStrategyDescriptor order) {
+					return order.getName();
+				}
+			}), Column.newReadOnlyColumn("Start time", new IGet() {
+				@Override
+				public String getValue(IStrategyDescriptor order) {
+					return DateUtils.format(order.getStartTime());
+				}
+			}), Column.newReadOnlyColumn("Params", new IGet() {
+				@Override
+				public String getValue(IStrategyDescriptor order) {
+					return order.getParameters().toString();
+				}
+			}), Column.newReadOnlyColumn("Mode", new IGet() {
+				@Override
+				public String getValue(IStrategyDescriptor order) {
+					return order instanceof ILocalStrategyDescriptor ? "LOCAL"
+							: "REMOTE";
+				}
+			}), };
+
 	private List<IStrategyDescriptor> strategyDescriptors = new ArrayList<IStrategyDescriptor>();
 
-	public void resetData(Set<IStrategyDescriptor> strats) {		
-		List<IStrategyDescriptor> stratList =new ArrayList<IStrategyDescriptor>(strats);
-		Collections.sort(new ArrayList<IStrategyDescriptor>(strats), new Comparator<IStrategyDescriptor>(){
-			@Override
-			public int compare(IStrategyDescriptor o1, IStrategyDescriptor o2) {				
-				return o1.getName().compareTo(o2.getName()) != 0 
-							? o1.getName().compareTo(o2.getName())
-							: Long.compare(o1.getStartTime(), o2.getStartTime());
-			}});
+	public void resetData(Set<IStrategyDescriptor> strats) {
+		List<IStrategyDescriptor> stratList = new ArrayList<IStrategyDescriptor>(
+				strats);
+		Collections.sort(new ArrayList<IStrategyDescriptor>(strats),
+				new Comparator<IStrategyDescriptor>() {
+					@Override
+					public int compare(IStrategyDescriptor o1,
+							IStrategyDescriptor o2) {
+						return o1.getName().compareTo(o2.getName()) != 0 ? o1
+								.getName().compareTo(o2.getName()) : Long
+								.compare(o1.getStartTime(), o2.getStartTime());
+					}
+				});
 		this.strategyDescriptors = stratList;
 		stopped.clear();
 		fireTableDataChanged();
 	}
-	
+
 	public void addStrategy(IStrategyDescriptor strategyDescriptor) {
 		this.strategyDescriptors.add(strategyDescriptor);
 		stopped.remove(strategyDescriptor);
 		fireTableDataChanged();
 	}
-	
+
 	public void setStopped(IStrategyDescriptor strategyDescriptor) {
 		stopped.add(strategyDescriptor);
 		fireTableDataChanged();
 	}
-	
+
 	public void removeStrategy(IStrategyDescriptor lastSelected) {
 		strategyDescriptors.remove(lastSelected);
 		fireTableDataChanged();
 	}
-	
-	public IStrategyDescriptor getStrategy(int rowNr){
-		if(rowNr >= strategyDescriptors.size()){
+
+	public IStrategyDescriptor getStrategy(int rowNr) {
+		if (rowNr >= strategyDescriptors.size()) {
 			return null;
 		}
 		return strategyDescriptors.get(rowNr);
 	}
-	
-	public boolean isStopped(int rowNr){
+
+	public boolean isStopped(int rowNr) {
 		return stopped.contains(strategyDescriptors.get(rowNr));
 	}
-	
-	public boolean isStopped(IStrategyDescriptor strat){
+
+	public boolean isStopped(IStrategyDescriptor strat) {
 		return stopped.contains(strat);
 	}
 
@@ -124,12 +117,16 @@ class StratTableModel extends AbstractTableModel {
 		return columns[columnIndex].isEditable();
 	}
 
-	public void setValueAt(final Object aValue, int rowIndex, final int columnIndex) {
+	public void setValueAt(final Object aValue, int rowIndex,
+			final int columnIndex) {
 		IStrategyDescriptor strat = strategyDescriptors.get(rowIndex);
 		try {
 			columns[columnIndex].set().setValue(strat, aValue);
 		} catch (Exception e) {
-			context.getConsole().getErr().format("Could not set value %s to [%s;%s] - %s", aValue, rowIndex, columnIndex, e).println();
+			context.getConsole()
+					.getErr()
+					.format("Could not set value %s to [%s;%s] - %s", aValue,
+							rowIndex, columnIndex, e).println();
 		}
 	}
 
@@ -137,7 +134,4 @@ class StratTableModel extends AbstractTableModel {
 		return columns[column].getName();
 	}
 
-
-
 }
-

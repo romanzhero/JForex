@@ -24,31 +24,36 @@ import com.dukascopy.api.Period;
 
 public class EMailConfiguration {
 	protected List<IFlexEmailElement> mailElements = new ArrayList<IFlexEmailElement>();
-	
+
 	public void parseConfFile(String filePath, Properties conf) {
 		// format of text config file is one element per line, # as comment
 		try {
-		    BufferedReader in = new BufferedReader(new FileReader(filePath));
-		    String str;
-		    while ((str = in.readLine()) != null) {
-		    	if (str.startsWith("#"))
-		    		continue;
-		    	
-		    	IFlexEmailElement e = FlexEmailElementFactory.create(str, conf);
-		    	if (e != null)
-		    		mailElements.add(e);
-		    }
-		    in.close();
-		} catch (IOException e) {	}		
+			BufferedReader in = new BufferedReader(new FileReader(filePath));
+			String str;
+			while ((str = in.readLine()) != null) {
+				if (str.startsWith("#"))
+					continue;
+
+				IFlexEmailElement e = FlexEmailElementFactory.create(str, conf);
+				if (e != null)
+					mailElements.add(e);
+			}
+			in.close();
+		} catch (IOException e) {
+		}
 	}
-	
-	public String getMailText(Instrument instrument, Period pPeriod, IBar bidBar,
-			IHistory history, IIndicators indicators, Trend trendDetector,
-			Channel channelPosition, Momentum momentum, Volatility vola,
-			TradeTrigger tradeTrigger, Properties conf, List<FlexLogEntry> logLine, Connection logDB) throws JFException {
+
+	public String getMailText(Instrument instrument, Period pPeriod,
+			IBar bidBar, IHistory history, IIndicators indicators,
+			Trend trendDetector, Channel channelPosition, Momentum momentum,
+			Volatility vola, TradeTrigger tradeTrigger, Properties conf,
+			List<FlexLogEntry> logLine, Connection logDB) throws JFException {
 		String mailText = new String();
 		for (IFlexEmailElement e : mailElements) {
-			mailText += e.print(instrument, pPeriod, bidBar, history, indicators, trendDetector, channelPosition, momentum, vola, tradeTrigger, conf, logLine, logDB) + "\n";
+			mailText += e.print(instrument, pPeriod, bidBar, history,
+					indicators, trendDetector, channelPosition, momentum, vola,
+					tradeTrigger, conf, logLine, logDB)
+					+ "\n";
 		}
 		return mailText;
 	}

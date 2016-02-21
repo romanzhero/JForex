@@ -1,11 +1,10 @@
 package trading.elements;
 
 public abstract class AbstractBrokerEvent implements IBrokerEvent {
-	
+
 	protected String ticker;
 	protected String orderID;
 	protected long time;
-
 
 	public AbstractBrokerEvent(String ticker, String orderID, long time) {
 		super();
@@ -28,6 +27,5 @@ public abstract class AbstractBrokerEvent implements IBrokerEvent {
 	public String getOrderID() {
 		return orderID;
 	}
-
 
 }

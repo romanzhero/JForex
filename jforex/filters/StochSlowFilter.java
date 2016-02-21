@@ -15,15 +15,16 @@ public class StochSlowFilter extends AbstractSimpleFilter implements IFilter {
 	}
 
 	@Override
-	protected double calcIndicator(Instrument instrument, OfferSide side, AppliedPrice appliedPrice, long time) throws JFException {
-    	int fastKPeriod = 14;
-        int slowKPeriod = 3;
-        MaType slowKMaType = MaType.SMA;
-        int slowDPeriod = 3;
-        MaType slowDMaType = MaType.SMA;
-		double[][] stoch2 = indicators.stoch(instrument, period, side, 
-				fastKPeriod, slowKPeriod, slowKMaType, slowDPeriod, slowDMaType, 
-				Filter.WEEKENDS, 1, time, 0);
+	protected double calcIndicator(Instrument instrument, OfferSide side,
+			AppliedPrice appliedPrice, long time) throws JFException {
+		int fastKPeriod = 14;
+		int slowKPeriod = 3;
+		MaType slowKMaType = MaType.SMA;
+		int slowDPeriod = 3;
+		MaType slowDMaType = MaType.SMA;
+		double[][] stoch2 = indicators.stoch(instrument, period, side,
+				fastKPeriod, slowKPeriod, slowKMaType, slowDPeriod,
+				slowDMaType, Filter.WEEKENDS, 1, time, 0);
 		return stoch2[1][0];
 	}
 

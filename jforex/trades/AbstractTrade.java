@@ -14,9 +14,10 @@ public abstract class AbstractTrade {
 	protected IEntry entry;
 	protected IStopMover stopMover;
 	protected IProfitTaker profitTaker;
-	
-	public abstract void onStartExec(IContext context) throws JFException;
-	public abstract void onBar(Instrument instrument, Period period, IBar askBar, IBar bidBar) throws JFException;
 
+	public abstract void onStartExec(IContext context) throws JFException;
+
+	public abstract void onBar(Instrument instrument, Period period,
+			IBar askBar, IBar bidBar) throws JFException;
 
 }

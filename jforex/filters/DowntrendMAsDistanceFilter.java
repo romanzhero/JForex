@@ -7,18 +7,23 @@ import com.dukascopy.api.JFException;
 import com.dukascopy.api.OfferSide;
 import com.dukascopy.api.IIndicators.AppliedPrice;
 
-public class DowntrendMAsDistanceFilter extends AbstractSimpleFilter implements IFilter {
+public class DowntrendMAsDistanceFilter extends AbstractSimpleFilter implements
+		IFilter {
 
 	@Override
-	public boolean check(Instrument instrument, OfferSide side, AppliedPrice appliedPrice, long time) throws JFException {
+	public boolean check(Instrument instrument, OfferSide side,
+			AppliedPrice appliedPrice, long time) throws JFException {
 		Trend trendDetector = new Trend(indicators);
 		double trendStDevPos = -1000.0;
-		//TODO: configuration file must contain default lookback period per time frame !
-		// 1000 for 30', 720 for 4h... And this should be read here instead hard coded !
-		if ((trendStDevPos = trendDetector.getDowntrendMAsMaxDifStDevPos(instrument, period, side, appliedPrice, time, 720)) != -1000) {
-			return trendStDevPos >= minAllowedValue && trendStDevPos <= maxAllowedValue;
-		}
-		else
+		// TODO: configuration file must contain default lookback period per
+		// time frame !
+		// 1000 for 30', 720 for 4h... And this should be read here instead hard
+		// coded !
+		if ((trendStDevPos = trendDetector.getDowntrendMAsMaxDifStDevPos(
+				instrument, period, side, appliedPrice, time, 720)) != -1000) {
+			return trendStDevPos >= minAllowedValue
+					&& trendStDevPos <= maxAllowedValue;
+		} else
 			return true; // filter not applicable, not an uptrend
 	}
 
@@ -28,9 +33,11 @@ public class DowntrendMAsDistanceFilter extends AbstractSimpleFilter implements 
 	}
 
 	@Override
-	protected double calcIndicator(Instrument instrument, OfferSide side, AppliedPrice appliedPrice, long time) throws JFException {
+	protected double calcIndicator(Instrument instrument, OfferSide side,
+			AppliedPrice appliedPrice, long time) throws JFException {
 		Trend trendDetector = new Trend(indicators);
-		return trendDetector.getDowntrendMAsMaxDifStDevPos(instrument, period, side, appliedPrice, time, 720);
+		return trendDetector.getDowntrendMAsMaxDifStDevPos(instrument, period,
+				side, appliedPrice, time, 720);
 	}
 
 }

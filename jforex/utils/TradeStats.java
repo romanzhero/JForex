@@ -2,7 +2,7 @@ package jforex.utils;
 
 public class TradeStats {
 	protected double maxWin = 0, maxLoss = 0; // in pips of course
-	
+
 	public void updateMaxPnL(double currPnLInPips) {
 		if (currPnLInPips > 0 && currPnLInPips > maxWin) {
 			maxWin = currPnLInPips;
@@ -20,6 +20,6 @@ public class TradeStats {
 	}
 
 	public void reset() {
-		maxLoss = maxWin = 0;		
+		maxLoss = maxWin = 0;
 	}
 }

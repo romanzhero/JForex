@@ -22,24 +22,42 @@ import jforex.techanalysis.Volatility;
 import jforex.utils.FXUtils;
 import jforex.utils.FlexLogEntry;
 
-public class BasicCandleInfoElement extends BaseFlexElement implements IFlexEmailElement {
+public class BasicCandleInfoElement extends BaseFlexElement implements
+		IFlexEmailElement {
 
 	@Override
 	public String print(Instrument instrument, Period pPeriod, IBar bidBar,
 			IHistory history, IIndicators indicators, Trend trendDetector,
 			Channel channelPosition, Momentum momentum, Volatility vola,
-			TradeTrigger tradeTrigger, Properties conf, List<FlexLogEntry> logLine, Connection logDB) throws JFException {
-		IBar prevBar30min = history.getBar(instrument, pPeriod, OfferSide.BID, 2);
-		return new String("Last bar candle stats: upper handle = "  
-				+ FXUtils.df1.format(tradeTrigger.barsUpperHandlePerc(bidBar)) + "% / " + 
-				(bidBar.getClose() > bidBar.getOpen() ? "BULLISH" : "BEARISH") + " body = "  
-				+ FXUtils.df1.format(tradeTrigger.barsBodyPerc(bidBar)) + "% / lower handle = "			
-				+ FXUtils.df1.format(tradeTrigger.barsLowerHandlePerc(bidBar)) + "%\n"
-				+ "Previous bar candle stats: upper handle = " 
-				+ FXUtils.df1.format(tradeTrigger.barsUpperHandlePerc(prevBar30min)) + "% / " + 
-				(prevBar30min.getClose() > prevBar30min.getOpen() ? "BULLISH" : "BEARISH") + " body = "  
-				+ FXUtils.df1.format(tradeTrigger.barsBodyPerc(prevBar30min)) + "% / lower handle = "			
-				+ FXUtils.df1.format(tradeTrigger.barsLowerHandlePerc(prevBar30min)) + "%\n");
+			TradeTrigger tradeTrigger, Properties conf,
+			List<FlexLogEntry> logLine, Connection logDB) throws JFException {
+		IBar prevBar30min = history.getBar(instrument, pPeriod, OfferSide.BID,
+				2);
+		return new String(
+				"Last bar candle stats: upper handle = "
+						+ FXUtils.df1.format(tradeTrigger
+								.barsUpperHandlePerc(bidBar))
+						+ "% / "
+						+ (bidBar.getClose() > bidBar.getOpen() ? "BULLISH"
+								: "BEARISH")
+						+ " body = "
+						+ FXUtils.df1.format(tradeTrigger.barsBodyPerc(bidBar))
+						+ "% / lower handle = "
+						+ FXUtils.df1.format(tradeTrigger
+								.barsLowerHandlePerc(bidBar))
+						+ "%\n"
+						+ "Previous bar candle stats: upper handle = "
+						+ FXUtils.df1.format(tradeTrigger
+								.barsUpperHandlePerc(prevBar30min))
+						+ "% / "
+						+ (prevBar30min.getClose() > prevBar30min.getOpen() ? "BULLISH"
+								: "BEARISH")
+						+ " body = "
+						+ FXUtils.df1.format(tradeTrigger
+								.barsBodyPerc(prevBar30min))
+						+ "% / lower handle = "
+						+ FXUtils.df1.format(tradeTrigger
+								.barsLowerHandlePerc(prevBar30min)) + "%\n");
 	}
 
 	@Override
@@ -54,7 +72,8 @@ public class BasicCandleInfoElement extends BaseFlexElement implements IFlexEmai
 	}
 
 	@Override
-	public String print(Instrument instrument, Period pPeriod, IBar bidBar,	List<FlexLogEntry> logLine, Connection logDB) {
+	public String print(Instrument instrument, Period pPeriod, IBar bidBar,
+			List<FlexLogEntry> logLine, Connection logDB) {
 		// TODO Auto-generated method stub
 		return null;
 	}

@@ -16,19 +16,21 @@ import com.dukascopy.api.Instrument;
 import com.dukascopy.api.JFException;
 import com.dukascopy.api.Period;
 
-public class SinglePairSingleSetupStrategy extends BasicTAStrategy implements IStrategy {
-	
+public class SinglePairSingleSetupStrategy extends BasicTAStrategy implements
+		IStrategy {
+
 	protected AbstractTrade trade;
 	Instrument selectedPair;
 
 	public SinglePairSingleSetupStrategy(Properties props) {
 		super(props);
 		trade = new LongMRTrade();
-        StringTokenizer st = new StringTokenizer(props.getProperty("pairsToCheck", "EUR/USD"), ";");
-        assert(st.countTokens() == 1);
-        
-    	String nextPair = st.nextToken();
-        selectedPair = Instrument.fromString(nextPair);        	
+		StringTokenizer st = new StringTokenizer(props.getProperty(
+				"pairsToCheck", "EUR/USD"), ";");
+		assert (st.countTokens() == 1);
+
+		String nextPair = st.nextToken();
+		selectedPair = Instrument.fromString(nextPair);
 	}
 
 	@Override
@@ -43,10 +45,11 @@ public class SinglePairSingleSetupStrategy extends BasicTAStrategy implements IS
 	}
 
 	@Override
-	public void onBar(Instrument instrument, Period period, IBar askBar, IBar bidBar) throws JFException {
+	public void onBar(Instrument instrument, Period period, IBar askBar,
+			IBar bidBar) throws JFException {
 		if (!instrument.equals(selectedPair))
 			return;
-		
+
 		trade.onBar(instrument, period, askBar, bidBar);
 	}
 

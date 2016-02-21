@@ -10,7 +10,9 @@ public abstract class AbstractWrapper implements IFlexEmailWrapper {
 	protected List<IFlexEmailElement> wrappedElements = new ArrayList<IFlexEmailElement>();
 
 	@Override
-	public boolean isGeneric() { return true; }
+	public boolean isGeneric() {
+		return true;
+	}
 
 	@Override
 	public void add(IFlexEmailElement e) {

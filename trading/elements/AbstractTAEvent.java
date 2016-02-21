@@ -1,16 +1,13 @@
 package trading.elements;
 
 public abstract class AbstractTAEvent implements ITAEvent {
-	
-	protected boolean
-		isLongEvent,
-		isOnMarket = false;
-	
-	protected double
-		stopPrice, limitPrice, stopLoss;
-	
+
+	protected boolean isLongEvent, isOnMarket = false;
+
+	protected double stopPrice, limitPrice, stopLoss;
+
 	protected long time;
-	
+
 	protected String name;
 
 	public AbstractTAEvent(boolean isLongEvent) {
@@ -18,7 +15,8 @@ public abstract class AbstractTAEvent implements ITAEvent {
 		this.isLongEvent = isLongEvent;
 	}
 
-	public AbstractTAEvent(boolean isLongEvent, double stopPrice, double limitPrice, long time) {
+	public AbstractTAEvent(boolean isLongEvent, double stopPrice,
+			double limitPrice, long time) {
 		super();
 		this.isLongEvent = isLongEvent;
 		this.stopPrice = stopPrice;
@@ -63,7 +61,8 @@ public abstract class AbstractTAEvent implements ITAEvent {
 
 	@Override
 	public void roundSL(int pipScale) {
-		stopLoss = Math.round(stopLoss * Math.pow(10, pipScale)) / Math.pow(10, pipScale); 		
+		stopLoss = Math.round(stopLoss * Math.pow(10, pipScale))
+				/ Math.pow(10, pipScale);
 	}
 
 }

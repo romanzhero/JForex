@@ -1,6 +1,7 @@
 package jforex.filters;
 
-public class ConditionalFilterADXMAsPosition extends ConditionalFilterOnMAsPosition implements IConditionalFilter {
+public class ConditionalFilterADXMAsPosition extends
+		ConditionalFilterOnMAsPosition implements IConditionalFilter {
 
 	@Override
 	public IFilter cloneFilter() {

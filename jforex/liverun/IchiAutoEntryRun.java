@@ -51,77 +51,93 @@ import jforex.utils.ClimberProperties;
 import jforex.utils.FXUtils;
 
 /**
- * This small program demonstrates how to initialize Dukascopy tester and start a strategy
+ * This small program demonstrates how to initialize Dukascopy tester and start
+ * a strategy
  */
 public class IchiAutoEntryRun {
-    private static final Logger LOGGER = LoggerFactory.getLogger(Main.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(Main.class);
 
-    //url of the DEMO jnlp
-    // private static String jnlpUrl = "https://www.dukascopy.com/client/demo/jclient/jforex.jnlp";
+	// url of the DEMO jnlp
+	// private static String jnlpUrl =
+	// "https://www.dukascopy.com/client/demo/jclient/jforex.jnlp";
 
-    public static void main(String[] args) throws Exception {
-        //get the instance of the IClient interface
-        final IClient client = ClientFactory.getDefaultInstance();
-        final ClimberProperties properties = new ClimberProperties();
-        
-        //set the listener that will receive system events
-        client.setSystemListener(new ForceReconnectListener(properties.getProperty("username"), properties.getProperty("password"), LOGGER, client, 
-        		properties.getProperty("environment_url", "https://www.dukascopy.com/client/demo/jclient/jforex.jnlp")));
+	public static void main(String[] args) throws Exception {
+		// get the instance of the IClient interface
+		final IClient client = ClientFactory.getDefaultInstance();
+		final ClimberProperties properties = new ClimberProperties();
 
-        if (args.length < 1) {
-            LOGGER.error("One argument needed: name of config file");
-            System.exit(1);        	
-        }
-        
-        try {
-            properties.load(new FileInputStream(args[0]));
-        } catch (IOException e) {
-            LOGGER.error("Can't open or can't read properties file " + args[0] + "...");
-            System.exit(1);
-        }
-        
-        properties.validate(LOGGER);
-        FXUtils.setDbToUse(properties.getProperty("dbToUse"));
-        
-        LOGGER.info("Connecting...");
-        //connect to the server using jnlp, user name and password
-        //connection is needed for data downloading
-        
-        int attempt = 0;
-        while (attempt++ < 5 && !client.isConnected()) {
-	        client.connect(properties.getProperty("environment_url", "https://www.dukascopy.com/client/demo/jclient/jforex.jnlp"), 
-	        				properties.getProperty("username"), properties.getProperty("password"));
-	
-	        //wait for it to connect
-	        int i = 10; //wait max ten seconds
-	        while (i > 0 && !client.isConnected()) {
-	            Thread.sleep(1000);
-	            i--;
-	        }
+		// set the listener that will receive system events
+		client.setSystemListener(new ForceReconnectListener(
+				properties.getProperty("username"),
+				properties.getProperty("password"),
+				LOGGER,
+				client,
+				properties
+						.getProperty("environment_url",
+								"https://www.dukascopy.com/client/demo/jclient/jforex.jnlp")));
 
-	        // not successful, try again in 30 sec
-	        if (!client.isConnected()) 
-	            Thread.sleep(30 * 1000);
-        }
-        if (!client.isConnected()) {
-            LOGGER.error("Failed to connect Dukascopy servers");
-            System.exit(1);
-        }      	
+		if (args.length < 1) {
+			LOGGER.error("One argument needed: name of config file");
+			System.exit(1);
+		}
 
-        // get all instruments having a subscription
-        Set<Instrument> instruments = new HashSet<Instrument>();
-        ResultSet dbInstruments = FXUtils.dbGetAllSubscribedInstruments(properties);
-        while (dbInstruments.next()) {
-            instruments.add(Instrument.fromString(dbInstruments.getString("ticker")));        	        	
-        }       
-        
-        LOGGER.info("Subscribing instruments...");
-        client.setSubscribedInstruments(instruments);
-        //setting initial deposit
-        client.setCacheDirectory(new File(properties.getProperty("cachedir")));
-                
-        long theTime = System.currentTimeMillis();
-        client.startStrategy(new IchiAutoEntry(properties, theTime, theTime, theTime));
-    }
+		try {
+			properties.load(new FileInputStream(args[0]));
+		} catch (IOException e) {
+			LOGGER.error("Can't open or can't read properties file " + args[0]
+					+ "...");
+			System.exit(1);
+		}
+
+		properties.validate(LOGGER);
+		FXUtils.setDbToUse(properties.getProperty("dbToUse"));
+
+		LOGGER.info("Connecting...");
+		// connect to the server using jnlp, user name and password
+		// connection is needed for data downloading
+
+		int attempt = 0;
+		while (attempt++ < 5 && !client.isConnected()) {
+			client.connect(
+					properties
+							.getProperty("environment_url",
+									"https://www.dukascopy.com/client/demo/jclient/jforex.jnlp"),
+					properties.getProperty("username"), properties
+							.getProperty("password"));
+
+			// wait for it to connect
+			int i = 10; // wait max ten seconds
+			while (i > 0 && !client.isConnected()) {
+				Thread.sleep(1000);
+				i--;
+			}
+
+			// not successful, try again in 30 sec
+			if (!client.isConnected())
+				Thread.sleep(30 * 1000);
+		}
+		if (!client.isConnected()) {
+			LOGGER.error("Failed to connect Dukascopy servers");
+			System.exit(1);
+		}
+
+		// get all instruments having a subscription
+		Set<Instrument> instruments = new HashSet<Instrument>();
+		ResultSet dbInstruments = FXUtils
+				.dbGetAllSubscribedInstruments(properties);
+		while (dbInstruments.next()) {
+			instruments.add(Instrument.fromString(dbInstruments
+					.getString("ticker")));
+		}
+
+		LOGGER.info("Subscribing instruments...");
+		client.setSubscribedInstruments(instruments);
+		// setting initial deposit
+		client.setCacheDirectory(new File(properties.getProperty("cachedir")));
+
+		long theTime = System.currentTimeMillis();
+		client.startStrategy(new IchiAutoEntry(properties, theTime, theTime,
+				theTime));
+	}
 
 }

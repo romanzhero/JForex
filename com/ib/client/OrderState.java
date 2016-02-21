@@ -15,11 +15,11 @@ public class OrderState {
 	public double m_minCommission;
 	public double m_maxCommission;
 	public String m_commissionCurrency;
-	
+
 	public String m_warningText;
 
 	OrderState() {
-		this (null, null, null, null, 0.0, 0.0, 0.0, null, null);
+		this(null, null, null, null, 0.0, 0.0, 0.0, null, null);
 	}
 
 	OrderState(String status, String initMargin, String maintMargin,
@@ -38,28 +38,29 @@ public class OrderState {
 
 	public boolean equals(Object other) {
 
-        if (this == other)
-            return true;
+		if (this == other)
+			return true;
 
-        if (other == null)
-            return false;
+		if (other == null)
+			return false;
 
-        OrderState state = (OrderState)other;
+		OrderState state = (OrderState) other;
 
-        if (m_commission != state.m_commission ||
-        	m_minCommission != state.m_minCommission ||
-        	m_maxCommission != state.m_maxCommission) {
-        	return false;
-        }
+		if (m_commission != state.m_commission
+				|| m_minCommission != state.m_minCommission
+				|| m_maxCommission != state.m_maxCommission) {
+			return false;
+		}
 
-        if (Util.StringCompare(m_status, state.m_status) != 0 ||
-        	Util.StringCompare(m_initMargin, state.m_initMargin) != 0 ||
-        	Util.StringCompare(m_maintMargin, state.m_maintMargin) != 0 ||
-        	Util.StringCompare(m_equityWithLoan, state.m_equityWithLoan) != 0 ||
-        	Util.StringCompare(m_commissionCurrency, state.m_commissionCurrency) != 0) {
-        	return false;
-        }
+		if (Util.StringCompare(m_status, state.m_status) != 0
+				|| Util.StringCompare(m_initMargin, state.m_initMargin) != 0
+				|| Util.StringCompare(m_maintMargin, state.m_maintMargin) != 0
+				|| Util.StringCompare(m_equityWithLoan, state.m_equityWithLoan) != 0
+				|| Util.StringCompare(m_commissionCurrency,
+						state.m_commissionCurrency) != 0) {
+			return false;
+		}
 
-        return true;
+		return true;
 	}
 }

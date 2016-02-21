@@ -10,7 +10,8 @@ import com.dukascopy.api.JFException;
 import com.dukascopy.api.OfferSide;
 import com.dukascopy.api.IIndicators.AppliedPrice;
 
-public class MACDHistogramFilter extends AbstractSimpleFilter implements IFilter {
+public class MACDHistogramFilter extends AbstractSimpleFilter implements
+		IFilter {
 
 	@Override
 	public IFilter cloneFilter() {
@@ -18,8 +19,10 @@ public class MACDHistogramFilter extends AbstractSimpleFilter implements IFilter
 	}
 
 	@Override
-	protected double calcIndicator(Instrument instrument, OfferSide side, AppliedPrice appliedPrice, long time) throws JFException {
-    	return indicators.macd(instrument, period, side, appliedPrice, 26, 12, 9, Filter.WEEKENDS, 1, time, 0)[2][0];
+	protected double calcIndicator(Instrument instrument, OfferSide side,
+			AppliedPrice appliedPrice, long time) throws JFException {
+		return indicators.macd(instrument, period, side, appliedPrice, 26, 12,
+				9, Filter.WEEKENDS, 1, time, 0)[2][0];
 	}
 
 	protected DecimalFormat decFormat() {

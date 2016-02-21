@@ -2,9 +2,7 @@ package jforex.techanalysis;
 
 public class TrendLineSnapshot implements Comparable<TrendLineSnapshot> {
 	protected String name;
-	protected double 
-		currentValue,
-		slope30min;
+	protected double currentValue, slope30min;
 
 	public TrendLineSnapshot(String name, double currentValue, double slope30min) {
 		super();

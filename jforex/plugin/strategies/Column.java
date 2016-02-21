@@ -13,16 +13,19 @@ class Column {
 
 	static Column newReadOnlyColumn(String name, IGet getValueFunc) {
 		return new Column(name, false, getValueFunc, new ISet() {
-			public void setValue(IStrategyDescriptor order, Object value) throws JFException {
+			public void setValue(IStrategyDescriptor order, Object value)
+					throws JFException {
 			}
 		});
 	}
 
-	static Column newEditableColumn(String name, IGet getValueFunc, ISet onChangeFunc) {
+	static Column newEditableColumn(String name, IGet getValueFunc,
+			ISet onChangeFunc) {
 		return new Column(name, true, getValueFunc, onChangeFunc);
 	}
 
-	private Column(String name, boolean editable, IGet getValueFunc, ISet onChangeFunc) {
+	private Column(String name, boolean editable, IGet getValueFunc,
+			ISet onChangeFunc) {
 		this.name = name;
 		this.editable = editable;
 		this.get = getValueFunc;

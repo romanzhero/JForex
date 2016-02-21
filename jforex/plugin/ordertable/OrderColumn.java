@@ -18,11 +18,13 @@ class OrderColumn {
 		});
 	}
 
-	static OrderColumn newEditableColumn(String name, IOrderGet getValueFunc, IOrderSet onChangeFunc) {
+	static OrderColumn newEditableColumn(String name, IOrderGet getValueFunc,
+			IOrderSet onChangeFunc) {
 		return new OrderColumn(name, true, getValueFunc, onChangeFunc);
 	}
 
-	private OrderColumn(String name, boolean editable, IOrderGet getValueFunc, IOrderSet onChangeFunc) {
+	private OrderColumn(String name, boolean editable, IOrderGet getValueFunc,
+			IOrderSet onChangeFunc) {
 		this.name = name;
 		this.editable = editable;
 		this.orderGet = getValueFunc;

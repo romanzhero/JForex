@@ -5,7 +5,8 @@ import trading.elements.ITradeState;
 
 public class IchiStateWaiting extends AbstractTradeState implements ITradeState {
 
-	public IchiStateWaiting(boolean pIsLongTrade, double open, double low, double high, double close) {
+	public IchiStateWaiting(boolean pIsLongTrade, double open, double low,
+			double high, double close) {
 		super(pIsLongTrade);
 		stateName = "Waiting for entry";
 		OHLCValues[0] = open;

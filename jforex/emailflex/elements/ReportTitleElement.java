@@ -20,11 +20,13 @@ import jforex.techanalysis.Volatility;
 import jforex.utils.FXUtils;
 import jforex.utils.FlexLogEntry;
 
-public class ReportTitleElement extends BaseFlexElement implements IFlexEmailElement {
-	
+public class ReportTitleElement extends BaseFlexElement implements
+		IFlexEmailElement {
+
 	protected String id = "reportTitle";
-	
-	public ReportTitleElement() {	}
+
+	public ReportTitleElement() {
+	}
 
 	@Override
 	public IFlexEmailElement cloneIt(Properties conf) {
@@ -33,18 +35,18 @@ public class ReportTitleElement extends BaseFlexElement implements IFlexEmailEle
 
 	@Override
 	public void setParameters(List<String> parameters) {
-		super.setParameters(parameters);		
+		super.setParameters(parameters);
 	}
 
 	@Override
 	public String print(Instrument instrument, Period pPeriod, IBar bidBar,
-			IHistory history, IIndicators indicators, 
-			Trend trendDetector, Channel channelPosition, Momentum momentum, Volatility vola, TradeTrigger tradeTrigger,
-			Properties conf, List<FlexLogEntry> logLine, Connection logDB) {
-		return new String("Report for " 
-			+ instrument.toString() + ", " 
-			+ FXUtils.getFormatedTimeCET(bidBar.getTime()) + " CET (time frame: " + pPeriod.toString() 
-			+ ")\n\n");
+			IHistory history, IIndicators indicators, Trend trendDetector,
+			Channel channelPosition, Momentum momentum, Volatility vola,
+			TradeTrigger tradeTrigger, Properties conf,
+			List<FlexLogEntry> logLine, Connection logDB) {
+		return new String("Report for " + instrument.toString() + ", "
+				+ FXUtils.getFormatedTimeCET(bidBar.getTime())
+				+ " CET (time frame: " + pPeriod.toString() + ")\n\n");
 	}
 
 	@Override
@@ -53,7 +55,8 @@ public class ReportTitleElement extends BaseFlexElement implements IFlexEmailEle
 	}
 
 	@Override
-	public String print(Instrument instrument, Period pPeriod, IBar bidBar,	List<FlexLogEntry> logLine, Connection logDB) {
+	public String print(Instrument instrument, Period pPeriod, IBar bidBar,
+			List<FlexLogEntry> logLine, Connection logDB) {
 		// TODO Auto-generated method stub
 		return null;
 	}

@@ -24,21 +24,29 @@ import jforex.techanalysis.Volatility;
 import jforex.utils.FXUtils;
 import jforex.utils.FlexLogEntry;
 
-public class BasicBarInfoElement extends BaseFlexElement implements	IFlexEmailElement {
+public class BasicBarInfoElement extends BaseFlexElement implements
+		IFlexEmailElement {
 
 	@Override
 	public String print(Instrument instrument, Period pPeriod, IBar bidBar,
 			IHistory history, IIndicators indicators, Trend trendDetector,
 			Channel channelPosition, Momentum momentum, Volatility vola,
-			TradeTrigger tradeTrigger, Properties conf, List<FlexLogEntry> logLine, Connection logDB) throws JFException {
+			TradeTrigger tradeTrigger, Properties conf,
+			List<FlexLogEntry> logLine, Connection logDB) throws JFException {
 		// TODO Auto-generated method stub
-		double roc1 = indicators.roc(instrument, pPeriod, OfferSide.BID, AppliedPrice.CLOSE, 1, Filter.WEEKENDS, 1, bidBar.getTime(), 0)[0];
+		double roc1 = indicators.roc(instrument, pPeriod, OfferSide.BID,
+				AppliedPrice.CLOSE, 1, Filter.WEEKENDS, 1, bidBar.getTime(), 0)[0];
 		String mailBody = new String();
-		mailBody += "30min price change: " + FXUtils.df1.format(roc1 * 100) + " pips";
-		mailBody += " (current price: " + FXUtils.df5.format(bidBar.getClose()) + ", ";  
-		mailBody += "last bar low: " + FXUtils.df5.format(bidBar.getLow()) + " / ";  
-		mailBody += "high: " + FXUtils.df5.format(bidBar.getHigh()) + " / ";  		
-		mailBody += "middle: " + FXUtils.df5.format(bidBar.getLow() + (bidBar.getHigh() - bidBar.getLow()) / 2) + ")\n";  	
+		mailBody += "30min price change: " + FXUtils.df1.format(roc1 * 100)
+				+ " pips";
+		mailBody += " (current price: " + FXUtils.df5.format(bidBar.getClose())
+				+ ", ";
+		mailBody += "last bar low: " + FXUtils.df5.format(bidBar.getLow())
+				+ " / ";
+		mailBody += "high: " + FXUtils.df5.format(bidBar.getHigh()) + " / ";
+		mailBody += "middle: "
+				+ FXUtils.df5.format(bidBar.getLow()
+						+ (bidBar.getHigh() - bidBar.getLow()) / 2) + ")\n";
 		return mailBody;
 	}
 
@@ -53,7 +61,8 @@ public class BasicBarInfoElement extends BaseFlexElement implements	IFlexEmailEl
 	}
 
 	@Override
-	public String print(Instrument instrument, Period pPeriod, IBar bidBar,	List<FlexLogEntry> logLine, Connection logDB) {
+	public String print(Instrument instrument, Period pPeriod, IBar bidBar,
+			List<FlexLogEntry> logLine, Connection logDB) {
 		// TODO Auto-generated method stub
 		return null;
 	}

@@ -13,7 +13,7 @@ public class FlexLogEntry {
 		this.value = value;
 		this.df = df;
 	}
-	
+
 	public FlexLogEntry(String label, String value) {
 		super();
 		this.label = label;
@@ -24,47 +24,36 @@ public class FlexLogEntry {
 	public String getLabel() {
 		return label;
 	}
-	
+
 	public Object getValue() {
 		return value;
 	}
 
-	public double getDoubleValue()
-	{
-		if (isDouble())
-		{
-			return ((Double)value).doubleValue();
-		}
-		else
-		{
+	public double getDoubleValue() {
+		if (isDouble()) {
+			return ((Double) value).doubleValue();
+		} else {
 			return -1.0;
 		}
 	}
-	
-	public double getIntegerValue()
-	{
-		if (isInteger())
-		{
-			return ((Integer)value).intValue();
-		}
-		else
-		{
+
+	public double getIntegerValue() {
+		if (isInteger()) {
+			return ((Integer) value).intValue();
+		} else {
 			return -1;
 		}
 	}
 
-	public String getFormattedValue()
-	{
+	public String getFormattedValue() {
 		String res = new String();
-		if (isDouble() && df != null)
-		{
-			res = df.format(((Double)value).doubleValue());
-		}
-		else
+		if (isDouble() && df != null) {
+			res = df.format(((Double) value).doubleValue());
+		} else
 			res = value.toString();
 		return res;
 	}
-	
+
 	public boolean isDouble() {
 		return value.getClass().equals(Double.class);
 	}
@@ -72,15 +61,15 @@ public class FlexLogEntry {
 	public boolean isInteger() {
 		return value.getClass().equals(Integer.class);
 	}
-	
+
 	@Override
 	public boolean equals(Object obj) {
 		if (obj instanceof String)
 			return getLabel().equals(obj);
 		else
-			return getLabel().equals(((FlexLogEntry)obj).getLabel());
+			return getLabel().equals(((FlexLogEntry) obj).getLabel());
 	}
-	
+
 	public String getNoTFLabel() {
 		if (label.contains("30min"))
 			return label.replace("30min", "");

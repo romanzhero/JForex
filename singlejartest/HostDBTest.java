@@ -39,36 +39,40 @@ import jforex.utils.ClimberProperties;
 import jforex.utils.FXUtils;
 
 /**
- * This small program demonstrates how to initialize Dukascopy tester and start a strategy
+ * This small program demonstrates how to initialize Dukascopy tester and start
+ * a strategy
  */
 public class HostDBTest {
-    private static final Logger LOGGER = LoggerFactory.getLogger(Main.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(Main.class);
 
-    public static void main(String[] args) throws Exception {
-    	
-        final ClimberProperties properties = new ClimberProperties();
+	public static void main(String[] args) throws Exception {
 
-        if (args.length < 1) {
-            LOGGER.error("One argument needed: name of config file");
-            System.exit(1);        	
-        }
-        
-        try {
-            properties.load(new FileInputStream(args[0]));
-        } catch (IOException e) {
-            LOGGER.error("Can't open or can't read properties file " + args[0] + "...");
-            System.exit(1);
-        }
-        
-        properties.validate(LOGGER);
-        FXUtils.setDbToUse(properties.getProperty("dbToUse"));
-        
-        // get all instruments having a subscription
-        ResultSet dbInstruments = FXUtils.dbGetAllSubscribedInstruments(properties);
-        while (dbInstruments.next()) {
-            LOGGER.info("Found subscribed instrument: " + dbInstruments.getString("ticker"));        	        	
-        }       
-        
-    }
+		final ClimberProperties properties = new ClimberProperties();
+
+		if (args.length < 1) {
+			LOGGER.error("One argument needed: name of config file");
+			System.exit(1);
+		}
+
+		try {
+			properties.load(new FileInputStream(args[0]));
+		} catch (IOException e) {
+			LOGGER.error("Can't open or can't read properties file " + args[0]
+					+ "...");
+			System.exit(1);
+		}
+
+		properties.validate(LOGGER);
+		FXUtils.setDbToUse(properties.getProperty("dbToUse"));
+
+		// get all instruments having a subscription
+		ResultSet dbInstruments = FXUtils
+				.dbGetAllSubscribedInstruments(properties);
+		while (dbInstruments.next()) {
+			LOGGER.info("Found subscribed instrument: "
+					+ dbInstruments.getString("ticker"));
+		}
+
+	}
 
 }

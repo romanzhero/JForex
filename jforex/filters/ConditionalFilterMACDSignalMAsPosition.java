@@ -1,6 +1,7 @@
 package jforex.filters;
 
-public class ConditionalFilterMACDSignalMAsPosition extends	ConditionalFilterOnMAsPosition implements IConditionalFilter {
+public class ConditionalFilterMACDSignalMAsPosition extends
+		ConditionalFilterOnMAsPosition implements IConditionalFilter {
 
 	@Override
 	public IFilter cloneFilter() {

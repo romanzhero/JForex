@@ -28,7 +28,7 @@ public class OrderChecker extends BasicStrategy implements IStrategy {
 
 	public OrderChecker(Properties props) {
 		super(props);
-	}	
+	}
 
 	@Override
 	public void onStart(IContext context) throws JFException {
@@ -42,27 +42,35 @@ public class OrderChecker extends BasicStrategy implements IStrategy {
 	}
 
 	@Override
-	public void onBar(Instrument instrument, Period period, IBar askBar, IBar bidBar) throws JFException {
+	public void onBar(Instrument instrument, Period period, IBar askBar,
+			IBar bidBar) throws JFException {
 		if (!period.equals(Period.THIRTY_MINS))
 			return;
 
 		try {
-			PrintWriter out = new PrintWriter(new FileWriter(instrument.toString().replace("/", "") + "_open_orders.txt"));
+			PrintWriter out = new PrintWriter(new FileWriter(instrument
+					.toString().replace("/", "") + "_open_orders.txt"));
 			List<IOrder> dukaOrders = context.getEngine().getOrders(instrument);
 			int openDukaOrders = 0;
 			for (IOrder currOrder : dukaOrders) {
 				if (currOrder.getState().equals(State.FILLED)) {
 					openDukaOrders++;
-					out.println(instrument.toString() + ":" 
-							+ (currOrder.isLong() ? "LONG" : "SHORT") + ":" 
-							+ FXUtils.df1.format(currOrder.getProfitLossInPips()) + ":"
-							+ FXUtils.df5.format(currOrder.getOpenPrice()) + ":"
-							+ FXUtils.df5.format(currOrder.getStopLossPrice()) + ":"
+					out.println(instrument.toString()
+							+ ":"
+							+ (currOrder.isLong() ? "LONG" : "SHORT")
+							+ ":"
+							+ FXUtils.df1.format(currOrder
+									.getProfitLossInPips())
+							+ ":"
+							+ FXUtils.df5.format(currOrder.getOpenPrice())
+							+ ":"
+							+ FXUtils.df5.format(currOrder.getStopLossPrice())
+							+ ":"
 							+ FXUtils.df5.format(currOrder.getTakeProfitPrice()));
 				}
 			}
 			out.close();
-		} catch (IOException e){
+		} catch (IOException e) {
 			e.printStackTrace();
 			return;
 		}

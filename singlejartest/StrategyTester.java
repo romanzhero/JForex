@@ -47,128 +47,150 @@ import java.util.Set;
 import java.util.StringTokenizer;
 import java.util.concurrent.Future;
 
+import jforex.strategies.FlatCascTest;
 import jforex.strategies.SimpleMAsIDCrossTrendFollow;
 import jforex.utils.ClimberProperties;
 import jforex.utils.FXUtils;
 
 /**
- * This small program demonstrates how to initialize Dukascopy tester and start a strategy
+ * This small program demonstrates how to initialize Dukascopy tester and start
+ * a strategy
  */
 public class StrategyTester {
-    private static final Logger LOGGER = LoggerFactory.getLogger(Main.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(Main.class);
 
-    //url of the DEMO jnlp
-    private static String jnlpUrl = "https://www.dukascopy.com/client/demo/jclient/jforex.jnlp";
+	// url of the DEMO jnlp
+	private static String jnlpUrl = "https://www.dukascopy.com/client/demo/jclient/jforex.jnlp";
 
-    public static void main(String[] args) throws Exception {
-        //get the instance of the IClient interface
-        final ITesterClient client = TesterFactory.getDefaultInstance();
-        final ClimberProperties properties = new ClimberProperties();
-        //set the listener that will receive system events
-        client.setSystemListener(new ISystemListener() {
-            @Override
-            public void onStart(long processId) {
-                LOGGER.info("Strategy started: " + processId);
-            }
+	public static void main(String[] args) throws Exception {
+		// get the instance of the IClient interface
+		final ITesterClient client = TesterFactory.getDefaultInstance();
+		final ClimberProperties properties = new ClimberProperties();
+		// set the listener that will receive system events
+		client.setSystemListener(new ISystemListener() {
+			@Override
+			public void onStart(long processId) {
+				LOGGER.info("Strategy started: " + processId);
+			}
 
-            @Override
-            public void onStop(long processId) {
-                LOGGER.info("Strategy stopped: " + processId);
-                File reportFile = new File(properties.getProperty("reportDirectory", ".") 
-                		+ "\\Strategy_run_report_"
-                		+ FXUtils.getFileTimeStamp(System.currentTimeMillis())                		
-                		+ ".html");
-                try {
-                    client.createReport(processId, reportFile);
-                } catch (Exception e) {
-                    LOGGER.error(e.getMessage(), e);
-                }
-                if (client.getStartedStrategies().size() == 0) {
-                    System.exit(0);
-                }
-            }
+			@Override
+			public void onStop(long processId) {
+				LOGGER.info("Strategy stopped: " + processId);
+				File reportFile = new File(properties.getProperty(
+						"reportDirectory", ".")
+						+ "\\Strategy_run_report_"
+						+ FXUtils.getFileTimeStamp(System.currentTimeMillis())
+						+ ".html");
+				try {
+					client.createReport(processId, reportFile);
+				} catch (Exception e) {
+					LOGGER.error(e.getMessage(), e);
+				}
+				if (client.getStartedStrategies().size() == 0) {
+					System.exit(0);
+				}
+			}
 
-            @Override
-            public void onConnect() {
-                LOGGER.info("Connected");
-            }
+			@Override
+			public void onConnect() {
+				LOGGER.info("Connected");
+			}
 
-            @Override
-            public void onDisconnect() {
-                //tester doesn't disconnect
-            }
-        });
+			@Override
+			public void onDisconnect() {
+				// tester doesn't disconnect
+			}
+		});
 
-        if (args.length < 1) {
-            LOGGER.error("One argument needed (name of config file)");
-            System.exit(1);        	
-        }
-        
-        try {
-            properties.load(new FileInputStream(args[0]));
-        } catch (IOException e) {
-            LOGGER.error("Can't open or can't read properties file " + args[0] + "...");
-            System.exit(1);
-        }
-        
-        properties.validate(LOGGER);
-        FXUtils.setDbToUse(properties.getProperty("dbToUse"));
-        
-        LOGGER.info("Connecting...");
-        //connect to the server using jnlp, user name and password
-        //connection is needed for data downloading
-        client.connect(jnlpUrl, properties.getProperty("username"), properties.getProperty("password"));
+		if (args.length < 1) {
+			LOGGER.error("One argument needed (name of config file)");
+			System.exit(1);
+		}
 
-        //wait for it to connect
-        int i = 10; //wait max ten seconds
-        while (i > 0 && !client.isConnected()) {
-            Thread.sleep(1000);
-            i--;
-        }
-        if (!client.isConnected()) {
-            LOGGER.error("Failed to connect Dukascopy servers");
-            System.exit(1);
-        }      	
-        	
-        //set instruments that will be used in testing
-        StringTokenizer st = new StringTokenizer(properties.getProperty("pairsToCheck"), ";");
-        Set<Instrument> instruments = new HashSet<Instrument>();
-        while(st.hasMoreTokens()) {
-        	String nextPair = st.nextToken();
-            instruments.add(Instrument.fromString(nextPair));        	
-        }
-        
-        LOGGER.info("Subscribing instruments...");
-        client.setSubscribedInstruments(instruments);
-        //setting initial deposit
-        client.setInitialDeposit(Instrument.EURUSD.getSecondaryJFCurrency(), Double.parseDouble(properties.getProperty("initialdeposit", "100000.0")));
-        client.setCacheDirectory(new File(properties.getProperty("cachedir")));
-        client.setDataInterval(Period.TICK, null, null, properties.getTestIntervalStart().getMillis(), properties.getTestIntervalEnd().getMillis());
-        //load data
-        LOGGER.info("Downloading data");
-        Future<?> future = client.downloadData(null);
-        //wait for downloading to complete
-        Thread.sleep(10000); //this timeout helped        
-        future.get();
-        //start the strategy
-        LOGGER.info("Starting strategy");
-		//client.startStrategy(new IchiAutoEntry(properties, properties.getTestIntervalStart().getMillis(), properties.getTestIntervalEnd().getMillis(), startTime), 
-		client.startStrategy(new SimpleMAsIDCrossTrendFollow(properties), 
-        	new LoadingProgressListener() {
-		        @Override
-		        public void dataLoaded(long startTime, long endTime, long currentTime, String information) {
-		            LOGGER.info(information);
-		        }
-		
-		        @Override
-		        public void loadingFinished(boolean allDataLoaded, long startTime, long endTime, long currentTime) {
-		        }
-		
-		        @Override
-		        public boolean stopJob() {
-		            return false;
-		        }
-        	});
-        //now it's running
-    }
+		try {
+			properties.load(new FileInputStream(args[0]));
+		} catch (IOException e) {
+			LOGGER.error("Can't open or can't read properties file " + args[0]
+					+ "...");
+			System.exit(1);
+		}
+
+		properties.validate(LOGGER);
+		FXUtils.setDbToUse(properties.getProperty("dbToUse"));
+
+		LOGGER.info("Connecting...");
+		// connect to the server using jnlp, user name and password
+		// connection is needed for data downloading
+		client.connect(jnlpUrl, properties.getProperty("username"),
+				properties.getProperty("password"));
+
+		// wait for it to connect
+		int i = 10; // wait max ten seconds
+		while (i > 0 && !client.isConnected()) {
+			Thread.sleep(1000);
+			i--;
+		}
+		if (!client.isConnected()) {
+			LOGGER.error("Failed to connect Dukascopy servers");
+			System.exit(1);
+		}
+
+		// set instruments that will be used in testing
+		StringTokenizer st = new StringTokenizer(
+				properties.getProperty("pairsToCheck"), ";");
+		Set<Instrument> instruments = new HashSet<Instrument>();
+		String pair = null;
+		while (st.hasMoreTokens()) {
+			String nextPair = st.nextToken();
+			instruments.add(Instrument.fromString(nextPair));
+			if (pair == null)
+				pair = new String(nextPair);
+		}
+		Instrument selectedInstrument = Instrument.fromString(pair);
+
+
+		LOGGER.info("Subscribing instruments...");
+		client.setSubscribedInstruments(instruments);
+		// setting initial deposit
+		client.setInitialDeposit(Instrument.EURUSD.getSecondaryJFCurrency(),
+				Double.parseDouble(properties.getProperty("initialdeposit",
+						"100000.0")));
+		client.setCacheDirectory(new File(properties.getProperty("cachedir")));
+		client.setDataInterval(Period.TICK, null, null, properties
+				.getTestIntervalStart().getMillis(), properties
+				.getTestIntervalEnd().getMillis());
+		// load data
+		LOGGER.info("Downloading data");
+		Future<?> future = client.downloadData(null);
+		// wait for downloading to complete
+		Thread.sleep(10000); // this timeout helped
+		future.get();
+		// start the strategy
+		LOGGER.info("Starting strategy");
+		// client.startStrategy(new IchiAutoEntry(properties,
+		// properties.getTestIntervalStart().getMillis(),
+		// properties.getTestIntervalEnd().getMillis(), startTime),
+		client.startStrategy(//new SimpleMAsIDCrossTrendFollow(properties),
+				new FlatCascTest(selectedInstrument, properties.getProperty("visualMode", "no").equalsIgnoreCase("yes"), 
+						properties.getProperty("showIndicators", "no").equalsIgnoreCase("yes"), 
+						properties.getProperty("reportDirectory", ".")),
+				new LoadingProgressListener() {
+					@Override
+					public void dataLoaded(long startTime, long endTime,
+							long currentTime, String information) {
+						LOGGER.info(information);
+					}
+
+					@Override
+					public void loadingFinished(boolean allDataLoaded,
+							long startTime, long endTime, long currentTime) {
+					}
+
+					@Override
+					public boolean stopJob() {
+						return false;
+					}
+				});
+		// now it's running
+	}
 }

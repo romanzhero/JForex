@@ -13,22 +13,24 @@ import com.dukascopy.api.JFException;
 import trading.elements.IBrokerEngine;
 
 public class JForexBrokerEngine implements IBrokerEngine {
-	
+
 	protected IEngine engine = null;
 	protected IAccount account = null;
-	
+
 	protected Map<String, Map<String, IOrder>> orders = new HashMap<String, Map<String, IOrder>>();
 
 	public JForexBrokerEngine(IEngine pEngine, IAccount pAccount) {
 		engine = pEngine;
-		account = pAccount; 
+		account = pAccount;
 	}
 
 	@Override
-	public String submitBuyStpOrder(String ticker, String ID, double amount, double stp, double sl, double tp) {
+	public String submitBuyStpOrder(String ticker, String ID, double amount,
+			double stp, double sl, double tp) {
 		try {
 			// amounts are in millions !
-			IOrder o = engine.submitOrder(ID, Instrument.fromString(ticker), OrderCommand.BUYSTOP, amount / 1000000, stp, 3, sl, tp);
+			IOrder o = engine.submitOrder(ID, Instrument.fromString(ticker),
+					OrderCommand.BUYSTOP, amount / 1000000, stp, 3, sl, tp);
 			logOrder(ticker, ID, o);
 		} catch (JFException e) {
 			// TODO Auto-generated catch block
@@ -48,11 +50,14 @@ public class JForexBrokerEngine implements IBrokerEngine {
 	}
 
 	@Override
-	public String submitSellStpOrder(String ticker, String ID, double amount, double stp, double sl, double tp) {
+	public String submitSellStpOrder(String ticker, String ID, double amount,
+			double stp, double sl, double tp) {
 		try {
 			// amounts are in millions !
-			IOrder o = engine.submitOrder(ID, Instrument.fromString(ticker), OrderCommand.SELLSTOP, amount / 1000000, stp, 3, sl, tp);
-			//         return engine.submitOrder(label, instrument, orderCmd, amount, price, slippage, stopLossPrice, 0);
+			IOrder o = engine.submitOrder(ID, Instrument.fromString(ticker),
+					OrderCommand.SELLSTOP, amount / 1000000, stp, 3, sl, tp);
+			// return engine.submitOrder(label, instrument, orderCmd, amount,
+			// price, slippage, stopLossPrice, 0);
 			logOrder(ticker, ID, o);
 		} catch (JFException e) {
 			// TODO Auto-generated catch block
@@ -84,7 +89,7 @@ public class JForexBrokerEngine implements IBrokerEngine {
 
 	@Override
 	public void closeOrderMkt(String ticker, String orderID) {
-		cancelOrder(ticker, orderID);		
+		cancelOrder(ticker, orderID);
 	}
 
 }

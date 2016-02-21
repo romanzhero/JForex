@@ -22,17 +22,20 @@ import jforex.techanalysis.Trend;
 import jforex.techanalysis.Volatility;
 import jforex.utils.FlexLogEntry;
 
-public class NextSetupElement extends BaseFlexElement implements IFlexEmailElement {
+public class NextSetupElement extends BaseFlexElement implements
+		IFlexEmailElement {
 
 	protected Map<String, String> nextSetups = new HashMap<String, String>();
 
 	@Override
-	public String print(Instrument instrument, Period pPeriod, IBar bidBar,			
-			IHistory history, IIndicators indicators, 
-			Trend trendDetector, Channel channelPosition, Momentum momentum, Volatility vola, TradeTrigger tradeTrigger,
-			Properties conf, List<FlexLogEntry> logLine, Connection logDB) {
+	public String print(Instrument instrument, Period pPeriod, IBar bidBar,
+			IHistory history, IIndicators indicators, Trend trendDetector,
+			Channel channelPosition, Momentum momentum, Volatility vola,
+			TradeTrigger tradeTrigger, Properties conf,
+			List<FlexLogEntry> logLine, Connection logDB) {
 		if (nextSetups.containsKey(instrument.toString())) {
-			return new String("Next recommended setup: " + nextSetups.get(instrument.toString()) + "\n\n");
+			return new String("Next recommended setup: "
+					+ nextSetups.get(instrument.toString()) + "\n\n");
 		}
 		return "";
 	}
@@ -41,12 +44,15 @@ public class NextSetupElement extends BaseFlexElement implements IFlexEmailEleme
 	public IFlexEmailElement cloneIt(Properties conf) {
 		String nextSetupsStr = conf.getProperty("nextSetups");
 		if (nextSetupsStr != null) {
-			// format should be: nextSetups=<pair>:<setup description>;<pair>:<setup description>;...;<pair>:<setup description>
+			// format should be: nextSetups=<pair>:<setup
+			// description>;<pair>:<setup description>;...;<pair>:<setup
+			// description>
 			StringTokenizer st = new StringTokenizer(nextSetupsStr, ";");
 			while (st.hasMoreTokens()) {
 				String nextSetup = st.nextToken();
 				StringTokenizer internal = new StringTokenizer(nextSetup, ":");
-				nextSetups.put(internal.nextToken(), internal.nextToken().replace("<br>", "\n"));
+				nextSetups.put(internal.nextToken(), internal.nextToken()
+						.replace("<br>", "\n"));
 			}
 		}
 		return new NextSetupElement();
@@ -58,7 +64,8 @@ public class NextSetupElement extends BaseFlexElement implements IFlexEmailEleme
 	}
 
 	@Override
-	public String print(Instrument instrument, Period pPeriod, IBar bidBar,	List<FlexLogEntry> logLine, Connection logDB) {
+	public String print(Instrument instrument, Period pPeriod, IBar bidBar,
+			List<FlexLogEntry> logLine, Connection logDB) {
 		// TODO Auto-generated method stub
 		return null;
 	}

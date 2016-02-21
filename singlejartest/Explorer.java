@@ -56,139 +56,150 @@ import jforex.utils.ClimberProperties;
 import jforex.utils.FXUtils;
 
 /**
- * This small program demonstrates how to initialize Dukascopy tester and start a strategy
+ * This small program demonstrates how to initialize Dukascopy tester and start
+ * a strategy
  */
 public class Explorer {
-    private static final Logger LOGGER = LoggerFactory.getLogger(Main.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(Main.class);
 
-    //url of the DEMO jnlp
-    private static String jnlpUrl = "https://www.dukascopy.com/client/demo/jclient/jforex.jnlp";
+	// url of the DEMO jnlp
+	private static String jnlpUrl = "https://www.dukascopy.com/client/demo/jclient/jforex.jnlp";
 
-    public static void main(String[] args) throws Exception {
-        //get the instance of the IClient interface
-        final ITesterClient client = TesterFactory.getDefaultInstance();
-        final ClimberProperties properties = new ClimberProperties();
-        //set the listener that will receive system events
-        client.setSystemListener(new ISystemListener() {
-            @Override
-            public void onStart(long processId) {
-                LOGGER.info("Strategy started: " + processId);
-            }
+	public static void main(String[] args) throws Exception {
+		// get the instance of the IClient interface
+		final ITesterClient client = TesterFactory.getDefaultInstance();
+		final ClimberProperties properties = new ClimberProperties();
+		// set the listener that will receive system events
+		client.setSystemListener(new ISystemListener() {
+			@Override
+			public void onStart(long processId) {
+				LOGGER.info("Strategy started: " + processId);
+			}
 
-            @Override
-            public void onStop(long processId) {
-            	
-                LOGGER.info("Strategy stopped: " + processId);
-                File reportFile = new File(properties.getProperty("reportDirectory", ".") 
-                		+ "\\Strategy_run_report_"
-                		+ FXUtils.getFileTimeStamp(System.currentTimeMillis())                		
-                		+ ".html");
-                try {
-                    client.createReport(processId, reportFile);
-                } catch (Exception e) {
-                    LOGGER.error(e.getMessage(), e);
-                }
-            	
-                LOGGER.info("Strategy stopped: " + processId);
-                if (client.getStartedStrategies().size() == 0) {
-                    System.exit(0);
-                }
-            }
+			@Override
+			public void onStop(long processId) {
 
-            @Override
-            public void onConnect() {
-                LOGGER.info("Connected");
-            }
+				LOGGER.info("Strategy stopped: " + processId);
+				File reportFile = new File(properties.getProperty(
+						"reportDirectory", ".")
+						+ "\\Strategy_run_report_"
+						+ FXUtils.getFileTimeStamp(System.currentTimeMillis())
+						+ ".html");
+				try {
+					client.createReport(processId, reportFile);
+				} catch (Exception e) {
+					LOGGER.error(e.getMessage(), e);
+				}
 
-            @Override
-            public void onDisconnect() {
-                //tester doesn't disconnect
-            }
-        });
+				LOGGER.info("Strategy stopped: " + processId);
+				if (client.getStartedStrategies().size() == 0) {
+					System.exit(0);
+				}
+			}
 
-        if (args.length < 2) {
-            LOGGER.error("Two arguments needed: name of config file and explorer class ID");
-            System.exit(1);        	
-        }
-        
-        try {
-            properties.load(new FileInputStream(args[0]));
-        } catch (IOException e) {
-            LOGGER.error("Can't open or can't read properties file " + args[0] + "...");
-            System.exit(1);
-        }
-        
-        properties.validate(LOGGER);
-        
-        LOGGER.info("Connecting...");
-        //connect to the server using jnlp, user name and password
-        //connection is needed for data downloading
-        client.connect(jnlpUrl, properties.getProperty("username"), properties.getProperty("password"));
+			@Override
+			public void onConnect() {
+				LOGGER.info("Connected");
+			}
 
-        //wait for it to connect
-        int i = 10; //wait max ten seconds
-        while (i > 0 && !client.isConnected()) {
-            Thread.sleep(1000);
-            i--;
-        }
-        if (!client.isConnected()) {
-            LOGGER.error("Failed to connect to Dukascopy servers");
-            System.exit(1);
-        }      	
-        	
-        //set instruments that will be used in testing. To set different timeframe per pair format is <pair>,<timeframe>;<pair>,<timeframe>...
-        StringTokenizer st = new StringTokenizer(properties.getProperty("pairsToCheck"), ";");
-        Set<Instrument> instruments = new HashSet<Instrument>();
-        while(st.hasMoreTokens()) {
-        	String nextPair = st.nextToken();
-        	StringTokenizer st2 = new StringTokenizer(nextPair, ",");
-            instruments.add(Instrument.fromString(st2.nextToken()));        	
-        }
-        
-        LOGGER.info("Subscribing instruments...");
-        client.setSubscribedInstruments(instruments);
-        //setting initial deposit
-        client.setInitialDeposit(Instrument.EURUSD.getSecondaryCurrency(), Double.parseDouble(properties.getProperty("initialdeposit", "50000.0")));
-        client.setCacheDirectory(new File(properties.getProperty("cachedir")));
-    	client.setDataInterval(DataLoadingMethod.ALL_TICKS, properties.getTestIntervalStart().getMillis(), properties.getTestIntervalEnd().getMillis());
+			@Override
+			public void onDisconnect() {
+				// tester doesn't disconnect
+			}
+		});
 
-        //load data
-        LOGGER.info("Downloading data");
-        Future<?> future = client.downloadData(null);
-        //wait for downloading to complete
-        Thread.sleep(10000); //this timeout helped
-        future.get();
-        //start the strategy
-        LOGGER.info("Starting strategy");
-        IStrategy strategyToRun = null;
-        if (args[1].equals("mailer"))
-        	strategyToRun = new TwoTFStatsCollector(properties);
-        else if (args[1].equals("SRlevels"))        	
-        	strategyToRun = new SRLevelsFinder(properties);
-        else if (args[1].equals("flex"))        	
-        	strategyToRun = new FlexStatsCollector(properties);
-        else if (args[1].equals("Ichi"))        	
-        	strategyToRun = new JForexIchiStrategy(properties);
-        else {
-            LOGGER.error("explorer class ID not valid. Valid values: [mailer, SRlevels, flex]");
-            System.exit(1);        		        	
-        }
-        client.startStrategy(strategyToRun, 
-        	new LoadingProgressListener() {
-		        @Override
-		        public void dataLoaded(long startTime, long endTime, long currentTime, String information) {
-		            LOGGER.info(information);
-		        }
-		
-		        @Override
-		        public void loadingFinished(boolean allDataLoaded, long startTime, long endTime, long currentTime) {
-		        }
-		
-		        @Override
-		        public boolean stopJob() {
-		            return false;
-		        }
-        	});
-        //now it's running
-    }
+		if (args.length < 2) {
+			LOGGER.error("Two arguments needed: name of config file and explorer class ID");
+			System.exit(1);
+		}
+
+		try {
+			properties.load(new FileInputStream(args[0]));
+		} catch (IOException e) {
+			LOGGER.error("Can't open or can't read properties file " + args[0]
+					+ "...");
+			System.exit(1);
+		}
+
+		properties.validate(LOGGER);
+
+		LOGGER.info("Connecting...");
+		// connect to the server using jnlp, user name and password
+		// connection is needed for data downloading
+		client.connect(jnlpUrl, properties.getProperty("username"),
+				properties.getProperty("password"));
+
+		// wait for it to connect
+		int i = 10; // wait max ten seconds
+		while (i > 0 && !client.isConnected()) {
+			Thread.sleep(1000);
+			i--;
+		}
+		if (!client.isConnected()) {
+			LOGGER.error("Failed to connect to Dukascopy servers");
+			System.exit(1);
+		}
+
+		// set instruments that will be used in testing. To set different
+		// timeframe per pair format is <pair>,<timeframe>;<pair>,<timeframe>...
+		StringTokenizer st = new StringTokenizer(
+				properties.getProperty("pairsToCheck"), ";");
+		Set<Instrument> instruments = new HashSet<Instrument>();
+		while (st.hasMoreTokens()) {
+			String nextPair = st.nextToken();
+			StringTokenizer st2 = new StringTokenizer(nextPair, ",");
+			instruments.add(Instrument.fromString(st2.nextToken()));
+		}
+
+		LOGGER.info("Subscribing instruments...");
+		client.setSubscribedInstruments(instruments);
+		// setting initial deposit
+		client.setInitialDeposit(Instrument.EURUSD.getSecondaryCurrency(),
+				Double.parseDouble(properties.getProperty("initialdeposit",
+						"50000.0")));
+		client.setCacheDirectory(new File(properties.getProperty("cachedir")));
+		client.setDataInterval(DataLoadingMethod.ALL_TICKS, properties
+				.getTestIntervalStart().getMillis(), properties
+				.getTestIntervalEnd().getMillis());
+
+		// load data
+		LOGGER.info("Downloading data");
+		Future<?> future = client.downloadData(null);
+		// wait for downloading to complete
+		Thread.sleep(10000); // this timeout helped
+		future.get();
+		// start the strategy
+		LOGGER.info("Starting strategy");
+		IStrategy strategyToRun = null;
+		if (args[1].equals("mailer"))
+			strategyToRun = new TwoTFStatsCollector(properties);
+		else if (args[1].equals("SRlevels"))
+			strategyToRun = new SRLevelsFinder(properties);
+		else if (args[1].equals("flex"))
+			strategyToRun = new FlexStatsCollector(properties);
+		else if (args[1].equals("Ichi"))
+			strategyToRun = new JForexIchiStrategy(properties);
+		else {
+			LOGGER.error("explorer class ID not valid. Valid values: [mailer, SRlevels, flex]");
+			System.exit(1);
+		}
+		client.startStrategy(strategyToRun, new LoadingProgressListener() {
+			@Override
+			public void dataLoaded(long startTime, long endTime,
+					long currentTime, String information) {
+				LOGGER.info(information);
+			}
+
+			@Override
+			public void loadingFinished(boolean allDataLoaded, long startTime,
+					long endTime, long currentTime) {
+			}
+
+			@Override
+			public boolean stopJob() {
+				return false;
+			}
+		});
+		// now it's running
+	}
 }

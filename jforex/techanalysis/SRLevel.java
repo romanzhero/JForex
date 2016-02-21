@@ -7,23 +7,26 @@ import com.dukascopy.api.IBar;
 public class SRLevel implements Comparable<SRLevel> {
 	protected String name;
 	protected double value;
-	
+
 	public SRLevel(String name, double value) {
 		super();
 		this.name = name;
 		this.value = value;
 	}
-	
+
 	public boolean hit(IBar bar, double tolerance) {
-		return bar.getLow() - tolerance <= value && bar.getHigh() + tolerance >= value;
+		return bar.getLow() - tolerance <= value
+				&& bar.getHigh() + tolerance >= value;
 	}
 
 	public boolean isNear(double price, double tolerance) {
 		return price >= value - tolerance && price <= value + tolerance;
 	}
-	
+
 	/**
-	 * @param highOrLow - for true hit of bar's high will be checked (bearish signals), otherwise hit of low (bullish signals)
+	 * @param highOrLow
+	 *            - for true hit of bar's high will be checked (bearish
+	 *            signals), otherwise hit of low (bullish signals)
 	 * @return
 	 */
 	public boolean hit(IBar bar, boolean highOrLow, double tolerance) {
@@ -37,15 +40,17 @@ public class SRLevel implements Comparable<SRLevel> {
 	 * To be used for BULLISH candle signals
 	 */
 	public boolean hitLow(IBar bar, double tolerance) {
-		return bar.getLow() - tolerance <= value && bar.getLow() + tolerance >= value;
+		return bar.getLow() - tolerance <= value
+				&& bar.getLow() + tolerance >= value;
 	}
-	
+
 	/**
 	 * To be used for BEARISH candle signals
 	 */
 	public boolean hitHigh(IBar bar, double tolerance) {
-		return bar.getHigh() - tolerance <= value && bar.getHigh() + tolerance >= value;
-	}	
+		return bar.getHigh() - tolerance <= value
+				&& bar.getHigh() + tolerance >= value;
+	}
 
 	@Override
 	public String toString() {
@@ -56,8 +61,9 @@ public class SRLevel implements Comparable<SRLevel> {
 		return name;
 	}
 
-	/* 
-	 * SRLevels are sorted in descending order of value, so they appear in lists as on the chart
+	/*
+	 * SRLevels are sorted in descending order of value, so they appear in lists
+	 * as on the chart
 	 */
 	@Override
 	public int compareTo(SRLevel other) {

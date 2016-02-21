@@ -3,7 +3,7 @@ package jforex.utils;
 public class TickerTimeFramePair {
 	public String ticker;
 	public int time_frame;
-	
+
 	public TickerTimeFramePair(String ticker, int time_frame) {
 		super();
 		this.ticker = ticker;
@@ -20,8 +20,7 @@ public class TickerTimeFramePair {
 		final int prime = 31;
 		int result = 1;
 		// ??? result = prime * result + getOuterType().hashCode();
-		result = prime * result
-				+ ((ticker == null) ? 0 : ticker.hashCode());
+		result = prime * result + ((ticker == null) ? 0 : ticker.hashCode());
 		result = prime * result + time_frame;
 		return result;
 	}

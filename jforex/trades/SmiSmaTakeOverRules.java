@@ -9,9 +9,9 @@ public class SmiSmaTakeOverRules implements ITakeOverRules {
 	protected Map<String, Set<String>> noTakeOverRules = new HashMap<String, Set<String>>();
 
 	public SmiSmaTakeOverRules() {
-		Set<String> rule1 = new HashSet<String>();
-		rule1.add("SMI");
-		noTakeOverRules.put("SMATrendIDFollow", rule1);
+		Set<String> trendIDnoTakeoverRules = new HashSet<String>();
+		trendIDnoTakeoverRules.add("SMI");
+		noTakeOverRules.put("SMATrendIDFollow", trendIDnoTakeoverRules);
 	}
 
 	@Override

@@ -9,23 +9,19 @@ import jforex.utils.Logger;
 
 /**
  * Generic class supporting multi-position multi-instrument trading
- *
+ * 
  */
 public abstract class AbstractTradingStrategy implements ITradingStrategy {
-	
+
 	protected Logger log = null;
-	
+
 	public class TickerTradeData {
 		protected List<Position> positions = new ArrayList<Position>();
-		protected ITradeState
-			currentState = null,
-			previousState = null;
+		protected ITradeState currentState = null, previousState = null;
 		protected String waitingOrderID = null;
-		protected long 
-			lastBarTime = 0,
-			tradeBarNo = 0;
+		protected long lastBarTime = 0, tradeBarNo = 0;
 		protected double stopLoss;
-		
+
 		public TickerTradeData(ITradeState initialState) {
 			super();
 			currentState = initialState;
@@ -40,7 +36,7 @@ public abstract class AbstractTradingStrategy implements ITradingStrategy {
 		}
 
 		public void changeState(ITradeState toState) {
-			previousState = currentState; 
+			previousState = currentState;
 			currentState = toState;
 		}
 
@@ -85,27 +81,25 @@ public abstract class AbstractTradingStrategy implements ITradingStrategy {
 			for (int i = 0; i < positions.size(); i++)
 				positions.remove(i);
 			waitingOrderID = null;
-			lastBarTime = 0;			
+			lastBarTime = 0;
 		}
 	}
-	
+
 	protected Map<String, TickerTradeData> tickersTradeData = new HashMap<String, TickerTradeData>();
-	
+
 	protected int maxPositions = 0;
-	
+
 	protected TimeFrames basicTimeFrame;
-	protected String 
-		name = "not assigned",
-		shortName = "not assigned";
-	
-	
-	public AbstractTradingStrategy(int maxPositions, IBrokerEngine brokerEngine, TimeFrames pBasicTimeFrame) {
+	protected String name = "not assigned", shortName = "not assigned";
+
+	public AbstractTradingStrategy(int maxPositions,
+			IBrokerEngine brokerEngine, TimeFrames pBasicTimeFrame) {
 		super();
 		this.maxPositions = maxPositions;
 		this.brokerEngine = brokerEngine;
 		this.basicTimeFrame = pBasicTimeFrame;
 	}
-	
+
 	protected IBrokerEngine brokerEngine = null;
 
 	@Override
@@ -124,8 +118,7 @@ public abstract class AbstractTradingStrategy implements ITradingStrategy {
 
 	@Override
 	public void setLogger(Logger l) {
-		log = l;		
+		log = l;
 	}
-
 
 }

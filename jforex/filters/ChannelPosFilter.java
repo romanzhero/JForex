@@ -8,7 +8,7 @@ import com.dukascopy.api.OfferSide;
 import com.dukascopy.api.IIndicators.AppliedPrice;
 
 public class ChannelPosFilter extends AbstractSimpleFilter implements IFilter {
-	
+
 	private static int TIME = 0;
 	private static int PRICE = 1;
 
@@ -18,9 +18,11 @@ public class ChannelPosFilter extends AbstractSimpleFilter implements IFilter {
 	}
 
 	@Override
-	protected double calcIndicator(Instrument instrument, OfferSide side, AppliedPrice appliedPrice, long time) throws JFException {
+	protected double calcIndicator(Instrument instrument, OfferSide side,
+			AppliedPrice appliedPrice, long time) throws JFException {
 		Channel ch = new Channel(null, indicators);
-		return ch.priceChannelPos(instrument, period, side, (long)auxParams[TIME], auxParams[PRICE]);
+		return ch.priceChannelPos(instrument, period, side,
+				(long) auxParams[TIME], auxParams[PRICE]);
 	}
 
 }

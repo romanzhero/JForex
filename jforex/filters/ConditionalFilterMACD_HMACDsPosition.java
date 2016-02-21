@@ -1,9 +1,8 @@
 package jforex.filters;
 
+public class ConditionalFilterMACD_HMACDsPosition extends
+		ConditionalFilterOnMACDsPosition implements IConditionalFilter {
 
-
-public class ConditionalFilterMACD_HMACDsPosition extends ConditionalFilterOnMACDsPosition implements IConditionalFilter {
-	
 	@Override
 	public IFilter cloneFilter() {
 		return new ConditionalFilterMACD_HMACDsPosition();
@@ -16,7 +15,7 @@ public class ConditionalFilterMACD_HMACDsPosition extends ConditionalFilterOnMAC
 
 	@Override
 	protected void setMainFilter() {
-		mainFilter = new MACDHistogramFilter();	
+		mainFilter = new MACDHistogramFilter();
 	}
 
 }
