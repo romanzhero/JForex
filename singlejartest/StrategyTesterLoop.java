@@ -56,9 +56,9 @@ import jforex.utils.FXUtils;
  * This small program demonstrates how to initialize Dukascopy tester and start
  * a strategy
  */
-public class StrategyTester {
+public class StrategyTesterLoop {
 	private static final Logger LOGGER = LoggerFactory.getLogger(Main.class);
-
+	private static File tradeTestRunningSignal = null;
 	// url of the DEMO jnlp
 	private static String jnlpUrl = "https://www.dukascopy.com/client/demo/jclient/jforex.jnlp";
 
@@ -119,7 +119,26 @@ public class StrategyTester {
 				// tester doesn't disconnect
 			}
 		});
+		
+		
 		FXUtils.setDbToUse(properties.getProperty("dbToUse"));
+		// set instruments that will be used in testing
+		StringTokenizer st = new StringTokenizer(properties.getProperty("pairsToCheck"), ";");
+		Set<Instrument> instruments = new HashSet<Instrument>();
+		String pair = null;
+		while (st.hasMoreTokens()) {
+			String nextPair = st.nextToken();
+			instruments.add(Instrument.fromString(nextPair));
+			if (pair == null)
+				pair = new String(nextPair);
+		}
+		Instrument selectedInstrument = Instrument.fromString(pair);
+
+		tradeTestRunningSignal = new File("strategyTestRunning.bin");
+		if (tradeTestRunningSignal.exists())
+			tradeTestRunningSignal.delete();
+		tradeTestRunningSignal.createNewFile();
+		// once test run is finished this file should be deleted !
 
 		LOGGER.info("Connecting...");
 		// connect to the server using jnlp, user name and password
@@ -137,20 +156,8 @@ public class StrategyTester {
 			System.exit(1);
 		}
 
-		// set instruments that will be used in testing
-		StringTokenizer st = new StringTokenizer(properties.getProperty("pairsToCheck"), ";");
-		Set<Instrument> instruments = new HashSet<Instrument>();
-		String pair = null;
-		while (st.hasMoreTokens()) {
-			String nextPair = st.nextToken();
-			instruments.add(Instrument.fromString(nextPair));
-			if (pair == null)
-				pair = new String(nextPair);
-		}
-		Instrument selectedInstrument = Instrument.fromString(pair);
-
-
 		LOGGER.info("Subscribing instruments...");
+		client.setCacheDirectory(new File(properties.getProperty("cachedir")));
 		client.setSubscribedInstruments(instruments);
 		// setting initial deposit
 		client.setInitialDeposit(Instrument.EURUSD.getSecondaryJFCurrency(), Double.parseDouble(properties.getProperty("initialdeposit", "100000.0")));

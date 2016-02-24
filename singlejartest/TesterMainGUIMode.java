@@ -49,9 +49,8 @@ import javax.swing.JPanel;
 import javax.swing.SwingUtilities;
 
 import jforex.strategies.FlatCascTest;
+import jforex.utils.ClimberProperties;
 import jforex.utils.FXUtils;
-import jforex.utils.SimpleProperties;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -78,9 +77,8 @@ import com.dukascopy.api.system.tester.ITesterUserInterface;
 @SuppressWarnings("serial")
 public class TesterMainGUIMode extends JFrame implements ITesterUserInterface,
 		ITesterExecution {
-	private static final Logger LOGGER = LoggerFactory
-			.getLogger(TesterMainGUIMode.class);
-	final static SimpleProperties properties = new SimpleProperties();
+	private static final Logger LOGGER = LoggerFactory.getLogger(TesterMainGUIMode.class);
+	final static ClimberProperties properties = new ClimberProperties();
 
 	private final int frameWidth = 1000;
 	private final int frameHeight = 600;
@@ -198,6 +196,7 @@ public class TesterMainGUIMode extends JFrame implements ITesterUserInterface,
 		instruments.add(instrument);
 
 		LOGGER.info("Subscribing instruments...");
+		client.setCacheDirectory(new File(properties.getProperty("cachedir")));
 		client.setSubscribedInstruments(instruments);
 		// setting initial deposit
 		client.setInitialDeposit(Instrument.EURUSD.getSecondaryJFCurrency(),
@@ -216,9 +215,7 @@ public class TesterMainGUIMode extends JFrame implements ITesterUserInterface,
 		LOGGER.info("Starting strategy");
 
 		client.startStrategy(
-				new FlatCascTest(instrument, properties.getProperty("visualMode", "no").equalsIgnoreCase("yes"), 
-						properties.getProperty("showIndicators", "no").equalsIgnoreCase("yes"), 
-						properties.getProperty("reportDirectory", ".")),
+				new FlatCascTest(instrument, properties),
 				// new MA_Play(),
 				new LoadingProgressListener() {
 					@Override

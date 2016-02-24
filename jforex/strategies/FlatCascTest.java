@@ -72,6 +72,7 @@ public class FlatCascTest implements IStrategy {
 		queueOrderIsLong;
 	private String queueOrderLabel = null;
 	private boolean headerPrinted = false;
+	private Properties conf = null;
 
 	public FlatCascTest(Instrument selectedInstrument, boolean visualMode,	boolean showIndicators, String reportDir) {
 		super();
@@ -79,6 +80,15 @@ public class FlatCascTest implements IStrategy {
 		this.visualMode = visualMode;
 		this.showIndicators = showIndicators;
 		this.reportDir = reportDir;
+	}
+	
+	public FlatCascTest(Instrument selectedInstrument, Properties p) {
+		super();
+		this.selectedInstrument = selectedInstrument;
+		this.visualMode = p.getProperty("visualMode", "no").equalsIgnoreCase("yes"); 
+		this.showIndicators = p.getProperty("showIndicators", "no").equalsIgnoreCase("yes");
+		this.reportDir = p.getProperty("reportDirectory", ".");
+		conf = p;
 	}
 
 	public void onStart(IContext context) throws JFException {
@@ -101,10 +111,15 @@ public class FlatCascTest implements IStrategy {
 		for (Instrument currI : pairs) {
 			orderPerPair.put(currI.name(), null);
 		}
-		tradeSetups.add(new FlatTradeSetup(indicators, history, engine, true));
+		if (conf.getProperty("FlatSetup", "no").equals("yes"))
+			tradeSetups.add(new FlatTradeSetup(indicators, history, engine, true));
 		//tradeSetups.add(new PUPBSetup(indicators, history, engine));
-		tradeSetups.add(new SmiTradeSetup(indicators, history, engine, false, 30.0, 30.0));
-		tradeSetups.add(new SmaTradeSetup(indicators, history, engine, context.getSubscribedInstruments(), true, false, 30.0, 30.0));
+		if (conf.getProperty("SMISetup", "no").equals("yes"))
+			tradeSetups.add(new SmiTradeSetup(indicators, history, engine, false, 30.0, 30.0));
+		if (conf.getProperty("TrendIDFollowSetup", "no").equals("yes"))
+			tradeSetups.add(new SmaTradeSetup(indicators, history, engine, context.getSubscribedInstruments(), true, false, 30.0, 30.0));
+		else if (conf.getProperty("TrendIDFollowSoloSetup", "no").equals("yes"))
+			tradeSetups.add(new SmaSoloTradeSetup(indicators, history, engine, context.getSubscribedInstruments(), true, false, 30.0, 30.0));
 		
 		taEvents.add(new LongCandlesEvent(indicators, history));
 		taEvents.add(new ShortCandlesEvent(indicators, history));

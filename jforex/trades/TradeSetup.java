@@ -82,6 +82,13 @@ public abstract class TradeSetup implements ITradeSetup {
 		return order;
 	}
 	
+	public IOrder submitMktOrder(String label, Instrument instrument, boolean isLong, double amount, IBar bidBar, IBar askBar, double stopLoss) throws JFException {
+		double stopLossPrice = stopLoss;
+		stopLossPrice = FXUtils.roundToPip(stopLoss, instrument);
+		IOrder order = engine.submitOrder(label, instrument, isLong ? IEngine.OrderCommand.BUY : IEngine.OrderCommand.SELL,	amount, 0, -1, stopLossPrice, 0);
+		//order.waitForUpdate(IOrder.State.FILLED);
+		return order;
+	}	
 	public IOrder submitStpOrder(String label, Instrument instrument, boolean isLong, double amount, IBar bidBar, IBar askBar, double stopLoss) throws JFException {
 		double 
 			stpPrice = isLong ? askBar.getHigh() : bidBar.getLow(),
