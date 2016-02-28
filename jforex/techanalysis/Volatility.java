@@ -19,10 +19,12 @@ public class Volatility {
 		this.indicators = indicators;
 	}
 
-	public double getATR(Instrument instrument, Period pPeriod, OfferSide side,
-			long time, int lookBack) throws JFException {
-		return indicators.atr(instrument, pPeriod, side, lookBack,
-				Filter.WEEKENDS, 1, time, 0)[0];
+	public double getATR(Instrument instrument, Period pPeriod, Filter filter, OfferSide side, long time, int lookBack) throws JFException {
+		return indicators.atr(instrument, pPeriod, side, lookBack, filter, 1, time, 0)[0];
+	}
+	
+	public double getATR(Instrument instrument, Period pPeriod, OfferSide side,	long time, int lookBack) throws JFException {
+		return getATR(instrument, pPeriod, Filter.WEEKENDS, side, time, lookBack);
 	}
 
 	public double[] getATRTimeSeries(Instrument instrument, Period pPeriod,

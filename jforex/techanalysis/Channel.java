@@ -60,15 +60,17 @@ public class Channel {
 		return results;
 	}
 
-	public double priceChannelPos(Instrument instrument, Period pPeriod,
-			OfferSide side, long time, double price) throws JFException {
-		double[][] bBands = indicators.bbands(instrument, pPeriod, side,
-				AppliedPrice.CLOSE, 20, 2.0, 2.0, MaType.SMA, Filter.WEEKENDS,
-				1, time, 0);
+	public double priceChannelPos(Instrument instrument, Period pPeriod, Filter filter, OfferSide side, long time, double price) throws JFException {
+		double[][] bBands = indicators.bbands(instrument, pPeriod, side, AppliedPrice.CLOSE, 20, 2.0, 2.0, MaType.SMA, filter, 1, time, 0);
 		double bBandsWidth = bBands[0][0] - bBands[2][0];
 		double bBandsBottom = bBands[2][0];
 		return (price - bBandsBottom) / bBandsWidth * 100;
 	}
+	
+	public double priceChannelPos(Instrument instrument, Period pPeriod, OfferSide side, long time, double price) throws JFException {
+		return priceChannelPos(instrument, pPeriod, Filter.WEEKENDS, side, time, price);
+	}
+
 
 	public double[] getRawBBandsData(Instrument instrument, Period pPeriod,
 			OfferSide side, long time) throws JFException {

@@ -36,6 +36,7 @@ import com.dukascopy.api.system.ISystemListener;
 import com.dukascopy.api.system.ITesterClient;
 import com.dukascopy.api.system.TesterFactory;
 
+import org.joda.time.DateTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -43,6 +44,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.PrintStream;
+import java.util.Date;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.StringTokenizer;
@@ -104,9 +106,7 @@ public class StrategyTesterLoop {
 				} catch (Exception e) {
 					LOGGER.error(e.getMessage(), e);
 				}
-				if (client.getStartedStrategies().size() == 0) {
-					System.exit(0);
-				}
+
 			}
 
 			@Override
@@ -122,6 +122,43 @@ public class StrategyTesterLoop {
 		
 		
 		FXUtils.setDbToUse(properties.getProperty("dbToUse"));
+		
+		String timePeriod = properties.getProperty("period");
+		if (timePeriod == null 
+			|| timePeriod.length() == 0
+			|| !(timePeriod.equalsIgnoreCase("y") || timePeriod.equalsIgnoreCase("m"))) {
+			LOGGER.error("property period needed, must by either m - for months or y - for years");
+			System.exit(1);			
+		}
+		String repeat = properties.getProperty("repeat");
+		int repeatNo = -1;
+		if (repeat == null || repeat.length() == 0) {
+			LOGGER.error("repeat property must be set !");
+			System.exit(1);			
+		} else {
+			try {
+				repeatNo = Integer.parseInt(repeat);
+			} catch (NumberFormatException e) {
+				LOGGER.error("Format of repeat property wrong, must be integer: "
+						+ repeat + ", exception " + e.getMessage());
+				System.exit(1);
+			}
+		}
+		String noOfPeriodsStr = properties.getProperty("howManyPeriods");
+		int noOfPeriods = -1;
+		if (noOfPeriodsStr == null || noOfPeriodsStr.length() == 0) {
+			LOGGER.error("howManyPeriods property must be set !");
+			System.exit(1);			
+		} else {
+			try {
+				noOfPeriods = Integer.parseInt(noOfPeriodsStr);
+			} catch (NumberFormatException e) {
+				LOGGER.error("Format of repeat property wrong, must be integer: "
+						+ repeat + ", exception " + e.getMessage());
+				System.exit(1);
+			}
+		}		
+		
 		// set instruments that will be used in testing
 		StringTokenizer st = new StringTokenizer(properties.getProperty("pairsToCheck"), ";");
 		Set<Instrument> instruments = new HashSet<Instrument>();
@@ -134,64 +171,80 @@ public class StrategyTesterLoop {
 		}
 		Instrument selectedInstrument = Instrument.fromString(pair);
 
-		tradeTestRunningSignal = new File("strategyTestRunning.bin");
-		if (tradeTestRunningSignal.exists())
-			tradeTestRunningSignal.delete();
-		tradeTestRunningSignal.createNewFile();
-		// once test run is finished this file should be deleted !
+		DateTime startDate = new DateTime(properties.getTestIntervalStart().getMillis());
+		for (int j = 0; j < repeatNo; j++) {
+			DateTime endDate = null;
+			if (timePeriod.equalsIgnoreCase("m"))
+				endDate = startDate.plusMonths(noOfPeriods);
+			else 
+				endDate = startDate.plusYears(noOfPeriods);
+			LOGGER.info("Starting backtest for the period: " + startDate.toString("dd.MM.yyyy") + " to " + endDate.toString("dd.MM.yyyy"));
+			
 
-		LOGGER.info("Connecting...");
-		// connect to the server using jnlp, user name and password
-		// connection is needed for data downloading
-		client.connect(jnlpUrl, properties.getProperty("username"),	properties.getProperty("password"));
+			LOGGER.info("Connecting...");
+			// connect to the server using jnlp, user name and password
+			// connection is needed for data downloading
+			client.connect(jnlpUrl, properties.getProperty("username"),	properties.getProperty("password"));
 
-		// wait for it to connect
-		int i = 10; // wait max ten seconds
-		while (i > 0 && !client.isConnected()) {
-			Thread.sleep(1000);
-			i--;
+			// wait for it to connect
+			int i = 10; // wait max ten seconds
+			while (i > 0 && !client.isConnected()) {
+				Thread.sleep(1000);
+				i--;
+			}
+			if (!client.isConnected()) {
+				LOGGER.error("Failed to connect Dukascopy servers");
+				System.exit(1);
+			}
+
+			LOGGER.info("Subscribing instruments...");
+			client.setCacheDirectory(new File(properties.getProperty("cachedir")));
+			client.setSubscribedInstruments(instruments);
+			// setting initial deposit
+			client.setInitialDeposit(Instrument.EURUSD.getSecondaryJFCurrency(), Double.parseDouble(properties.getProperty("initialdeposit", "100000.0")));
+			client.setDataInterval(Period.TICK, null, null, startDate.getMillis(), endDate.getMillis());
+			// load data
+			LOGGER.info("Downloading data");
+			Future<?> future = client.downloadData(null);
+			// wait for downloading to complete
+			Thread.sleep(10000); // this timeout helped
+			future.get();
+			// start the strategy
+			LOGGER.info("Starting strategy");
+			// client.startStrategy(new IchiAutoEntry(properties,
+			// properties.getTestIntervalStart().getMillis(),
+			// properties.getTestIntervalEnd().getMillis(), startTime),
+			tradeTestRunningSignal = new File("strategyTestRunning.bin");
+			if (tradeTestRunningSignal.exists())
+				tradeTestRunningSignal.delete();
+			tradeTestRunningSignal.createNewFile();
+			// once test run is finished this file should be deleted !
+			client.startStrategy(//new SimpleMAsIDCrossTrendFollow(properties),
+					new FlatCascTest(selectedInstrument, properties),
+					new LoadingProgressListener() {
+						@Override
+						public void dataLoaded(long startTime, long endTime, long currentTime, String information) {
+							LOGGER.info(information);
+						}
+
+						@Override
+						public void loadingFinished(boolean allDataLoaded,	long startTime, long endTime, long currentTime) {
+						}
+
+						@Override
+						public boolean stopJob() {
+							return false;
+						}
+					});
+			// now it's running			
+			while (tradeTestRunningSignal.exists()) {	}
+			
+			startDate = endDate;
 		}
-		if (!client.isConnected()) {
-			LOGGER.error("Failed to connect Dukascopy servers");
-			System.exit(1);
+		
+		if (client.getStartedStrategies().size() == 0) {
+			System.exit(0);
 		}
-
-		LOGGER.info("Subscribing instruments...");
-		client.setCacheDirectory(new File(properties.getProperty("cachedir")));
-		client.setSubscribedInstruments(instruments);
-		// setting initial deposit
-		client.setInitialDeposit(Instrument.EURUSD.getSecondaryJFCurrency(), Double.parseDouble(properties.getProperty("initialdeposit", "100000.0")));
-		client.setDataInterval(Period.TICK, null, null, properties.getTestIntervalStart().getMillis(), properties.getTestIntervalEnd().getMillis());
-		// load data
-		LOGGER.info("Downloading data");
-		Future<?> future = client.downloadData(null);
-		// wait for downloading to complete
-		Thread.sleep(10000); // this timeout helped
-		future.get();
-		// start the strategy
-		LOGGER.info("Starting strategy");
-		// client.startStrategy(new IchiAutoEntry(properties,
-		// properties.getTestIntervalStart().getMillis(),
-		// properties.getTestIntervalEnd().getMillis(), startTime),
-		client.startStrategy(//new SimpleMAsIDCrossTrendFollow(properties),
-				new FlatCascTest(selectedInstrument, properties),
-				new LoadingProgressListener() {
-					@Override
-					public void dataLoaded(long startTime, long endTime,
-							long currentTime, String information) {
-						LOGGER.info(information);
-					}
-
-					@Override
-					public void loadingFinished(boolean allDataLoaded,
-							long startTime, long endTime, long currentTime) {
-					}
-
-					@Override
-					public boolean stopJob() {
-						return false;
-					}
-				});
-		// now it's running
+		
 	}
 }

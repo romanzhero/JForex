@@ -1,6 +1,7 @@
 package jforex.strategies;
 
 import java.awt.Color;
+import java.io.File;
 import java.util.*;
 
 import com.dukascopy.api.*;
@@ -24,6 +25,8 @@ import jforex.techanalysis.Trend.FLAT_REGIME_CAUSE;
 import jforex.techanalysis.Volatility;
 import jforex.techanalysis.Channel;
 import jforex.techanalysis.TradeTrigger;
+import jforex.techanalysis.source.FlexTASource;
+import jforex.techanalysis.source.FlexTAValue;
 import jforex.trades.*;
 
 public class FlatCascTest implements IStrategy {
@@ -57,6 +60,7 @@ public class FlatCascTest implements IStrategy {
 	private ITakeOverRules takeOverRules = new SmiSmaTakeOverRules();
 	private ITradeSetup currentSetup = null;
 
+	private FlexTASource taSource = null;
 	private Trend trend = null;
 	private Volatility vola = null;
 	private Channel channel = null;
@@ -99,6 +103,7 @@ public class FlatCascTest implements IStrategy {
 
 		dataService = context.getDataService();
 
+		taSource = new FlexTASource(indicators, history, selectedFilter);
 		trend = new Trend(indicators);
 		vola = new Volatility(indicators);
 		channel = new Channel(context.getHistory(), indicators);
@@ -112,14 +117,14 @@ public class FlatCascTest implements IStrategy {
 			orderPerPair.put(currI.name(), null);
 		}
 		if (conf.getProperty("FlatSetup", "no").equals("yes"))
-			tradeSetups.add(new FlatTradeSetup(indicators, history, engine, true));
+			tradeSetups.add(new FlatTradeSetup(engine, true));
 		//tradeSetups.add(new PUPBSetup(indicators, history, engine));
 		if (conf.getProperty("SMISetup", "no").equals("yes"))
-			tradeSetups.add(new SmiTradeSetup(indicators, history, engine, false, 30.0, 30.0));
+			tradeSetups.add(new SmiTradeSetup(engine, false, 30.0, 30.0));
 		if (conf.getProperty("TrendIDFollowSetup", "no").equals("yes"))
 			tradeSetups.add(new SmaTradeSetup(indicators, history, engine, context.getSubscribedInstruments(), true, false, 30.0, 30.0));
 		else if (conf.getProperty("TrendIDFollowSoloSetup", "no").equals("yes"))
-			tradeSetups.add(new SmaSoloTradeSetup(indicators, history, engine, context.getSubscribedInstruments(), true, false, 30.0, 30.0));
+			tradeSetups.add(new SmaSoloTradeSetup(engine, context.getSubscribedInstruments(), true, false, 30.0, 30.0));
 		
 		taEvents.add(new LongCandlesEvent(indicators, history));
 		taEvents.add(new ShortCandlesEvent(indicators, history));
@@ -238,6 +243,8 @@ public class FlatCascTest implements IStrategy {
 			|| !barProcessingAllowed(bidBar.getTime())
 			|| (bidBar.getClose() == bidBar.getOpen() && bidBar.getClose() == bidBar.getHigh() && bidBar.getClose() == bidBar.getLow()))
 			return;
+		
+		Map<String, FlexTAValue> taValues = taSource.calcTAValues(instrument, period, askBar, bidBar);
 
 		double[][] slowSMI = indicators.smi(instrument, period, OfferSide.BID,
 				50, 15, 5, 3, selectedFilter, 2, bidBar.getTime(), 0), fastSMI = indicators
@@ -265,10 +272,10 @@ public class FlatCascTest implements IStrategy {
 			// they should take over (their conditions fullfilled)
 			ITradeSetup.EntryDirection signal = ITradeSetup.EntryDirection.NONE;
 			boolean takeOver = false;
-			if (!currentSetup.isTradeLocked(instrument, period, askBar, bidBar,	selectedFilter, order)) {
+			if (!currentSetup.isTradeLocked(instrument, period, askBar, bidBar,	selectedFilter, order, taValues)) {
 				for (ITradeSetup setup : tradeSetups) {
 					if (!setup.getName().equals(currentSetup.getName())) {
-						signal = setup.checkTakeOver(instrument, period, askBar, bidBar, selectedFilter);
+						signal = setup.checkTakeOver(instrument, period, askBar, bidBar, selectedFilter, taValues);
 						takeOver = (order.isLong() && signal.equals(ITradeSetup.EntryDirection.LONG) && takeOverRules.canTakeOver(currentSetup.getName(), setup.getName()))
 								|| (!order.isLong()	&& signal.equals(ITradeSetup.EntryDirection.SHORT) && takeOverRules.canTakeOver(currentSetup.getName(),	setup.getName()));
 						if (takeOver) {
@@ -285,8 +292,8 @@ public class FlatCascTest implements IStrategy {
 			}
 			if (!takeOver) {
 				// check market situation by testing all available entry signals and TA events and send them to current setup for processing / reaction
-				List<TAEventDesc> marketEvents = checkMarketEvents(instrument, period, askBar, bidBar, selectedFilter);
-				currentSetup.inTradeProcessing(instrument, period, askBar, bidBar, selectedFilter, order, marketEvents);
+				List<TAEventDesc> marketEvents = checkMarketEvents(instrument, period, askBar, bidBar, selectedFilter, taValues);
+				currentSetup.inTradeProcessing(instrument, period, askBar, bidBar, selectedFilter, order, taValues, marketEvents);
 				// inTradeProcessing might CLOSE the order, onMessage will set to null !
 				order = orderPerPair.get(instrument.name());
 				if (order != null) {
@@ -294,7 +301,7 @@ public class FlatCascTest implements IStrategy {
 						tradeLog.updateMaxRisk(order.getStopLossPrice());
 					tradeLog.updateMaxLoss(bidBar, atr);
 					tradeLog.updateMaxProfit(bidBar);
-					ITradeSetup.EntryDirection exitSignal = currentSetup.checkExit(instrument, period, askBar, bidBar, selectedFilter, order);
+					ITradeSetup.EntryDirection exitSignal = currentSetup.checkExit(instrument, period, askBar, bidBar, selectedFilter, order, taValues);
 					if ((order.isLong() && exitSignal.equals(ITradeSetup.EntryDirection.LONG))
 							|| (!order.isLong() && exitSignal.equals(ITradeSetup.EntryDirection.SHORT))) {
 						if (tradeLog != null)
@@ -317,7 +324,7 @@ public class FlatCascTest implements IStrategy {
 			// no open position
 			TAEventDesc signal = null;
 			for (ITradeSetup setup : tradeSetups) {
-				signal = setup.checkEntry(instrument, period, askBar, bidBar, selectedFilter);
+				signal = setup.checkEntry(instrument, period, askBar, bidBar, selectedFilter, taValues);
 				if (signal != null) {
 					// must be before so also Mkt orders can have a chance to
 					// write to non-null tradeLog !
@@ -366,10 +373,10 @@ public class FlatCascTest implements IStrategy {
 		}
 	}
 
-	private List<TAEventDesc> checkMarketEvents(Instrument instrument,	Period period, IBar askBar, IBar bidBar, Filter filter) throws JFException {
+	private List<TAEventDesc> checkMarketEvents(Instrument instrument,	Period period, IBar askBar, IBar bidBar, Filter filter, Map<String, FlexTAValue> taValues) throws JFException {
 		List<TAEventDesc> result = new ArrayList<TAEventDesc>();
 		for (ITradeSetup setup : tradeSetups) {
-			TAEventDesc signal = setup.checkEntry(instrument, period, askBar, bidBar, filter);
+			TAEventDesc signal = setup.checkEntry(instrument, period, askBar, bidBar, filter, taValues);
 			if (signal != null) {
 				result.add(signal);
 			}
@@ -451,6 +458,9 @@ public class FlatCascTest implements IStrategy {
 	public void onStop() throws JFException {
 		log.close();
 		statsLog.close();
+		File tradeTestRunningSignal = new File("strategyTestRunning.bin");
+		if (tradeTestRunningSignal.exists())
+			tradeTestRunningSignal.delete();
 	}
 
 	public void onAccount(IAccount account) throws JFException {

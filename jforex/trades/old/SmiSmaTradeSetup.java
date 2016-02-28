@@ -1,4 +1,4 @@
-package jforex.trades;
+package jforex.trades.old;
 
 import java.util.HashMap;
 import java.util.List;
@@ -7,17 +7,18 @@ import java.util.Set;
 
 import jforex.events.TAEventDesc;
 import jforex.events.TAEventDesc.TAEventType;
-import jforex.techanalysis.source.FlexTASource;
-import jforex.techanalysis.source.FlexTAValue;
 import jforex.utils.FXUtils;
 
 import com.dukascopy.api.Filter;
 import com.dukascopy.api.IBar;
 import com.dukascopy.api.IConsole;
 import com.dukascopy.api.IEngine;
+import com.dukascopy.api.IHistory;
+import com.dukascopy.api.IIndicators;
 import com.dukascopy.api.IOrder;
 import com.dukascopy.api.Instrument;
 import com.dukascopy.api.JFException;
+import com.dukascopy.api.OfferSide;
 import com.dukascopy.api.Period;
 
 public class SmiSmaTradeSetup extends TradeSetup {
@@ -26,8 +27,10 @@ public class SmiSmaTradeSetup extends TradeSetup {
 	protected boolean mktEntry = true;
 	protected Map<String, Boolean> ma50TrailFlags = new HashMap<String, Boolean>();
 
-	public SmiSmaTradeSetup(IEngine engine, IConsole console, Set<Instrument> subscribedInstruments, boolean mktEntry) {
-		super(engine);
+	public SmiSmaTradeSetup(IIndicators indicators, IHistory history,
+			IEngine engine, IConsole console,
+			Set<Instrument> subscribedInstruments, boolean mktEntry) {
+		super(indicators, history, engine);
 		this.console = console;
 		this.mktEntry = mktEntry;
 
@@ -43,24 +46,34 @@ public class SmiSmaTradeSetup extends TradeSetup {
 	}
 
 	@Override
-	public TAEventDesc checkEntry(Instrument instrument, Period period,	IBar askBar, IBar bidBar, Filter filter, Map<String, FlexTAValue> taValues) throws JFException {
-		double[][] 
-			mas = taValues.get(FlexTASource.MAs).getDa2DimValue(),
-			smis = taValues.get(FlexTASource.SMI).getDa2DimValue();	
-		double 
-			prevSlow = smis[1][1], 
-			currSlow = smis[1][2], 
-			prevFast = smis[0][1], 
-			currFast = smis[0][2]; 		
-		double
-			ma20 = mas[1][0], 
-			ma50 = mas[1][1],
-			ma100 = mas[1][2],
-			ma200 = mas[1][3];
-		if (buySignal(prevSlow, currSlow, prevFast, currFast, ma20, ma50, ma100, ma200, bidBar)) {
+	public TAEventDesc checkEntry(Instrument instrument, Period period,
+			IBar askBar, IBar bidBar, Filter filter) throws JFException {
+		double[][] slowSMI = indicators.smi(instrument, period, OfferSide.BID,
+				50, 15, 5, 3, filter, 2, bidBar.getTime(), 0), fastSMI = indicators
+				.smi(instrument, period, OfferSide.BID, 10, 3, 5, 3, filter, 2,
+						bidBar.getTime(), 0);
+		double ma20 = indicators.sma(instrument, period, OfferSide.BID,
+				IIndicators.AppliedPrice.CLOSE, 20, filter, 1,
+				bidBar.getTime(), 0)[0], ma50 = indicators.sma(instrument,
+				period, OfferSide.BID, IIndicators.AppliedPrice.CLOSE, 50,
+				filter, 1, bidBar.getTime(), 0)[0], ma100 = indicators.sma(
+				instrument, period, OfferSide.BID,
+				IIndicators.AppliedPrice.CLOSE, 100, filter, 1,
+				bidBar.getTime(), 0)[0], ma200 = indicators.sma(instrument,
+				period, OfferSide.BID, IIndicators.AppliedPrice.CLOSE, 200,
+				filter, 1, bidBar.getTime(), 0)[0];
+
+		if (buySignal(slowSMI, fastSMI, ma20, ma50, ma100, ma200, bidBar)) {
 			TAEventDesc result = new TAEventDesc(TAEventType.ENTRY_SIGNAL, getName(), instrument, true, askBar, bidBar, period);
 			return result;
-		} else if (sellSignal(prevSlow, currSlow, prevFast, currFast, ma20, ma50, ma100, ma200, askBar)) {
+		} else if (sellSignal(slowSMI, fastSMI, ma20, ma50, ma100, ma200,
+				askBar)) {
+			// console.getOut().println("Short signal at " +
+			// FXUtils.getFormatedBarTime(bidBar)
+			// + "; currFast: " + FXUtils.df1.format(fastSMI[0][1])
+			// + "; prevFast: " + FXUtils.df1.format(fastSMI[0][0])
+			// + "; currSlow: " + FXUtils.df1.format(slowSMI[0][1])
+			// + "; prevSlow: " + FXUtils.df1.format(slowSMI[0][0]));
 			TAEventDesc result = new TAEventDesc(TAEventType.ENTRY_SIGNAL, getName(), instrument, false, askBar, bidBar, period);
 			return result;
 		}
@@ -68,24 +81,25 @@ public class SmiSmaTradeSetup extends TradeSetup {
 	}
 
 	@Override
-	public EntryDirection checkExit(Instrument instrument, Period period, IBar askBar, IBar bidBar, Filter filter, IOrder order, Map<String, FlexTAValue> taValues)	throws JFException {
-		double[][] 
-				smis = taValues.get(FlexTASource.SMI).getDa2DimValue();	
-			double 
-				currSlow = smis[1][2], 
-				prevFast = smis[0][1], 
-				currFast = smis[0][2]; 	
+	public EntryDirection checkExit(Instrument instrument, Period period,
+			IBar askBar, IBar bidBar, Filter filter, IOrder order)
+			throws JFException {
+		double[][] slowSMI = indicators.smi(instrument, period, OfferSide.BID,
+				50, 15, 5, 3, filter, 2, bidBar.getTime(), 0), fastSMI = indicators
+				.smi(instrument, period, OfferSide.BID, 10, 3, 5, 3, filter, 2,
+						bidBar.getTime(), 0);
 
-		if (exitLong(currSlow, prevFast, currFast))
+		if (exitLong(slowSMI, fastSMI))
 			return ITradeSetup.EntryDirection.LONG;
-		else if (exitShort(currSlow, prevFast, currFast))
+		else if (exitShort(slowSMI, fastSMI))
 			return ITradeSetup.EntryDirection.SHORT;
 		return ITradeSetup.EntryDirection.NONE;
 	}
 
-	boolean buySignal(double prevSlow, double currSlow, double prevFast, double currFast, 
-			double ma20, double ma50, double ma100, double ma200, IBar bidBar) {
-		
+	boolean buySignal(double[][] slowSMI, double[][] fastSMI, double ma20,
+			double ma50, double ma100, double ma200, IBar bidBar) {
+		double prevSlow = slowSMI[0][0], currSlow = slowSMI[0][1], prevFast = fastSMI[0][0], currFast = fastSMI[0][1];
+
 		// too strong a downtrend, price below middle MA, don't try it !
 		if (ma20 < ma50 && ma50 < ma100 && bidBar.getClose() < ma50)
 			return false;
@@ -96,8 +110,10 @@ public class SmiSmaTradeSetup extends TradeSetup {
 				&& prevFast < currFast;
 	}
 
-	boolean sellSignal(double prevSlow, double currSlow, double prevFast, double currFast, 
-			double ma20, double ma50, double ma100, double ma200, IBar bidBar) {
+	boolean sellSignal(double[][] slowSMI, double[][] fastSMI, double ma20,
+			double ma50, double ma100, double ma200, IBar bidBar) {
+		double prevSlow = slowSMI[0][0], currSlow = slowSMI[0][1], prevFast = fastSMI[0][0], currFast = fastSMI[0][1];
+
 		// too strong an uptrend, price above middle MA, don't try it !
 		if (ma20 > ma50 && ma50 > ma100 && bidBar.getClose() > ma50)
 			return false;
@@ -109,7 +125,9 @@ public class SmiSmaTradeSetup extends TradeSetup {
 				&& prevFast > currFast;
 	}
 
-	boolean exitLong(double currSlow, double prevFast, double currFast) {		
+	boolean exitLong(double[][] slowSMI, double[][] fastSMI) {
+		double currSlow = slowSMI[0][1], prevFast = fastSMI[0][0], currFast = fastSMI[0][1];
+
 		return (!(currFast > 60.0 && currSlow > 60.0) // no need to exit long
 														// while heavily
 														// overbought !
@@ -133,7 +151,9 @@ public class SmiSmaTradeSetup extends TradeSetup {
 																// falling
 	}
 
-	boolean exitShort(double currSlow, double prevFast, double currFast) {
+	boolean exitShort(double[][] slowSMI, double[][] fastSMI) {
+		double currSlow = slowSMI[0][1], prevFast = fastSMI[0][0], currFast = fastSMI[0][1];
+
 		return (!(currFast < -60.0 && currSlow < -60.0) // no need to exixt
 														// short while heavily
 														// oversold !
@@ -143,15 +163,19 @@ public class SmiSmaTradeSetup extends TradeSetup {
 	}
 
 	@Override
-	public void inTradeProcessing(Instrument instrument, Period period,	IBar askBar, IBar bidBar, Filter filter, IOrder order, Map<String, FlexTAValue> taValues, List<TAEventDesc> marketEvents) throws JFException {
+	public void inTradeProcessing(Instrument instrument, Period period,	IBar askBar, IBar bidBar, Filter filter, IOrder order, List<TAEventDesc> marketEvents) throws JFException {
 		if (order == null)
 			return;
 
-		double[][] mas = taValues.get(FlexTASource.MAs).getDa2DimValue();
-		double
-			ma20 = mas[1][0], 
-			ma50 = mas[1][1],
-			ma100 = mas[1][2];
+		double ma20 = indicators.sma(instrument, period, OfferSide.BID,
+				IIndicators.AppliedPrice.CLOSE, 20, filter, 1,
+				bidBar.getTime(), 0)[0], ma50 = indicators.sma(instrument,
+				period, OfferSide.BID, IIndicators.AppliedPrice.CLOSE, 50,
+				filter, 1, bidBar.getTime(), 0)[0], ma100 = indicators.sma(
+				instrument, period, OfferSide.BID,
+				IIndicators.AppliedPrice.CLOSE, 100, filter, 1,
+				bidBar.getTime(), 0)[0];
+
 		if (order.isLong())
 			startTrailingLong(ma20, ma50, ma100, bidBar, order);
 		else
@@ -161,7 +185,8 @@ public class SmiSmaTradeSetup extends TradeSetup {
 
 	// true means there's a strong uptrend and momentum exits are now switched
 	// OFF
-	boolean startTrailingLong(double ma20, double ma50, double ma100, IBar bidBar, IOrder order) throws JFException {
+	boolean startTrailingLong(double ma20, double ma50, double ma100,
+			IBar bidBar, IOrder order) throws JFException {
 		if (ma20 > ma50 && ma50 > ma100) {
 			Boolean ma50Trailing = ma50TrailFlags.get(order.getInstrument()
 					.name());
@@ -238,9 +263,11 @@ public class SmiSmaTradeSetup extends TradeSetup {
 			return false;
 	}
 
-	boolean buySignalWeak(double prevSlow, double currSlow, double prevFast, double currFast, 
-			double ma20, double ma50, double ma100, double ma200, IBar bidBar) {
-			// too strong a downtrend, price below middle MA, don't try it !
+	boolean buySignalWeak(double[][] slowSMI, double[][] fastSMI, double ma20,
+			double ma50, double ma100, double ma200, IBar bidBar) {
+		double prevSlow = slowSMI[0][0], currSlow = slowSMI[0][1], prevFast = fastSMI[0][0], currFast = fastSMI[0][1];
+
+		// too strong a downtrend, price below middle MA, don't try it !
 		if (ma20 < ma50 && ma50 < ma100 && bidBar.getClose() < ma50)
 			return false;
 
@@ -249,8 +276,10 @@ public class SmiSmaTradeSetup extends TradeSetup {
 				&& prevSlow < currSlow && prevFast < currFast;
 	}
 
-	boolean sellSignalWeak(double prevSlow, double currSlow, double prevFast, double currFast, 
-			double ma20, double ma50, double ma100, double ma200, IBar bidBar) {
+	boolean sellSignalWeak(double[][] slowSMI, double[][] fastSMI, double ma20,
+			double ma50, double ma100, double ma200, IBar bidBar) {
+		double prevSlow = slowSMI[0][0], currSlow = slowSMI[0][1], prevFast = fastSMI[0][0], currFast = fastSMI[0][1];
+
 		// too strong an uptrend, price above middle MA, don't try it !
 		if (ma20 > ma50 && ma50 > ma100 && bidBar.getClose() > ma50)
 			return false;
@@ -261,25 +290,28 @@ public class SmiSmaTradeSetup extends TradeSetup {
 	}
 
 	@Override
-	public EntryDirection checkCancel(Instrument instrument, Period period,	IBar askBar, IBar bidBar, Filter filter, Map<String, FlexTAValue> taValues) throws JFException {
+	public EntryDirection checkCancel(Instrument instrument, Period period,
+			IBar askBar, IBar bidBar, Filter filter) throws JFException {
 		ITradeSetup.EntryDirection result = ITradeSetup.EntryDirection.NONE;
-		double[][] 
-				mas = taValues.get(FlexTASource.MAs).getDa2DimValue(),
-				smis = taValues.get(FlexTASource.SMI).getDa2DimValue();	
-			double 
-				prevSlow = smis[1][1], 
-				currSlow = smis[1][2], 
-				prevFast = smis[0][1], 
-				currFast = smis[0][2]; 		
-			double
-				ma20 = mas[1][0], 
-				ma50 = mas[1][1],
-				ma100 = mas[1][2],
-				ma200 = mas[1][3];
+		double[][] slowSMI = indicators.smi(instrument, period, OfferSide.BID,
+				50, 15, 5, 3, filter, 2, bidBar.getTime(), 0), fastSMI = indicators
+				.smi(instrument, period, OfferSide.BID, 10, 3, 5, 3, filter, 2,
+						bidBar.getTime(), 0);
+		double ma20 = indicators.sma(instrument, period, OfferSide.BID,
+				IIndicators.AppliedPrice.CLOSE, 20, filter, 1,
+				bidBar.getTime(), 0)[0], ma50 = indicators.sma(instrument,
+				period, OfferSide.BID, IIndicators.AppliedPrice.CLOSE, 50,
+				filter, 1, bidBar.getTime(), 0)[0], ma100 = indicators.sma(
+				instrument, period, OfferSide.BID,
+				IIndicators.AppliedPrice.CLOSE, 100, filter, 1,
+				bidBar.getTime(), 0)[0], ma200 = indicators.sma(instrument,
+				period, OfferSide.BID, IIndicators.AppliedPrice.CLOSE, 200,
+				filter, 1, bidBar.getTime(), 0)[0];
 
-		if (!buySignalWeak(prevSlow, currSlow, prevFast, currFast, ma20, ma50, ma100, ma200, bidBar))
+		if (!buySignalWeak(slowSMI, fastSMI, ma20, ma50, ma100, ma200, bidBar))
 			return ITradeSetup.EntryDirection.LONG;
-		else if (!sellSignalWeak(prevSlow, currSlow, prevFast, currFast, ma20, ma50, ma100, ma200, askBar))
+		else if (!sellSignalWeak(slowSMI, fastSMI, ma20, ma50, ma100, ma200,
+				askBar))
 			return ITradeSetup.EntryDirection.SHORT;
 
 		return result;

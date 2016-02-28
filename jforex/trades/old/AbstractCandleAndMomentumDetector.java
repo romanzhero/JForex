@@ -1,8 +1,11 @@
-package jforex.trades;
+package jforex.trades.old;
 
+import jforex.techanalysis.Momentum;
 import jforex.techanalysis.TradeTrigger;
 
 public class AbstractCandleAndMomentumDetector {
+	protected TradeTrigger candles = null;
+	protected Momentum momentum = null;
 	protected double thresholdLevel, lastSupportResistance = -1.0, // needed to
 																	// set SL
 																	// and check
@@ -14,7 +17,10 @@ public class AbstractCandleAndMomentumDetector {
 	protected long lastSignalTime;
 	protected TradeTrigger.TriggerDesc candleSignalDesc = null;
 
-	public AbstractCandleAndMomentumDetector(double thresholdLevel) {
+	public AbstractCandleAndMomentumDetector(TradeTrigger candles,
+			Momentum momentum, double thresholdLevel) {
+		this.candles = candles;
+		this.momentum = momentum;
 		this.thresholdLevel = thresholdLevel;
 	}
 

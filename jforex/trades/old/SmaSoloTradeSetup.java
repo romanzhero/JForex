@@ -1,4 +1,4 @@
-package jforex.trades;
+package jforex.trades.old;
 
 import java.util.HashMap;
 import java.util.List;
@@ -7,18 +7,23 @@ import java.util.Set;
 
 import jforex.events.TAEventDesc;
 import jforex.events.TAEventDesc.TAEventType;
+import jforex.techanalysis.Momentum;
+import jforex.techanalysis.Trend;
 import jforex.techanalysis.Trend.FLAT_REGIME_CAUSE;
-import jforex.techanalysis.source.FlexTASource;
-import jforex.techanalysis.source.FlexTAValue;
+import jforex.techanalysis.Volatility;
 import jforex.utils.FXUtils;
 
 import com.dukascopy.api.Filter;
 import com.dukascopy.api.IBar;
 import com.dukascopy.api.IEngine;
+import com.dukascopy.api.IHistory;
+import com.dukascopy.api.IIndicators;
 import com.dukascopy.api.IOrder;
 import com.dukascopy.api.Instrument;
 import com.dukascopy.api.JFException;
+import com.dukascopy.api.OfferSide;
 import com.dukascopy.api.Period;
+import com.dukascopy.api.IEngine.OrderCommand;
 
 public class SmaSoloTradeSetup extends TradeSetup {
 
@@ -30,17 +35,23 @@ public class SmaSoloTradeSetup extends TradeSetup {
 			onlyCross = true,
 			mktEntry = true;
 	private Map<String, Boolean> ma50TrailFlags = new HashMap<String, Boolean>();
+	protected Trend trend = null;
+	protected Volatility vola = null;
+	protected Momentum momentum = null;
 	private double 
 		flatPercThreshold,
 		bBandsSqueezeThreshold;
 	private double lastSL;
 
-	public SmaSoloTradeSetup(IEngine engine, Set<Instrument> subscribedInstruments, boolean mktEntry, boolean onlyCross, double pFlatPercThreshold, double pBBandsSqueezeThreshold) {
-		super(engine);
+	public SmaSoloTradeSetup(IIndicators indicators, IHistory history, IEngine engine, Set<Instrument> subscribedInstruments, boolean mktEntry, boolean onlyCross, double pFlatPercThreshold, double pBBandsSqueezeThreshold) {
+		super(indicators, history, engine);
 		this.mktEntry = mktEntry;
 		this.onlyCross = onlyCross;
 		this.flatPercThreshold = pFlatPercThreshold;
 		this.bBandsSqueezeThreshold = pBBandsSqueezeThreshold;
+		this.trend = new Trend(indicators);
+		this.vola = new Volatility(indicators);
+		this.momentum = new Momentum(history, indicators);
 
 		for (Instrument i : subscribedInstruments) {
 			ma50TrailFlags.put(i.name(), new Boolean(false));
@@ -53,23 +64,27 @@ public class SmaSoloTradeSetup extends TradeSetup {
 	}
 
 	@Override
-	public TAEventDesc checkEntry(Instrument instrument, Period period,	IBar askBar, IBar bidBar, Filter filter, Map<String, FlexTAValue> taValues) throws JFException {
-		double[][] mas = taValues.get(FlexTASource.MAs).getDa2DimValue();
-		double[] 
-				ma20 = new double[]{ mas[0][0], mas[1][0]}, 
-				ma50 = new double[]{ mas[0][1], mas[1][1]},
-				ma100 = new double[]{ mas[0][2], mas[1][2]},
-				ma200 = new double[]{ mas[0][3], mas[1][3]};
+	public TAEventDesc checkEntry(Instrument instrument, Period period,	IBar askBar, IBar bidBar, Filter filter) throws JFException {
+		double[] ma20 = indicators.sma(instrument, period, OfferSide.BID,
+				IIndicators.AppliedPrice.CLOSE, 20, filter, 2,
+				bidBar.getTime(), 0), ma50 = indicators.sma(instrument, period,
+				OfferSide.BID, IIndicators.AppliedPrice.CLOSE, 50, filter, 2,
+				bidBar.getTime(), 0), ma100 = indicators.sma(instrument,
+				period, OfferSide.BID, IIndicators.AppliedPrice.CLOSE, 100,
+				filter, 2, bidBar.getTime(), 0), ma200 = indicators.sma(
+				instrument, period, OfferSide.BID,
+				IIndicators.AppliedPrice.CLOSE, 200, filter, 2,
+				bidBar.getTime(), 0);
 
-		if (buySignal(instrument, period, filter, ma20, ma50, ma100, ma200, bidBar, onlyCross, taValues)) {
+		if (buySignal(instrument, period, filter, ma20, ma50, ma100, ma200, bidBar, onlyCross)) {
 			lastTradingEvent = "buy signal";
-			double twoAtrAbs = FXUtils.roundToPip(2	* taValues.get(FlexTASource.ATR).getDoubleValue() / Math.pow(10, instrument.getPipValue()), instrument);
+			double twoAtrAbs = FXUtils.roundToPip(2	* indicators.atr(instrument, period, OfferSide.BID, 14, filter, 1, bidBar.getTime(), 0)[0] / Math.pow(10, instrument.getPipValue()), instrument);
 			lastSL = bidBar.getClose() - twoAtrAbs;
 			TAEventDesc result = new TAEventDesc(TAEventType.ENTRY_SIGNAL, getName(), instrument, true, askBar, bidBar, period);
 			return result;
-		} else if (sellSignal(instrument, period, filter, ma20, ma50, ma100, ma200, askBar, onlyCross, taValues)) {
+		} else if (sellSignal(instrument, period, filter, ma20, ma50, ma100, ma200, askBar, onlyCross)) {
 			lastTradingEvent = "sell signal";
-			double twoAtrAbs = FXUtils.roundToPip(2	* taValues.get(FlexTASource.ATR).getDoubleValue() / Math.pow(10, instrument.getPipValue()), instrument);
+			double twoAtrAbs = FXUtils.roundToPip(2	* indicators.atr(instrument, period, OfferSide.ASK, 14, filter, 1, bidBar.getTime(), 0)[0]	/ Math.pow(10, instrument.getPipValue()), instrument);
 			lastSL = askBar.getClose() + twoAtrAbs;
 			TAEventDesc result = new TAEventDesc(TAEventType.ENTRY_SIGNAL, getName(), instrument, false, askBar, bidBar, period);
 			return result;
@@ -77,14 +92,14 @@ public class SmaSoloTradeSetup extends TradeSetup {
 		return null;
 	}
 
-	boolean buySignal(Instrument instrument, Period period, Filter filter, double[] ma20, double[] ma50, double[] ma100, double[] ma200, IBar bidBar, boolean strict, Map<String, FlexTAValue> taValues) throws JFException {
+	boolean buySignal(Instrument instrument, Period period, Filter filter, double[] ma20, double[] ma50, double[] ma100, double[] ma200, IBar bidBar, boolean strict) throws JFException {
 		double currMA20 = ma20[1], currMA50 = ma50[1], currMA100 = ma100[1], prevMA20 = ma20[0], prevMA50 = ma50[0], prevMA100 = ma100[0];
 
 		if (strict)
 			return (currMA20 > currMA50 && currMA50 > currMA100) && !(prevMA20 > prevMA50 && prevMA50 > prevMA100);
 		else {
-			FLAT_REGIME_CAUSE isFlat = (FLAT_REGIME_CAUSE )taValues.get(FlexTASource.FLAT_REGIME).getValue();		
-			if (isDownMomentum(instrument, period, filter, bidBar, taValues)
+			FLAT_REGIME_CAUSE isFlat = trend.isFlatRegime(instrument, period, OfferSide.BID, IIndicators.AppliedPrice.CLOSE, filter, bidBar.getTime(), FXUtils.YEAR_WORTH_OF_4H_BARS, flatPercThreshold);		
+			if (isDownMomentum(instrument, period, filter, bidBar)
 				|| isFlat.equals(FLAT_REGIME_CAUSE.MAs_CLOSE))
 				return false;
 			
@@ -92,47 +107,49 @@ public class SmaSoloTradeSetup extends TradeSetup {
 		}
 	}
 
-	protected boolean isDownMomentum(Instrument instrument, Period period, Filter filter, IBar bidBar, Map<String, FlexTAValue> taValues) throws JFException {
+	protected boolean isDownMomentum(Instrument instrument, Period period, Filter filter, IBar bidBar) throws JFException {
 		double[][] 
-				smis = taValues.get(FlexTASource.SMI).getDa2DimValue(),
-				stochs = taValues.get(FlexTASource.STOCH).getDa2DimValue();	
+				slowSMI = indicators.smi(instrument, period, OfferSide.BID,	50, 15, 5, 3, filter, 2, bidBar.getTime(), 0), 
+				fastSMI = indicators.smi(instrument, period, OfferSide.BID, 10, 3, 5, 3, filter, 2,	bidBar.getTime(), 0);
+		double[] stoch = momentum.getStochs(instrument, period, OfferSide.BID, bidBar.getTime());
 		double 
-			prevSlow = smis[1][1], 
-			currSlow = smis[1][2], 
-			prevFast = smis[0][1], 
-			currFast = smis[0][2],
-			fastStoch = stochs[0][1], 
-			slowStoch = stochs[1][1]; 
+			prevSlow = slowSMI[0][0], 
+			currSlow = slowSMI[0][1], 
+			prevFast = fastSMI[0][0], 
+			currFast = fastSMI[0][1],
+			fastStoch = stoch[0],
+			slowStoch = stoch[1];
 		return ((currSlow < prevSlow && currFast < currSlow)
 				|| (currSlow < prevSlow && currFast < prevFast)
 				|| fastStoch < slowStoch);
 	}
 
-	boolean sellSignal(Instrument instrument, Period period, Filter filter, double[] ma20, double[] ma50, double[] ma100, double[] ma200, IBar bidBar, boolean strict, Map<String, FlexTAValue> taValues) throws JFException {
+	boolean sellSignal(Instrument instrument, Period period, Filter filter, double[] ma20, double[] ma50, double[] ma100, double[] ma200, IBar bidBar, boolean strict) throws JFException {
 		double currMA20 = ma20[1], currMA50 = ma50[1], currMA100 = ma100[1], prevMA20 = ma20[0], prevMA50 = ma50[0], prevMA100 = ma100[0];
 
 		if (strict)
 			return (currMA20 < currMA50 && currMA50 < currMA100) && !(prevMA20 < prevMA50 && prevMA50 < prevMA100);
 		else {
-			FLAT_REGIME_CAUSE isFlat = (FLAT_REGIME_CAUSE)taValues.get(FlexTASource.FLAT_REGIME).getValue();			
-			if(isUpMomentum(instrument, period, filter, bidBar, taValues) || isFlat.equals(FLAT_REGIME_CAUSE.MAs_CLOSE))				
+			FLAT_REGIME_CAUSE isFlat = trend.isFlatRegime(instrument, period, OfferSide.BID, IIndicators.AppliedPrice.CLOSE, filter, bidBar.getTime(), FXUtils.YEAR_WORTH_OF_4H_BARS, flatPercThreshold);			
+			if(isUpMomentum(instrument, period, filter, bidBar)	|| isFlat.equals(FLAT_REGIME_CAUSE.MAs_CLOSE))				
 				return false;
 			
 			return currMA20 < currMA50 && currMA50 < currMA100;
 		}
 	}
 
-	protected boolean isUpMomentum(Instrument instrument, Period period, Filter filter, IBar bidBar, Map<String, FlexTAValue> taValues) throws JFException {
+	protected boolean isUpMomentum(Instrument instrument, Period period, Filter filter, IBar bidBar) throws JFException {
 		double[][] 
-				smis = taValues.get(FlexTASource.SMI).getDa2DimValue(),
-				stochs = taValues.get(FlexTASource.STOCH).getDa2DimValue();	
+				slowSMI = indicators.smi(instrument, period, OfferSide.BID,	50, 15, 5, 3, filter, 2, bidBar.getTime(), 0), 
+				fastSMI = indicators.smi(instrument, period, OfferSide.BID, 10, 3, 5, 3, filter, 2,	bidBar.getTime(), 0);
+		double[] stoch = momentum.getStochs(instrument, period, OfferSide.BID, bidBar.getTime());
 		double 
-			prevSlow = smis[1][1], 
-			currSlow = smis[1][2], 
-			prevFast = smis[0][1], 
-			currFast = smis[0][2],
-			fastStoch = stochs[0][1], 
-			slowStoch = stochs[1][1]; 
+			prevSlow = slowSMI[0][0], 
+			currSlow = slowSMI[0][1], 
+			prevFast = fastSMI[0][0], 
+			currFast = fastSMI[0][1],
+			fastStoch = stoch[0],
+			slowStoch = stoch[1];
 		return ((currSlow > prevSlow && currFast > currSlow)
 				|| (currSlow > prevSlow && currFast > prevFast)
 				|| fastStoch > slowStoch);
@@ -140,17 +157,21 @@ public class SmaSoloTradeSetup extends TradeSetup {
 	
 
 	@Override
-	public void inTradeProcessing(Instrument instrument, Period period,	IBar askBar, IBar bidBar, Filter filter, IOrder order, Map<String, FlexTAValue> taValues, List<TAEventDesc> marketEvents) throws JFException {
+	public void inTradeProcessing(Instrument instrument, Period period,	IBar askBar, IBar bidBar, Filter filter, IOrder order, List<TAEventDesc> marketEvents) throws JFException {
 		// TODO Auto-generated method stub
-		super.inTradeProcessing(instrument, period, askBar, bidBar, filter,	order, taValues, marketEvents);
+		super.inTradeProcessing(instrument, period, askBar, bidBar, filter,	order, marketEvents);
 		if (order == null)
 			return;
-		
-		double[][] mas = taValues.get(FlexTASource.MAs).getDa2DimValue();
-		double
-			ma20 = mas[1][0], 
-			ma50 = mas[1][1],
-			ma100 = mas[1][2];
+
+		double ma20 = indicators.sma(instrument, period, OfferSide.BID,
+				IIndicators.AppliedPrice.CLOSE, 20, filter, 1,
+				bidBar.getTime(), 0)[0], ma50 = indicators.sma(instrument,
+				period, OfferSide.BID, IIndicators.AppliedPrice.CLOSE, 50,
+				filter, 1, bidBar.getTime(), 0)[0], ma100 = indicators.sma(
+				instrument, period, OfferSide.BID,
+				IIndicators.AppliedPrice.CLOSE, 100, filter, 1,
+				bidBar.getTime(), 0)[0];
+
 		if (order.isLong())
 			startTrailingLong(ma20, ma50, ma100, bidBar, order);
 		else
@@ -243,17 +264,21 @@ public class SmaSoloTradeSetup extends TradeSetup {
 	}
 
 	@Override
-	public boolean isTradeLocked(Instrument instrument, Period period,	IBar askBar, IBar bidBar, Filter filter, IOrder order, Map<String, FlexTAValue> taValues)	throws JFException {
-		double[][] mas = taValues.get(FlexTASource.MAs).getDa2DimValue();
-		double[] 
-				ma20 = new double[]{ mas[0][0], mas[1][0]}, 
-				ma50 = new double[]{ mas[0][1], mas[1][1]},
-				ma100 = new double[]{ mas[0][2], mas[1][2]},
-				ma200 = new double[]{ mas[0][3], mas[1][3]};
+	public boolean isTradeLocked(Instrument instrument, Period period,	IBar askBar, IBar bidBar, Filter filter, IOrder order)	throws JFException {
+		double[] ma20 = indicators.sma(instrument, period, OfferSide.BID,
+				IIndicators.AppliedPrice.CLOSE, 20, filter, 2,
+				bidBar.getTime(), 0), ma50 = indicators.sma(instrument, period,
+				OfferSide.BID, IIndicators.AppliedPrice.CLOSE, 50, filter, 2,
+				bidBar.getTime(), 0), ma100 = indicators.sma(instrument,
+				period, OfferSide.BID, IIndicators.AppliedPrice.CLOSE, 100,
+				filter, 2, bidBar.getTime(), 0), ma200 = indicators.sma(
+				instrument, period, OfferSide.BID,
+				IIndicators.AppliedPrice.CLOSE, 200, filter, 2,
+				bidBar.getTime(), 0);
 
-		if (order.isLong() && !buySignal(instrument, period, filter, ma20, ma50, ma100, ma200, bidBar, false, taValues)) {
+		if (order.isLong() && !buySignal(instrument, period, filter, ma20, ma50, ma100, ma200, bidBar, false)) {
 			return false;
-		} else if (!order.isLong() && !sellSignal(instrument, period, filter, ma20, ma50, ma100, ma200, askBar, false, taValues)) {
+		} else if (!order.isLong() && !sellSignal(instrument, period, filter, ma20, ma50, ma100, ma200, askBar, false)) {
 			return false;
 		}
 		return true;

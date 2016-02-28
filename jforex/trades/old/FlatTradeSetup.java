@@ -1,7 +1,6 @@
-package jforex.trades;
+package jforex.trades.old;
 
 import java.util.List;
-import java.util.Map;
 
 import jforex.events.TAEventDesc;
 import jforex.events.TAEventDesc.TAEventType;
@@ -9,8 +8,6 @@ import jforex.techanalysis.Momentum;
 import jforex.techanalysis.TradeTrigger;
 import jforex.techanalysis.Trend;
 import jforex.techanalysis.Volatility;
-import jforex.techanalysis.source.FlexTASource;
-import jforex.techanalysis.source.FlexTAValue;
 import jforex.utils.FXUtils;
 
 import com.dukascopy.api.Filter;
@@ -38,13 +35,15 @@ public class FlatTradeSetup extends TradeSetup implements ITradeSetup {
 	protected Volatility vola = null;
 	protected Trend trend = null;
 
-	public FlatTradeSetup(IEngine engine, boolean aggressive) {
-		super(engine);
+	public FlatTradeSetup(IIndicators indicators, IHistory history, IEngine engine, boolean aggressive) {
+		super(indicators, history, engine);
 		// this way signals will be generated regardless of the channel position so they can be used both for entry and all exit checks
 		// entry and exit checks must explicitly test channel position !
-		longCmd = new LongCandleAndMomentumDetector(100);
-		shortCmd = new ShortCandleAndMomentumDetector(0);
+		longCmd = new LongCandleAndMomentumDetector(new TradeTrigger(indicators, history, null), new Momentum(history, indicators), 100);
+		shortCmd = new ShortCandleAndMomentumDetector(new TradeTrigger(indicators, history, null), new Momentum(history, indicators), 0);
 		this.aggressive = aggressive;
+		vola = new Volatility(indicators);
+		trend = new Trend(indicators);
 	}
 
 	@Override
@@ -53,10 +52,10 @@ public class FlatTradeSetup extends TradeSetup implements ITradeSetup {
 	}
 
 	@Override
-	public TAEventDesc checkEntry(Instrument instrument, Period period,	IBar askBar, IBar bidBar, Filter filter, Map<String, FlexTAValue> taValues) throws JFException {
+	public TAEventDesc checkEntry(Instrument instrument, Period period,	IBar askBar, IBar bidBar, Filter filter) throws JFException {
 		TradeTrigger.TriggerDesc 
-			currLongSignal = longCmd.checkEntry(instrument, period, OfferSide.BID, filter, bidBar, askBar, taValues), 
-			currShortSignal = shortCmd.checkEntry(instrument, period, OfferSide.BID, filter, bidBar, askBar, taValues);
+			currLongSignal = longCmd.checkEntry(instrument, period, OfferSide.BID, filter, bidBar, askBar), 
+			currShortSignal = shortCmd.checkEntry(instrument, period, OfferSide.BID, filter, bidBar, askBar);
 
 		if (currLongSignal == null && currShortSignal == null)
 			return null;
@@ -101,7 +100,7 @@ public class FlatTradeSetup extends TradeSetup implements ITradeSetup {
 	}
 
 	@Override
-	public void inTradeProcessing(Instrument instrument, Period period,	IBar askBar, IBar bidBar, Filter filter, IOrder order, Map<String, FlexTAValue> taValues, List<TAEventDesc> marketEvents) throws JFException {
+	public void inTradeProcessing(Instrument instrument, Period period,	IBar askBar, IBar bidBar, Filter filter, IOrder order, List<TAEventDesc> marketEvents) throws JFException {
 		IBar barToCheck = null;
 		/*
 		 * if ((lastLongSignal != null && lastShortSignal != null &&
@@ -140,10 +139,9 @@ public class FlatTradeSetup extends TradeSetup implements ITradeSetup {
 			// The newest one wins therefore it must be ensured that their check methods are called for each bar while strategy is running !
 			// Should be OK with successive calls to checkEntry and inTradeProcessing
 			TradeTrigger.TriggerDesc 
-				currLongSignal = longCmd.checkEntry(instrument, period, OfferSide.BID, filter, bidBar, askBar, taValues), 
-				currShortSignal = shortCmd.checkEntry(instrument, period, OfferSide.BID, filter, bidBar, askBar, taValues);
-			double ma20 = taValues.get(FlexTASource.MAs).getDa2DimValue()[1][0]; 
-					// indicators.sma(instrument, period, OfferSide.BID, IIndicators.AppliedPrice.CLOSE, 20, filter, 1, bidBar.getTime(), 0)[0];
+				currLongSignal = longCmd.checkEntry(instrument, period, OfferSide.BID, filter, bidBar, askBar), 
+				currShortSignal = shortCmd.checkEntry(instrument, period, OfferSide.BID, filter, bidBar, askBar);
+			double ma20 = indicators.sma(instrument, period, OfferSide.BID, IIndicators.AppliedPrice.CLOSE, 20, filter, 1, bidBar.getTime(), 0)[0];
 			boolean
 				longExitSignal = currShortSignal != null && currShortSignal.channelPosition > 100,
 				shortExitSignal = currLongSignal != null && currLongSignal.channelPosition < 0, 

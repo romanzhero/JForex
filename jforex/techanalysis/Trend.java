@@ -11,6 +11,7 @@ import com.dukascopy.api.Filter;
 import com.dukascopy.api.IBar;
 import com.dukascopy.api.IHistory;
 import com.dukascopy.api.IIndicators;
+import com.dukascopy.api.IIndicators.AppliedPrice;
 import com.dukascopy.api.Instrument;
 import com.dukascopy.api.JFException;
 import com.dukascopy.api.OfferSide;
@@ -151,21 +152,10 @@ public class Trend {
 	 *         6 - strong uptrend, top-bottom order of MAs MA20, MA50, MA100
 	 * @throws JFException
 	 */
-	public TREND_STATE getTrendState(Instrument instrument, Period pPeriod,
-			OfferSide side, IIndicators.AppliedPrice appliedPrice, long time)
-			throws JFException {
-		double MA20 = indicators.sma(instrument, pPeriod, side, appliedPrice,
-				20, Filter.WEEKENDS, 1, time, 0)[0];
-		double MA50 = indicators.sma(instrument, pPeriod, side, appliedPrice,
-				50, Filter.WEEKENDS, 1, time, 0)[0];
-		double MA100 = indicators.sma(instrument, pPeriod, side, appliedPrice,
-				100, Filter.WEEKENDS, 1, time, 0)[0];
-		// double MA20 = indicators.sma(instrument, pPeriod, side, appliedPrice,
-		// 20, 0);
-		// double MA50 = indicators.sma(instrument, pPeriod, side, appliedPrice,
-		// 50, 0);
-		// double MA100 = indicators.sma(instrument, pPeriod, side,
-		// appliedPrice, 100, 0);
+	public TREND_STATE getTrendState(Instrument instrument, Period pPeriod, Filter filter, OfferSide side, IIndicators.AppliedPrice appliedPrice, long time) throws JFException {
+		double MA20 = indicators.sma(instrument, pPeriod, side, appliedPrice, 20, filter, 1, time, 0)[0];
+		double MA50 = indicators.sma(instrument, pPeriod, side, appliedPrice, 50, filter, 1, time, 0)[0];
+		double MA100 = indicators.sma(instrument, pPeriod, side, appliedPrice, 100, filter, 1, time, 0)[0];
 
 		if (MA20 > MA50 && MA20 > MA100 && MA50 > MA100)
 			return TREND_STATE.UP_STRONG;
@@ -183,35 +173,42 @@ public class Trend {
 			return TREND_STATE.NONE;
 	}
 
-	public boolean isMA200Lowest(Instrument instrument, Period pPeriod,
-			OfferSide side, IIndicators.AppliedPrice appliedPrice, long time)
+	public boolean isMA200Lowest(Instrument instrument, Period pPeriod,	Filter filter, OfferSide side, IIndicators.AppliedPrice appliedPrice, long time)
 			throws JFException {
 		double MA20 = indicators.sma(instrument, pPeriod, side, appliedPrice,
-				20, Filter.WEEKENDS, 1, time, 0)[0];
+				20, filter, 1, time, 0)[0];
 		double MA50 = indicators.sma(instrument, pPeriod, side, appliedPrice,
-				50, Filter.WEEKENDS, 1, time, 0)[0];
+				50, filter, 1, time, 0)[0];
 		double MA100 = indicators.sma(instrument, pPeriod, side, appliedPrice,
-				100, Filter.WEEKENDS, 1, time, 0)[0];
+				100, filter, 1, time, 0)[0];
 		double MA200 = indicators.sma(instrument, pPeriod, side, appliedPrice,
-				200, Filter.WEEKENDS, 1, time, 0)[0];
+				200, filter, 1, time, 0)[0];
 
 		return MA200 < MA20 && MA200 < MA50 && MA200 < MA100;
 	}
+	
+	public boolean isMA200Lowest(Instrument instrument, Period pPeriod,	OfferSide side, IIndicators.AppliedPrice appliedPrice, long time) throws JFException {
+		return isMA200Lowest(instrument, pPeriod, Filter.WEEKENDS, side, appliedPrice, time);
+	}
 
-	public boolean isMA200Highest(Instrument instrument, Period pPeriod,
-			OfferSide side, IIndicators.AppliedPrice appliedPrice, long time)
-			throws JFException {
+
+	public boolean isMA200Highest(Instrument instrument, Period pPeriod, Filter filter,	OfferSide side, IIndicators.AppliedPrice appliedPrice, long time) throws JFException {
 		double MA20 = indicators.sma(instrument, pPeriod, side, appliedPrice,
-				20, Filter.WEEKENDS, 1, time, 0)[0];
+				20, filter, 1, time, 0)[0];
 		double MA50 = indicators.sma(instrument, pPeriod, side, appliedPrice,
-				50, Filter.WEEKENDS, 1, time, 0)[0];
+				50, filter, 1, time, 0)[0];
 		double MA100 = indicators.sma(instrument, pPeriod, side, appliedPrice,
-				100, Filter.WEEKENDS, 1, time, 0)[0];
+				100, filter, 1, time, 0)[0];
 		double MA200 = indicators.sma(instrument, pPeriod, side, appliedPrice,
-				200, Filter.WEEKENDS, 1, time, 0)[0];
+				200, filter, 1, time, 0)[0];
 
 		return MA200 > MA20 && MA200 > MA50 && MA200 > MA100;
 	}
+	
+	public boolean isMA200Highest(Instrument instrument, Period pPeriod, OfferSide side, IIndicators.AppliedPrice appliedPrice, long time) throws JFException {
+		return isMA200Highest(instrument, pPeriod, Filter.WEEKENDS, side, appliedPrice, time);
+	}
+
 
 	public boolean isBarHighAboveAllMAs(Instrument instrument, Period pPeriod,
 			OfferSide side, IIndicators.AppliedPrice appliedPrice, IBar bar)
@@ -262,16 +259,13 @@ public class Trend {
 		return FXUtils.sdFast(result);
 	}
 
-	protected double[] getRawUptrendMAsDifferences(Instrument instrument,
-			Period pPeriod, OfferSide side,
-			IIndicators.AppliedPrice appliedPrice, long time, int lookBack)
-			throws JFException {
+	protected double[] getRawUptrendMAsDifferences(Instrument instrument, Period pPeriod, Filter filter, OfferSide side, IIndicators.AppliedPrice appliedPrice, long time, int lookBack) throws JFException {
 		double[] MAs20 = indicators.sma(instrument, pPeriod, side,
-				appliedPrice, 20, Filter.WEEKENDS, lookBack, time, 0);
+				appliedPrice, 20, filter, lookBack, time, 0);
 		double[] MAs50 = indicators.sma(instrument, pPeriod, side,
-				appliedPrice, 50, Filter.WEEKENDS, lookBack, time, 0);
+				appliedPrice, 50, filter, lookBack, time, 0);
 		double[] MAs100 = indicators.sma(instrument, pPeriod, side,
-				appliedPrice, 100, Filter.WEEKENDS, lookBack, time, 0);
+				appliedPrice, 100, filter, lookBack, time, 0);
 
 		List<Double> upTrendValues = new ArrayList<Double>();
 		for (int i = 0; i < MAs20.length; i++) {
@@ -287,6 +281,11 @@ public class Trend {
 		}
 		return result;
 	}
+	
+	protected double[] getRawUptrendMAsDifferences(Instrument instrument, Period pPeriod, OfferSide side, IIndicators.AppliedPrice appliedPrice, long time, int lookBack) throws JFException {
+		return getRawUptrendMAsDifferences(instrument, pPeriod, Filter.WEEKENDS, side, appliedPrice, time, lookBack);
+	}
+
 
 	public double getUptrendMAsMaxDifStDevPos(Instrument instrument,
 			Period pPeriod, OfferSide side,
@@ -369,16 +368,13 @@ public class Trend {
 		return FXUtils.sdFast(result);
 	}
 
-	protected double[] getRawDowntrendMAsDifferences(Instrument instrument,
-			Period pPeriod, OfferSide side,
-			IIndicators.AppliedPrice appliedPrice, long time, int lookBack)
-			throws JFException {
+	protected double[] getRawDowntrendMAsDifferences(Instrument instrument,	Period pPeriod, Filter filter, OfferSide side,	IIndicators.AppliedPrice appliedPrice, long time, int lookBack)	throws JFException {
 		double[] MAs20 = indicators.sma(instrument, pPeriod, side,
-				appliedPrice, 20, Filter.WEEKENDS, lookBack, time, 0);
+				appliedPrice, 20, filter, lookBack, time, 0);
 		double[] MAs50 = indicators.sma(instrument, pPeriod, side,
-				appliedPrice, 50, Filter.WEEKENDS, lookBack, time, 0);
+				appliedPrice, 50, filter, lookBack, time, 0);
 		double[] MAs100 = indicators.sma(instrument, pPeriod, side,
-				appliedPrice, 100, Filter.WEEKENDS, lookBack, time, 0);
+				appliedPrice, 100, filter, lookBack, time, 0);
 
 		List<Double> downTrendValues = new ArrayList<Double>();
 		for (int i = 0; i < MAs20.length; i++) {
@@ -393,6 +389,10 @@ public class Trend {
 			result[pos++] = d.doubleValue();
 		}
 		return result;
+	}
+	
+	protected double[] getRawDowntrendMAsDifferences(Instrument instrument,	Period pPeriod, OfferSide side,	IIndicators.AppliedPrice appliedPrice, long time, int lookBack)	throws JFException {
+		return getRawDowntrendMAsDifferences(instrument, pPeriod, Filter.WEEKENDS, side, appliedPrice, time, lookBack);
 	}
 
 	public double getDowntrendMAsMaxDifStDevPos(Instrument instrument,
@@ -431,16 +431,10 @@ public class Trend {
 		return FXUtils.sdFast(result);
 	}
 
-	protected double[] getRawMAsDifferences(Instrument instrument,
-			Period pPeriod, OfferSide side,
-			IIndicators.AppliedPrice appliedPrice, long time, int lookBack)
-			throws JFException {
-		double[] MAs20 = indicators.sma(instrument, pPeriod, side,
-				appliedPrice, 20, Filter.WEEKENDS, lookBack, time, 0);
-		double[] MAs50 = indicators.sma(instrument, pPeriod, side,
-				appliedPrice, 50, Filter.WEEKENDS, lookBack, time, 0);
-		double[] MAs100 = indicators.sma(instrument, pPeriod, side,
-				appliedPrice, 100, Filter.WEEKENDS, lookBack, time, 0);
+	protected double[] getRawMAsDifferences(Instrument instrument, Period pPeriod, Filter filter, OfferSide side, IIndicators.AppliedPrice appliedPrice, long time, int lookBack) throws JFException {
+		double[] MAs20 = indicators.sma(instrument, pPeriod, side, appliedPrice, 20, filter, lookBack, time, 0);
+		double[] MAs50 = indicators.sma(instrument, pPeriod, side, appliedPrice, 50, filter, lookBack, time, 0);
+		double[] MAs100 = indicators.sma(instrument, pPeriod, side,	appliedPrice, 100, filter, lookBack, time, 0);
 
 		double[] result = new double[MAs20.length];
 		for (int i = 0; i < MAs20.length; i++) {
@@ -448,6 +442,11 @@ public class Trend {
 		}
 		return result;
 	}
+	
+	protected double[] getRawMAsDifferences(Instrument instrument, Period pPeriod, OfferSide side, IIndicators.AppliedPrice appliedPrice, long time, int lookBack) throws JFException {
+		return getRawMAsDifferences(instrument, pPeriod, Filter.WEEKENDS, side, appliedPrice, time, lookBack);
+	}
+
 
 	public double getMAsMaxDiffStDevPos(Instrument instrument, Period pPeriod,
 			OfferSide side, IIndicators.AppliedPrice appliedPrice, long time,
@@ -465,43 +464,44 @@ public class Trend {
 				/ stDevStats[1];
 	}
 
-	public double getMAsMaxDiffPercentile(Instrument instrument,
-			Period pPeriod, OfferSide side,
-			IIndicators.AppliedPrice appliedPrice, long time, int lookback)
-			throws JFException {
-		double[] rawData = getRawMAsDifferences(instrument, pPeriod, side,
-				appliedPrice, time, lookback);
+	public double getMAsMaxDiffPercentile(Instrument instrument, Period pPeriod, Filter filter, OfferSide side,	IIndicators.AppliedPrice appliedPrice, long time, int lookback)	throws JFException {
+		double[] rawData = getRawMAsDifferences(instrument, pPeriod, filter, side, appliedPrice, time, lookback);
 		double[] rank = new NaturalRanking().rank(rawData);
 
 		// the last in rawData should be the latest bar. Rank 1 means it is the
 		// biggest etc. Percentile is simply rank / array size * 100
 		return rank[rank.length - 1] / rank.length * 100.0;
 	}
+	
+	public double getMAsMaxDiffPercentile(Instrument instrument, Period pPeriod, OfferSide side,	IIndicators.AppliedPrice appliedPrice, long time, int lookback)	throws JFException {
+		return getMAsMaxDiffPercentile(instrument, pPeriod, Filter.WEEKENDS, side, appliedPrice, time, lookback);
+	}
 
-	public double getUptrendMAsMaxDiffPercentile(Instrument instrument,
-			Period pPeriod, OfferSide side,
-			IIndicators.AppliedPrice appliedPrice, long time, int lookback)
-			throws JFException {
-		double[] rawData = getRawUptrendMAsDifferences(instrument, pPeriod,
-				side, appliedPrice, time, lookback);
+
+	public double getUptrendMAsMaxDiffPercentile(Instrument instrument,	Period pPeriod, Filter filter, OfferSide side,	IIndicators.AppliedPrice appliedPrice, long time, int lookback)	throws JFException {
+		double[] rawData = getRawUptrendMAsDifferences(instrument, pPeriod, filter,	side, appliedPrice, time, lookback);
 		double[] rank = new NaturalRanking().rank(rawData);
 
 		// the last in rawData should be the latest bar. Rank 1 means it is the
 		// biggest etc. Percentile is simply rank / array size * 100
 		return rank[rank.length - 1] / rank.length * 100.0;
 	}
+	
+	public double getUptrendMAsMaxDiffPercentile(Instrument instrument,	Period pPeriod, OfferSide side,	IIndicators.AppliedPrice appliedPrice, long time, int lookback)	throws JFException {
+		return getUptrendMAsMaxDiffPercentile(instrument, pPeriod, Filter.WEEKENDS, side, appliedPrice, time, lookback);
+	}
 
-	public double getDowntrendMAsMaxDiffPercentile(Instrument instrument,
-			Period pPeriod, OfferSide side,
-			IIndicators.AppliedPrice appliedPrice, long time, int lookback)
-			throws JFException {
-		double[] rawData = getRawDowntrendMAsDifferences(instrument, pPeriod,
-				side, appliedPrice, time, lookback);
+	public double getDowntrendMAsMaxDiffPercentile(Instrument instrument, Period pPeriod, Filter filter, OfferSide side, IIndicators.AppliedPrice appliedPrice, long time, int lookback) throws JFException {
+		double[] rawData = getRawDowntrendMAsDifferences(instrument, pPeriod, filter, side, appliedPrice, time, lookback);
 		double[] rank = new NaturalRanking().rank(rawData);
 
 		// the last in rawData should be the latest bar. Rank 1 means it is the
 		// biggest etc. Percentile is simply rank / array size * 100
 		return rank[rank.length - 1] / rank.length * 100.0;
+	}
+	
+	public double getDowntrendMAsMaxDiffPercentile(Instrument instrument, Period pPeriod, OfferSide side, IIndicators.AppliedPrice appliedPrice, long time, int lookback) throws JFException {
+		return getDowntrendMAsMaxDiffPercentile(instrument, pPeriod, Filter.WEEKENDS, side, appliedPrice, time, lookback);
 	}
 
 	public double[] getADXs(Instrument instrument, Period pPeriod,
@@ -870,6 +870,10 @@ public class Trend {
 		// against MA200. For example MA200 highest but any of three uptrends.
 		// Study !!!
 		return FLAT_REGIME_CAUSE.NONE;
+	}
+
+	public TREND_STATE getTrendState(Instrument instrument, Period period, OfferSide bid, AppliedPrice close, long time) throws JFException {
+		return getTrendState(instrument, period, Filter.WEEKENDS, bid, close, time);
 	}
 
 }

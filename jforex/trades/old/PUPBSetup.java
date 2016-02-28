@@ -1,13 +1,11 @@
-package jforex.trades;
+package jforex.trades.old;
 
 import java.util.List;
-import java.util.Map;
 
 import jforex.events.TAEventDesc;
 import jforex.events.TAEventDesc.TAEventType;
 import jforex.techanalysis.TradeTrigger;
 import jforex.techanalysis.Trend;
-import jforex.techanalysis.source.FlexTAValue;
 import jforex.utils.FXUtils;
 
 import com.dukascopy.api.Filter;
@@ -24,7 +22,7 @@ import com.dukascopy.api.Period;
 public class PUPBSetup extends FlatTradeSetup implements ITradeSetup {
 
 	public PUPBSetup(IIndicators indicators, IHistory history, IEngine engine) {
-		super(engine, true);
+		super(indicators, history, engine, true);
 		// TODO Auto-generated constructor stub
 	}
 
@@ -34,10 +32,10 @@ public class PUPBSetup extends FlatTradeSetup implements ITradeSetup {
 	}
 
 	@Override
-	public TAEventDesc checkEntry(Instrument instrument, Period period,	IBar askBar, IBar bidBar, Filter filter, Map<String, FlexTAValue> taValues) throws JFException {
+	public TAEventDesc checkEntry(Instrument instrument, Period period,	IBar askBar, IBar bidBar, Filter filter) throws JFException {
 			TradeTrigger.TriggerDesc 
-			currLongSignal = longCmd.checkEntry(instrument, period, OfferSide.BID, filter, bidBar, askBar, taValues), 
-			currShortSignal = shortCmd.checkEntry(instrument, period, OfferSide.BID, filter, bidBar, askBar, taValues);
+			currLongSignal = longCmd.checkEntry(instrument, period, OfferSide.BID, filter, bidBar, askBar), 
+			currShortSignal = shortCmd.checkEntry(instrument, period, OfferSide.BID, filter, bidBar, askBar);
 	
 		if (currLongSignal == null && currShortSignal == null)
 			return null;
@@ -77,7 +75,7 @@ public class PUPBSetup extends FlatTradeSetup implements ITradeSetup {
 	}
 
 	@Override
-	public void inTradeProcessing(Instrument instrument, Period period,	IBar askBar, IBar bidBar, Filter filter, IOrder order, Map<String, FlexTAValue> taValues,	List<TAEventDesc> marketEvents) throws JFException {
+	public void inTradeProcessing(Instrument instrument, Period period,	IBar askBar, IBar bidBar, Filter filter, IOrder order,	List<TAEventDesc> marketEvents) throws JFException {
 		IBar barToCheck = null;
 		if (order.isLong())
 			barToCheck = bidBar;
@@ -94,8 +92,8 @@ public class PUPBSetup extends FlatTradeSetup implements ITradeSetup {
 		} else if (order.getState().equals(IOrder.State.FILLED)) {
 			// continue executing just to keep pace
 			TradeTrigger.TriggerDesc 
-				currLongSignal = longCmd.checkEntry(instrument, period, OfferSide.BID, filter, bidBar, askBar, taValues), 
-				currShortSignal = shortCmd.checkEntry(instrument, period, OfferSide.BID, filter, bidBar, askBar, taValues);
+				currLongSignal = longCmd.checkEntry(instrument, period, OfferSide.BID, filter, bidBar, askBar), 
+				currShortSignal = shortCmd.checkEntry(instrument, period, OfferSide.BID, filter, bidBar, askBar);
 			
 			// check whether to unlock the trade - price exceeded opposite
 			// channel border at the time of the signal

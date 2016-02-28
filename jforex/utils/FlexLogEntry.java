@@ -3,9 +3,9 @@ package jforex.utils;
 import java.text.DecimalFormat;
 
 public class FlexLogEntry {
-	private String label;
-	private Object value;
-	private DecimalFormat df = null;
+	protected String label;
+	protected Object value;
+	protected DecimalFormat df = null;
 
 	public FlexLogEntry(String label, Object value, DecimalFormat df) {
 		super();
@@ -15,6 +15,13 @@ public class FlexLogEntry {
 	}
 
 	public FlexLogEntry(String label, String value) {
+		super();
+		this.label = label;
+		this.value = value;
+		this.df = null;
+	}
+
+	public FlexLogEntry(String label, Object value) {
 		super();
 		this.label = label;
 		this.value = value;
@@ -44,6 +51,10 @@ public class FlexLogEntry {
 			return -1;
 		}
 	}
+	
+	public boolean getBooleanValue() {
+		return ((Boolean) value).booleanValue();
+	}
 
 	public String getFormattedValue() {
 		String res = new String();
@@ -60,6 +71,10 @@ public class FlexLogEntry {
 
 	public boolean isInteger() {
 		return value.getClass().equals(Integer.class);
+	}
+	
+	public boolean isBoolean() {
+		return value.getClass().equals(Boolean.class);
 	}
 
 	@Override

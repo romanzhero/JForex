@@ -180,12 +180,10 @@ public class TradeTrigger {
 			return Double.MIN_VALUE;
 	}
 
-	public IBar bullishReversalCandlePatternBar(Instrument instrument,
-			Period pPeriod, OfferSide side, long time) throws JFException {
+	public IBar bullishReversalCandlePatternBar(Instrument instrument,	Period pPeriod, OfferSide side, long time) throws JFException {
 		lastBullishTrigger = TriggerType.NONE;
 		IBar pivotLowBar = null;
-		if ((pivotLowBar = this.oneBarBullishTriggerBar(instrument, pPeriod,
-				side, time)) != null) {
+		if ((pivotLowBar = this.oneBarBullishTriggerBar(instrument, pPeriod, side, time)) != null) {
 			lastBullishTrigger = TriggerType.BULLISH_1_BAR;
 			return pivotLowBar;
 		} else if ((pivotLowBar = this.twoBarsBullishTriggerBar(instrument,
@@ -200,121 +198,15 @@ public class TradeTrigger {
 			return null;
 	}
 
-	public TriggerDesc bullishReversalCandlePatternDesc(Instrument instrument,
-			Period pPeriod, OfferSide side, long time) throws JFException {
-		lastBullishTrigger = TriggerType.NONE;
-		IBar pivotLowBar = null;
-		if ((pivotLowBar = this.oneBarBullishTriggerBar(instrument, pPeriod,
-				side, time)) != null) {
-			lastBullishTrigger = TriggerType.BULLISH_1_BAR;
-			IBar[] patternBars = new IBar[1];
-			patternBars[0] = pivotLowBar;
-			// calc % of the combined candle
-			double range = pivotLowBar.getHigh() - pivotLowBar.getLow(), bodyTop = Math
-					.max(pivotLowBar.getOpen(), pivotLowBar.getClose()), bodyBottom = Math
-					.min(pivotLowBar.getOpen(), pivotLowBar.getClose());
-			double[] bBandsDesc = priceChannelPos(instrument, pPeriod, side,
-					time, pivotLowBar.getLow(), 0);
-
-			return new TriggerDesc(TriggerType.BULLISH_1_BAR, 1, patternBars,
-					pivotLowBar.getLow(), getLowerHandleMiddle(pivotLowBar),
-					bBandsDesc[0], bBandsDesc[1], bBandsDesc[2], bBandsDesc[3],
-					priceKeltnerChannelPos(instrument, pPeriod, side, time,
-							pivotLowBar.getLow(), 0),
-					(pivotLowBar.getHigh() - bodyTop) / range * 100.0,
-					(bodyTop - bodyBottom) / range * 100.0,
-					(bodyBottom - pivotLowBar.getLow()) / range * 100.0,
-					pivotLowBar.getClose() > pivotLowBar.getOpen());
-		} else if ((pivotLowBar = this.twoBarsBullishTriggerBar(instrument,
-				pPeriod, side, time)) != null) {
-			List<IBar> bars = history.getBars(instrument, pPeriod, side,
-					Filter.WEEKENDS, 2, time, 0);
-			IBar prevBar = bars.get(0);
-			IBar currBar = bars.get(1);
-			IBar[] patternBars = new IBar[2];
-			patternBars[0] = prevBar;
-			patternBars[1] = currBar;
-			// calc % of the combined candle
-			double h = Math.max(prevBar.getHigh(), currBar.getHigh()), l = Math
-					.min(prevBar.getLow(), currBar.getLow()), o = prevBar
-					.getOpen(), c = currBar.getClose(), range = h - l, bodyTop = Math
-					.max(o, c), bodyBottom = Math.min(o, c);
-			double[] bBandsDesc = priceChannelPos(instrument, pPeriod, side,
-					time, pivotLowBar.getLow(),
-					prevBar.getLow() < currBar.getLow() ? 1 : 0);
-
-			lastBullishTrigger = TriggerType.BULLISH_2_BARS;
-			return new TriggerDesc(TriggerType.BULLISH_2_BARS, 2,
-					patternBars,
-					pivotLowBar.getLow(),
-					// srLevel is simply last bar middle. Maybe something more
-					// precise (with handles) can be done...
-					currBar.getLow() + (currBar.getHigh() - currBar.getLow())
-							/ 2, bBandsDesc[0], bBandsDesc[1], bBandsDesc[2],
-					bBandsDesc[3], priceKeltnerChannelPos(instrument, pPeriod,
-							side, time, pivotLowBar.getLow(),
-							prevBar.getLow() < currBar.getLow() ? 1 : 0),
-					(h - bodyTop) / range * 100.0, (bodyTop - bodyBottom)
-							/ range * 100.0, (bodyBottom - l) / range * 100.0,
-					bodyTop > bodyBottom);
-		} else if ((pivotLowBar = this.bullishPivotalLowsTriggerBar(instrument,	pPeriod, side, time)) != null) {
-			lastBullishTrigger = TriggerType.BULLISH_3_BARS;
-			List<IBar> bars = history.getBars(instrument, pPeriod, side, Filter.WEEKENDS, 3, time, 0);
-			IBar firstBar = bars.get(0);
-			IBar middleBar = bars.get(1);
-			IBar currBar = bars.get(2);
-			IBar[] patternBars = new IBar[3];
-			patternBars[0] = firstBar;
-			patternBars[1] = middleBar;
-			patternBars[2] = currBar;
-			// calc % of the combined candle
-			double 
-				h = Math.max(Math.max(firstBar.getHigh(), middleBar.getHigh()),	currBar.getHigh()), l = pivotLowBar.getLow(), 
-				o = firstBar.getOpen(), c = currBar.getClose(), 
-				range = h - l, 
-				bodyTop = Math.max(o, c), 
-				bodyBottom = Math.min(o, c);
-			double[] bBandsDesc = priceChannelPos(instrument, pPeriod, side, time, pivotLowBar.getLow(), 1);
-
-			return new TriggerDesc(TriggerType.BULLISH_3_BARS, 3, patternBars,
-					pivotLowBar.getLow(),
-					getBullishPivotalThreeBarsSRLevel(middleBar),
-					bBandsDesc[0], bBandsDesc[1], bBandsDesc[2], bBandsDesc[3],
-					priceKeltnerChannelPos(instrument, pPeriod, side, time,	pivotLowBar.getLow(), 1), 
-					(h - bodyTop) / range * 100.0, 
-					(bodyTop - bodyBottom) / range * 100.0,
-					(bodyBottom - l) / range * 100.0, c > o);
-		} else if ((pivotLowBar = this.bullishMaribouzuBar(instrument, pPeriod,
-				side, time)) != null) {
-			lastBullishTrigger = TriggerType.BULLISH_1_BAR;
-			IBar[] patternBars = new IBar[1];
-			patternBars[0] = pivotLowBar;
-			// calc % of the combined candle
-			double range = pivotLowBar.getHigh() - pivotLowBar.getLow(), bodyTop = Math
-					.max(pivotLowBar.getOpen(), pivotLowBar.getClose()), bodyBottom = Math
-					.min(pivotLowBar.getOpen(), pivotLowBar.getClose());
-			double[] bBandsDesc = priceChannelPos(instrument, pPeriod, side,
-					time, pivotLowBar.getLow(), 0);
-
-			return new TriggerDesc(TriggerType.BULLISH_1_BAR, 1, patternBars,
-					pivotLowBar.getLow(), getLowerHandleMiddle(pivotLowBar),
-					bBandsDesc[0], bBandsDesc[1], bBandsDesc[2], bBandsDesc[3],
-					priceKeltnerChannelPos(instrument, pPeriod, side, time,
-							pivotLowBar.getLow(), 0),
-					(pivotLowBar.getHigh() - bodyTop) / range * 100.0,
-					(bodyTop - bodyBottom) / range * 100.0,
-					(bodyBottom - pivotLowBar.getLow()) / range * 100.0,
-					pivotLowBar.getClose() > pivotLowBar.getOpen());
-		} else
-			return null;
+	public TriggerDesc bullishReversalCandlePatternDesc(Instrument instrument,	Period pPeriod, OfferSide side, long time) throws JFException {
+		return bullishReversalCandlePatternDesc(instrument, pPeriod, Filter.WEEKENDS, side, time);
 	}
 
 	/**
 	 * S/R level for bullish 3-bar is middle of middle bar's LOWER handle
 	 */
 	private double getBullishPivotalThreeBarsSRLevel(IBar middleBar) {
-		double realBodyBottom = Math.min(middleBar.getOpen(),
-				middleBar.getClose());
+		double realBodyBottom = Math.min(middleBar.getOpen(),	middleBar.getClose());
 		return middleBar.getLow() + (realBodyBottom - middleBar.getLow()) / 2.0;
 	}
 
@@ -322,10 +214,8 @@ public class TradeTrigger {
 	 * support/resistance level is the same both for bullish and bearish pivot
 	 * triangle - simply the middle bar middle
 	 */
-	private double getPivotalThreeBarsSRLevel(Instrument instrument,
-			Period pPeriod, OfferSide side, long time) throws JFException {
-		List<IBar> bars = history.getBars(instrument, pPeriod, side,
-				Filter.WEEKENDS, 2, time, 0);
+	private double getPivotalThreeBarsSRLevel(Instrument instrument, Period pPeriod, OfferSide side, long time) throws JFException {
+		List<IBar> bars = history.getBars(instrument, pPeriod, side, Filter.WEEKENDS, 2, time, 0);
 		IBar prevBar = bars.get(0);
 		return prevBar.getLow() + (prevBar.getHigh() - prevBar.getLow()) / 2;
 	}
@@ -335,28 +225,25 @@ public class TradeTrigger {
 		return bar.getLow() + (realBodyBottom - bar.getLow()) / 2;
 	}
 
-	public double priceKeltnerChannelPos(Instrument instrument, Period pPeriod,
-			OfferSide side, long time, double price, int backBars)
-			throws JFException {
-		double[] last2ATRs = indicators.atr(instrument, pPeriod, side, 14,
-				Filter.WEEKENDS, 2, time, 0);
-		double[] last2MAs = indicators.sma(instrument, pPeriod, side,
-				AppliedPrice.CLOSE, 20, Filter.WEEKENDS, 2, time, 0);
-		double keltnerBandsWidth = (last2MAs[backBars] + 2.0 * last2ATRs[backBars])
-				- (last2MAs[backBars] - 2.0 * last2ATRs[backBars]);
-		double keltnerBandsBottom = last2MAs[backBars] - 2.0
-				* last2ATRs[backBars];
+	public double priceKeltnerChannelPos(Instrument instrument, Period pPeriod,	OfferSide side, long time, double price, int backBars)	throws JFException {
+		return priceKeltnerChannelPos(instrument, pPeriod, Filter.WEEKENDS, side, time, price, backBars);
+	}
+	
+	public double priceKeltnerChannelPos(Instrument instrument, Period pPeriod,	Filter filter, OfferSide side, long time, double price, int backBars)	throws JFException {
+		double[] last2ATRs = indicators.atr(instrument, pPeriod, side, 14, filter, 2, time, 0);
+		double[] last2MAs = indicators.sma(instrument, pPeriod, side, AppliedPrice.CLOSE, 20, filter, 2, time, 0);
+		double keltnerBandsWidth = (last2MAs[backBars] + 2.0 * last2ATRs[backBars])	- (last2MAs[backBars] - 2.0 * last2ATRs[backBars]);
+		double keltnerBandsBottom = last2MAs[backBars] - 2.0 * last2ATRs[backBars];
 		return (price - keltnerBandsBottom) / keltnerBandsWidth * 100;
 	}
+
 
 	/**
 	 * @return low of pivot bar if condition found (to serve as protective stop)
 	 *         otherwise -1
 	 */
-	public double bullishPivotalLowsTrigger(Instrument instrument,
-			Period pPeriod, OfferSide side, long time) throws JFException {
-		List<IBar> bars = history.getBars(instrument, pPeriod, side,
-				Filter.WEEKENDS, 3, time, 0);
+	public double bullishPivotalLowsTrigger(Instrument instrument, Period pPeriod, OfferSide side, long time) throws JFException {
+		List<IBar> bars = history.getBars(instrument, pPeriod, side,Filter.WEEKENDS, 3, time, 0);
 		IBar currBar = bars.get(2);
 		IBar prevBar1 = bars.get(1);
 		IBar prevBar2 = bars.get(0);
@@ -369,16 +256,17 @@ public class TradeTrigger {
 		}
 	}
 
-	public IBar bullishPivotalLowsTriggerBar(Instrument instrument,
-			Period pPeriod, OfferSide side, long time) throws JFException {
-		List<IBar> bars = history.getBars(instrument, pPeriod, side,
-				Filter.WEEKENDS, 3, time, 0);
+	public IBar bullishPivotalLowsTriggerBar(Instrument instrument,	Period pPeriod, OfferSide side, long time) throws JFException {
+		return bullishPivotalLowsTriggerBar(instrument, pPeriod, Filter.WEEKENDS, side, time);
+	}
+	
+	public IBar bullishPivotalLowsTriggerBar(Instrument instrument,	Period pPeriod, Filter filter, OfferSide side, long time) throws JFException {
+		List<IBar> bars = history.getBars(instrument, pPeriod, side, filter, 3, time, 0);
 		IBar currBar = bars.get(2);
 		IBar prevBar1 = bars.get(1);
 		IBar prevBar2 = bars.get(0);
 
-		if (currBar.getLow() > prevBar1.getLow()
-				&& prevBar1.getLow() <= prevBar2.getLow()) {
+		if (currBar.getLow() > prevBar1.getLow() && prevBar1.getLow() <= prevBar2.getLow()) {
 			return prevBar1;
 		} else {
 			return null;
@@ -406,17 +294,20 @@ public class TradeTrigger {
 	}
 
 	// bar length must be at least average
-	public IBar oneBarBullishTriggerBar(Instrument instrument, Period pPeriod,
-			OfferSide side, long time) throws JFException {
-		List<IBar> bars = history.getBars(instrument, pPeriod, side,
-				Filter.WEEKENDS, 1, time, 0);
+	public IBar oneBarBullishTriggerBar(Instrument instrument, Period pPeriod,	OfferSide side, long time) throws JFException {
+		return oneBarBullishTriggerBar(instrument, pPeriod, Filter.WEEKENDS, side, time);
+	}
+	
+	public IBar oneBarBullishTriggerBar(Instrument instrument, Period pPeriod, Filter filter, OfferSide side, long time) throws JFException {
+		List<IBar> bars = history.getBars(instrument, pPeriod, side, filter, 1, time, 0);
 		IBar currBar = bars.get(0);
 		if (barLengthStatPos(instrument, pPeriod, side, currBar, 1000) <= 0.0)
 			return null;
 
-		double barLength = currBar.getHigh() - currBar.getLow(), realBodyLow = Math
-				.min(currBar.getOpen(), currBar.getClose()), lowerWick = realBodyLow
-				- currBar.getLow();
+		double 
+			barLength = currBar.getHigh() - currBar.getLow(), 
+			realBodyLow = Math.min(currBar.getOpen(), currBar.getClose()), 
+			lowerWick = realBodyLow	- currBar.getLow();
 
 		if (lowerWick / barLength >= 0.6) {
 			return currBar;
@@ -442,12 +333,28 @@ public class TradeTrigger {
 			return null;
 		}
 	}
+	
+	public IBar bullishMaribouzuBar(Instrument instrument, Period pPeriod, Filter filter, OfferSide side, long time) throws JFException {
+		List<IBar> bars = history.getBars(instrument, pPeriod, side, filter, 1, time, 0);
+		IBar currBar = bars.get(0);
+		if (barLengthStatPos(instrument, pPeriod, filter, side, currBar, 1000) <= 0.0)
+			return null;
 
-	public double oneBarBearishTrigger(Instrument instrument, Period pPeriod, OfferSide side, long time) throws JFException {
-		List<IBar> bars = history.getBars(instrument, pPeriod, side, Filter.WEEKENDS, 1, time, 0);
+		double barLength = currBar.getHigh() - currBar.getLow();
+
+		if (currBar.getClose() > currBar.getOpen() && (currBar.getClose() - currBar.getOpen()) / barLength >= 0.8) {
+			return currBar;
+		} else {
+			return null;
+		}
+	}
+
+
+	public double oneBarBearishTrigger(Instrument instrument, Period pPeriod, Filter filter, OfferSide side, long time) throws JFException {
+		List<IBar> bars = history.getBars(instrument, pPeriod, side, filter, 1, time, 0);
 		IBar currBar = bars.get(0);
 		// bar length must be at least average
-		if (barLengthStatPos(instrument, pPeriod, side, currBar, 1000) <= 0.0)
+		if (barLengthStatPos(instrument, pPeriod, filter, side, currBar, 1000) <= 0.0)
 			return Double.MAX_VALUE;
 
 		double barLength = currBar.getHigh() - currBar.getLow(), realBodyHigh = Math
@@ -461,13 +368,15 @@ public class TradeTrigger {
 		}
 	}
 
-	public double bearishMaribouzuBar(Instrument instrument, Period pPeriod,
-			OfferSide side, long time) throws JFException {
-		List<IBar> bars = history.getBars(instrument, pPeriod, side,
-				Filter.WEEKENDS, 1, time, 0);
+	public double oneBarBearishTrigger(Instrument instrument, Period pPeriod, OfferSide side, long time) throws JFException {
+		return oneBarBearishTrigger(instrument, pPeriod, Filter.WEEKENDS, side, time);
+	}
+	
+	public double bearishMaribouzuBar(Instrument instrument, Period pPeriod, Filter filter, OfferSide side, long time) throws JFException {
+		List<IBar> bars = history.getBars(instrument, pPeriod, side, filter, 1, time, 0);
 		IBar currBar = bars.get(0);
 		// bar length must be at least average
-		if (barLengthStatPos(instrument, pPeriod, side, currBar, 1000) <= 0.0)
+		if (barLengthStatPos(instrument, pPeriod, filter, side, currBar, 1000) <= 0.0)
 			return Double.MAX_VALUE;
 
 		double barLength = currBar.getHigh() - currBar.getLow();
@@ -479,6 +388,11 @@ public class TradeTrigger {
 			return Double.MAX_VALUE;
 		}
 	}
+	
+	public double bearishMaribouzuBar(Instrument instrument, Period pPeriod, OfferSide side, long time) throws JFException {
+		return bearishMaribouzuBar(instrument, pPeriod, Filter.WEEKENDS, side, time);
+	}
+
 
 	// 2nd bar body length must be at least average
 	public double twoBarsBullishTrigger(Instrument instrument, Period pPeriod,
@@ -569,36 +483,30 @@ public class TradeTrigger {
 		return lowerHandleSize / totalBarSize * 100.0;
 	}
 
-	public IBar twoBarsBullishTriggerBar(Instrument instrument, Period pPeriod,
-			OfferSide side, long time) throws JFException {
-		List<IBar> bars = history.getBars(instrument, pPeriod, side,
-				Filter.WEEKENDS, 2, time, 0);
+	public IBar twoBarsBullishTriggerBar(Instrument instrument, Period pPeriod,	OfferSide side, long time) throws JFException {
+		return twoBarsBullishTriggerBar(instrument, pPeriod, Filter.WEEKENDS, side, time);
+	}
+	
+	public IBar twoBarsBullishTriggerBar(Instrument instrument, Period pPeriod,	Filter filter, OfferSide side, long time) throws JFException {
+		List<IBar> bars = history.getBars(instrument, pPeriod, side, filter, 2, time, 0);
 		IBar prevBar = bars.get(0);
 		IBar currBar = bars.get(1);
 
 		// bullish inside bar (previous very big and RED, current bar very
 		// small)
-		if (barBodyLengthStatPos(instrument, pPeriod, side, currBar, 1000) <= -1.0
-				&& barBodyLengthStatPos(instrument, pPeriod, side, prevBar,
-						1000) >= 1.0
-				&& prevBar.getClose() < prevBar.getOpen() // careful, avoid
-															// riksha man !
-															// Previous bar
-															// should have
-															// significant body
-															// size relative to
-															// length !
+		if (barBodyLengthStatPos(instrument, pPeriod, filter, side, currBar, 1000) <= -1.0
+			&& barBodyLengthStatPos(instrument, pPeriod, filter, side, prevBar,	1000) >= 1.0
+				&& prevBar.getClose() < prevBar.getOpen() // careful, avoid riksha man ! Previous bar should have significant body size relative to length !
 				&& barsBodyPerc(prevBar) >= 60.0
 				&& prevBar.getHigh() >= currBar.getHigh()
 				&& prevBar.getLow() <= currBar.getLow())
 			return prevBar;
 
-		if (barBodyLengthStatPos(instrument, pPeriod, side, currBar, 1000) <= 0.0)
+		if (barBodyLengthStatPos(instrument, pPeriod, filter, side, currBar, 1000) <= 0.0)
 			return null;
 
 		// first check strict engulfing possibility
-		int[] engulfing = indicators.cdlEngulfing(instrument, pPeriod, side,
-				Filter.WEEKENDS, 1, time, 0);
+		int[] engulfing = indicators.cdlEngulfing(instrument, pPeriod, side, filter, 1, time, 0);
 		if (engulfing != null && engulfing[0] == 100)
 			return prevBar.getLow() < currBar.getLow() ? prevBar : currBar;
 
@@ -616,19 +524,17 @@ public class TradeTrigger {
 		} else
 			return null;
 	}
+	
 
 	// 2nd bar body length must be at least average
-	public double twoBarsBearishTrigger(Instrument instrument, Period pPeriod,
-			OfferSide side, long time) throws JFException {
-		List<IBar> bars = history.getBars(instrument, pPeriod, side,
-				Filter.WEEKENDS, 2, time, 0);
+	public double twoBarsBearishTrigger(Instrument instrument, Period pPeriod, Filter filter, OfferSide side, long time) throws JFException {
+		List<IBar> bars = history.getBars(instrument, pPeriod, side, filter, 2, time, 0);
 		IBar prevBar = bars.get(0);
 		IBar currBar = bars.get(1);
 
 		// bearish inside bar: previous bar huge and green, this bar small
-		if (barBodyLengthStatPos(instrument, pPeriod, side, currBar, 1000) <= -1.0
-				&& barBodyLengthStatPos(instrument, pPeriod, side, prevBar,
-						1000) >= 1.0
+		if (barBodyLengthStatPos(instrument, pPeriod, filter, side, currBar, 1000) <= -1.0
+			&& barBodyLengthStatPos(instrument, pPeriod, filter, side, prevBar,	1000) >= 1.0
 				&& prevBar.getClose() > prevBar.getOpen() // careful, avoid
 															// riksha man !
 															// Previous bar
@@ -641,15 +547,13 @@ public class TradeTrigger {
 				&& prevBar.getLow() <= currBar.getLow())
 			return prevBar.getHigh();
 
-		if (barBodyLengthStatPos(instrument, pPeriod, side, currBar, 1000) <= 0.0)
+		if (barBodyLengthStatPos(instrument, pPeriod, filter, side, currBar, 1000) <= 0.0)
 			return Double.MAX_VALUE;
 
 		// first check strict engulfing possibility
-		int[] engulfing = indicators.cdlEngulfing(instrument, pPeriod, side,
-				Filter.WEEKENDS, 1, time, 0);
+		int[] engulfing = indicators.cdlEngulfing(instrument, pPeriod, side, filter, 1, time, 0);
 		if (engulfing != null && engulfing[0] == -100)
-			return prevBar.getHigh() > currBar.getHigh() ? prevBar.getHigh()
-					: currBar.getHigh();
+			return prevBar.getHigh() > currBar.getHigh() ? prevBar.getHigh() : currBar.getHigh();
 
 		// 2nd bar of the combination must be red
 		if (currBar.getClose() > currBar.getOpen())
@@ -665,6 +569,11 @@ public class TradeTrigger {
 		} else
 			return Double.MAX_VALUE;
 	}
+	
+	public double twoBarsBearishTrigger(Instrument instrument, Period pPeriod, OfferSide side, long time) throws JFException {
+		return twoBarsBearishTrigger(instrument, pPeriod, Filter.WEEKENDS, side, time);
+	}
+
 
 	private double bodiesOverlapPerc(IBar prevBar, IBar currBar) {
 		// Bar1 is the left (earlier) and Bar2 the right (newer) bar
@@ -720,10 +629,8 @@ public class TradeTrigger {
 				&& currBar.getLow() < prevBar1.getLow();
 	}
 
-	public double triggerFoundBearishPivotalHighs(Instrument instrument,
-			Period pPeriod, OfferSide side, long time) throws JFException {
-		List<IBar> bars = history.getBars(instrument, pPeriod, side,
-				Filter.WEEKENDS, 3, time, 0);
+	public double triggerFoundBearishPivotalHighs(Instrument instrument, Period pPeriod, Filter filter, OfferSide side, long time) throws JFException {
+		List<IBar> bars = history.getBars(instrument, pPeriod, side, filter, 3, time, 0);
 		IBar currBar = bars.get(2);
 		IBar prevBar1 = bars.get(1);
 		IBar prevBar2 = bars.get(0);
@@ -735,6 +642,11 @@ public class TradeTrigger {
 			return Double.MAX_VALUE;
 		}
 	}
+	
+	public double triggerFoundBearishPivotalHighs(Instrument instrument, Period pPeriod, OfferSide side, long time) throws JFException {
+		return triggerFoundBearishPivotalHighs(instrument, pPeriod, Filter.WEEKENDS, side, time);
+	}
+
 
 	public boolean startT1BL(IOrder positionOrder, Instrument instrument,
 			Period pPeriod, OfferSide side,
@@ -829,120 +741,7 @@ public class TradeTrigger {
 	}
 
 	public TriggerDesc bearishReversalCandlePatternDesc(Instrument instrument, Period pPeriod, OfferSide side, long time) throws JFException {
-		double pivotHigh = Double.MAX_VALUE;
-		lastBearishTrigger = TriggerType.NONE;
-
-		if ((pivotHigh = this.oneBarBearishTrigger(instrument, pPeriod, side, time)) != Double.MAX_VALUE) {
-			lastBearishTrigger = TriggerType.BEARISH_1_BAR;
-			List<IBar> bars = history.getBars(instrument, pPeriod, side, Filter.WEEKENDS, 1, time, 0);
-			IBar[] patternBars = new IBar[1];
-			patternBars[0] = bars.get(0);
-			// calc % of the combined candle
-			double range = patternBars[0].getHigh() - patternBars[0].getLow(), bodyTop = Math
-					.max(patternBars[0].getOpen(), patternBars[0].getClose()), bodyBottom = Math
-					.min(patternBars[0].getOpen(), patternBars[0].getClose());
-			double[] bBandsDesc = priceChannelPos(instrument, pPeriod, side, time, pivotHigh, 0);
-
-			return new TriggerDesc(TriggerType.BEARISH_1_BAR, 1, patternBars,
-					pivotHigh,
-					getUpperHandleMiddle(history.getBars(instrument, pPeriod, side, Filter.WEEKENDS, 1, time, 0).get(0)),
-					bBandsDesc[0], bBandsDesc[1], bBandsDesc[2], bBandsDesc[3],
-					priceKeltnerChannelPos(instrument, pPeriod, side, time,	pivotHigh, 0), 
-					(patternBars[0].getHigh() - bodyTop) / range * 100.0, 
-					(bodyTop - bodyBottom) / range * 100.0, (bodyBottom - patternBars[0].getLow()) / range * 100.0,
-					patternBars[0].getClose() > patternBars[0].getOpen());
-		} else if ((pivotHigh = this.twoBarsBearishTrigger(instrument, pPeriod,
-				side, time)) != Double.MAX_VALUE) {
-			List<IBar> bars = history.getBars(instrument, pPeriod, side,
-					Filter.WEEKENDS, 2, time, 0);
-			IBar prevBar = bars.get(0);
-			IBar currBar = bars.get(1);
-			IBar[] patternBars = new IBar[2];
-			patternBars[0] = prevBar;
-			patternBars[1] = currBar;
-			// calc % of the combined candle
-			double h = Math.max(prevBar.getHigh(), currBar.getHigh()), l = Math
-					.min(prevBar.getLow(), currBar.getLow()), o = prevBar
-					.getOpen(), c = currBar.getClose(), range = h - l, bodyTop = Math
-					.max(o, c), bodyBottom = Math.min(o, c);
-			double[] bBandsDesc = priceChannelPos(instrument, pPeriod, side,
-					time, pivotHigh, prevBar.getHigh() > currBar.getHigh() ? 1
-							: 0);
-
-			lastBearishTrigger = TriggerType.BEARISH_2_BARS;
-			return new TriggerDesc(TriggerType.BEARISH_2_BARS, 2,
-					patternBars,
-					pivotHigh,
-					// srLevel is simply last bar middle. Maybe something more
-					// precise (with handles) can be done...
-					currBar.getLow() + (currBar.getHigh() - currBar.getLow())
-							/ 2, bBandsDesc[0], bBandsDesc[1], bBandsDesc[2],
-					bBandsDesc[3], priceKeltnerChannelPos(instrument, pPeriod,
-							side, time, pivotHigh,
-							prevBar.getHigh() > currBar.getHigh() ? 1 : 0),
-					(h - bodyTop) / range * 100.0, (bodyTop - bodyBottom)
-							/ range * 100.0, (bodyBottom - l) / range * 100.0,
-					c > o);
-
-		} else if ((pivotHigh = this.triggerFoundBearishPivotalHighs(
-				instrument, pPeriod, side, time)) != Double.MAX_VALUE) {
-			List<IBar> bars = history.getBars(instrument, pPeriod, side,
-					Filter.WEEKENDS, 3, time, 0);
-			IBar firstBar = bars.get(0);
-			IBar middleBar = bars.get(1);
-			IBar currBar = bars.get(2);
-			IBar[] patternBars = new IBar[3];
-			patternBars[0] = firstBar;
-			patternBars[1] = middleBar;
-			patternBars[2] = currBar;
-			// calc % of the combined candle
-			double h = pivotHigh, l = Math.min(
-					Math.min(firstBar.getLow(), middleBar.getLow()),
-					currBar.getLow()), o = firstBar.getOpen(), c = currBar
-					.getClose(), range = h - l, bodyTop = Math.max(o, c), bodyBottom = Math
-					.min(o, c);
-			double[] bBandsDesc = priceChannelPos(instrument, pPeriod, side,
-					time, pivotHigh, 1);
-
-			lastBearishTrigger = TriggerType.BEARISH_3_BARS;
-			return new TriggerDesc(TriggerType.BEARISH_3_BARS, 3,
-					patternBars,
-					pivotHigh,
-					// S/R level for bearish 3-bar is middle of middle bar's
-					// UPPER handle
-					getUpperHandleMiddle(middleBar), bBandsDesc[0],
-					bBandsDesc[1], bBandsDesc[2], bBandsDesc[3],
-					priceKeltnerChannelPos(instrument, pPeriod, side, time,
-							pivotHigh, 1), (h - bodyTop) / range * 100.0,
-					(bodyTop - bodyBottom) / range * 100.0, (bodyBottom - l)
-							/ range * 100.0, c > o);
-		} else if ((pivotHigh = this.bearishMaribouzuBar(instrument, pPeriod,
-				side, time)) != Double.MAX_VALUE) {
-			lastBearishTrigger = TriggerType.BEARISH_1_BAR;
-			List<IBar> bars = history.getBars(instrument, pPeriod, side,
-					Filter.WEEKENDS, 1, time, 0);
-			IBar[] patternBars = new IBar[1];
-			patternBars[0] = bars.get(0);
-			// calc % of the combined candle
-			double range = patternBars[0].getHigh() - patternBars[0].getLow(), bodyTop = Math
-					.max(patternBars[0].getOpen(), patternBars[0].getClose()), bodyBottom = Math
-					.min(patternBars[0].getOpen(), patternBars[0].getClose());
-			double[] bBandsDesc = priceChannelPos(instrument, pPeriod, side,
-					time, pivotHigh, 0);
-
-			return new TriggerDesc(TriggerType.BEARISH_1_BAR, 1, patternBars,
-					pivotHigh,
-					getUpperHandleMiddle(history.getBars(instrument, pPeriod,
-							side, Filter.WEEKENDS, 1, time, 0).get(0)),
-					bBandsDesc[0], bBandsDesc[1], bBandsDesc[2], bBandsDesc[3],
-					priceKeltnerChannelPos(instrument, pPeriod, side, time,
-							pivotHigh, 0), (patternBars[0].getHigh() - bodyTop)
-							/ range * 100.0, (bodyTop - bodyBottom) / range
-							* 100.0, (bodyBottom - patternBars[0].getLow())
-							/ range * 100.0,
-					patternBars[0].getClose() > patternBars[0].getOpen());
-		} else
-			return null;
+		return bearishReversalCandlePatternDesc(instrument, pPeriod, Filter.WEEKENDS, side, time);
 	}
 
 	private double getUpperHandleMiddle(IBar bar) {
@@ -950,10 +749,12 @@ public class TradeTrigger {
 		return realBodyTop + (bar.getHigh() - realBodyTop) / 2;
 	}
 
-	public double barLengthStatPos(Instrument instrument, Period pPeriod,
-			OfferSide side, IBar forBar, int lookBack) throws JFException {
-		List<IBar> bars = history.getBars(instrument, pPeriod, side,
-				Filter.WEEKENDS, lookBack - 1, forBar.getTime(), 0);
+	public double barLengthStatPos(Instrument instrument, Period pPeriod, OfferSide side, IBar forBar, int lookBack) throws JFException {
+		return barLengthStatPos(instrument, pPeriod, Filter.WEEKENDS, side, forBar, lookBack);
+	}
+
+	public double barLengthStatPos(Instrument instrument, Period pPeriod, Filter filter, OfferSide side, IBar forBar, int lookBack) throws JFException {
+		List<IBar> bars = history.getBars(instrument, pPeriod, side, filter, lookBack - 1, forBar.getTime(), 0);
 		// include current bar in calc !
 		bars.add(forBar);
 		double[] barLengths = new double[bars.size()];
@@ -965,12 +766,9 @@ public class TradeTrigger {
 		return ((forBar.getHigh() - forBar.getLow()) - stDevStats[0])
 				/ stDevStats[1];
 	}
-
-	public double barLengthStatPos(Instrument instrument, Period pPeriod,
-			OfferSide side, IBar forBar, double combinedHigh,
-			double combinedLow, int lookBack) throws JFException {
-		List<IBar> bars = history.getBars(instrument, pPeriod, side,
-				Filter.WEEKENDS, lookBack - 1, forBar.getTime(), 0);
+	
+	public double barLengthStatPos(Instrument instrument, Period pPeriod, OfferSide side, IBar forBar, double combinedHigh, double combinedLow, int lookBack) throws JFException {
+		List<IBar> bars = history.getBars(instrument, pPeriod, side, Filter.WEEKENDS, lookBack - 1, forBar.getTime(), 0);
 		// include current bar in calc !
 		bars.add(forBar);
 		double[] barLengths = new double[bars.size()];
@@ -1002,10 +800,12 @@ public class TradeTrigger {
 				* Math.pow(10, instrument.getPipScale());
 	}
 
-	public double barBodyLengthStatPos(Instrument instrument, Period pPeriod,
-			OfferSide side, IBar forBar, int lookBack) throws JFException {
-		List<IBar> bars = history.getBars(instrument, pPeriod, side,
-				Filter.WEEKENDS, lookBack - 1, forBar.getTime(), 0);
+	public double barBodyLengthStatPos(Instrument instrument, Period pPeriod,	OfferSide side, IBar forBar, int lookBack) throws JFException {
+		return barBodyLengthStatPos(instrument, pPeriod, Filter.WEEKENDS, side, forBar, lookBack);
+	}
+	
+	public double barBodyLengthStatPos(Instrument instrument, Period pPeriod, Filter filter, OfferSide side, IBar forBar, int lookBack) throws JFException {
+		List<IBar> bars = history.getBars(instrument, pPeriod, side, filter, lookBack - 1, forBar.getTime(), 0);
 		// include current bar in calc !
 		bars.add(forBar);
 		double[] barBodyLengths = new double[bars.size()];
@@ -1021,6 +821,7 @@ public class TradeTrigger {
 				- Math.min(forBar.getOpen(), forBar.getClose());
 		return (forBbarBodyLength - stDevStats[0]) / stDevStats[1];
 	}
+
 
 	public double avgHandleLength(Instrument instrument, Period pPeriod,
 			OfferSide side, IBar forBar, int lookBack) throws JFException {
@@ -1178,7 +979,11 @@ public class TradeTrigger {
 	}
 
 	public double[] priceChannelPos(Instrument instrument, Period pPeriod, OfferSide side, long time, double price, int backBars) throws JFException {
-		double[][] bBands = indicators.bbands(instrument, pPeriod, side, AppliedPrice.CLOSE, 20, 2.0, 2.0, MaType.SMA, Filter.WEEKENDS,	2, time, 0);
+		return priceChannelPos(instrument, pPeriod, Filter.WEEKENDS, side, time, price, backBars);
+	}
+
+	public double[] priceChannelPos(Instrument instrument, Period pPeriod, Filter filter, OfferSide side, long time, double price, int backBars) throws JFException {
+		double[][] bBands = indicators.bbands(instrument, pPeriod, side, AppliedPrice.CLOSE, 20, 2.0, 2.0, MaType.SMA, filter,	2, time, 0);
 		double bBandsWidth = bBands[0][1 - backBars] - bBands[2][1 - backBars];
 		double bBandsBottom = bBands[2][1 - backBars];
 		double[] results = new double[4];
@@ -1188,7 +993,7 @@ public class TradeTrigger {
 		results[3] = bBandsWidth;
 		return results;
 	}
-
+	
 	public String[] parseCandleTriggers(String valueToShow) {
 		String bullishCandles = null, bearishCandles = null;
 		String[] result = new String[2];
@@ -1223,5 +1028,201 @@ public class TradeTrigger {
 			}
 		}
 		return result;
+	}
+
+	public TriggerDesc bullishReversalCandlePatternDesc(Instrument instrument,	Period pPeriod, Filter filter, OfferSide side, long time) throws JFException {
+		lastBullishTrigger = TriggerType.NONE;
+		IBar pivotLowBar = null;
+		if ((pivotLowBar = this.oneBarBullishTriggerBar(instrument, pPeriod, filter, side, time)) != null) {
+			lastBullishTrigger = TriggerType.BULLISH_1_BAR;
+			IBar[] patternBars = new IBar[1];
+			patternBars[0] = pivotLowBar;
+			// calc % of the combined candle
+			double range = pivotLowBar.getHigh() - pivotLowBar.getLow(), bodyTop = Math
+					.max(pivotLowBar.getOpen(), pivotLowBar.getClose()), bodyBottom = Math
+					.min(pivotLowBar.getOpen(), pivotLowBar.getClose());
+			double[] bBandsDesc = priceChannelPos(instrument, pPeriod, filter, side, time, pivotLowBar.getLow(), 0);
+
+			return new TriggerDesc(TriggerType.BULLISH_1_BAR, 1, patternBars,
+					pivotLowBar.getLow(), getLowerHandleMiddle(pivotLowBar),
+					bBandsDesc[0], bBandsDesc[1], bBandsDesc[2], bBandsDesc[3],
+					priceKeltnerChannelPos(instrument, pPeriod, filter, side, time,	pivotLowBar.getLow(), 0),
+					(pivotLowBar.getHigh() - bodyTop) / range * 100.0,
+					(bodyTop - bodyBottom) / range * 100.0,
+					(bodyBottom - pivotLowBar.getLow()) / range * 100.0,
+					pivotLowBar.getClose() > pivotLowBar.getOpen());
+		} else if ((pivotLowBar = this.twoBarsBullishTriggerBar(instrument,	pPeriod, filter, side, time)) != null) {
+			List<IBar> bars = history.getBars(instrument, pPeriod, side, filter, 2, time, 0);
+			IBar prevBar = bars.get(0);
+			IBar currBar = bars.get(1);
+			IBar[] patternBars = new IBar[2];
+			patternBars[0] = prevBar;
+			patternBars[1] = currBar;
+			// calc % of the combined candle
+			double h = Math.max(prevBar.getHigh(), currBar.getHigh()), l = Math
+					.min(prevBar.getLow(), currBar.getLow()), o = prevBar
+					.getOpen(), c = currBar.getClose(), range = h - l, bodyTop = Math
+					.max(o, c), bodyBottom = Math.min(o, c);
+			double[] bBandsDesc = priceChannelPos(instrument, pPeriod, filter, side, time, pivotLowBar.getLow(), prevBar.getLow() < currBar.getLow() ? 1 : 0);
+
+			lastBullishTrigger = TriggerType.BULLISH_2_BARS;
+			return new TriggerDesc(TriggerType.BULLISH_2_BARS, 2,
+					patternBars,
+					pivotLowBar.getLow(),
+					// srLevel is simply last bar middle. Maybe something more
+					// precise (with handles) can be done...
+					currBar.getLow() + (currBar.getHigh() - currBar.getLow()) / 2, 
+					bBandsDesc[0], bBandsDesc[1], bBandsDesc[2], bBandsDesc[3], 
+					priceKeltnerChannelPos(instrument, pPeriod, filter,	side, time, pivotLowBar.getLow(),
+					prevBar.getLow() < currBar.getLow() ? 1 : 0),
+					(h - bodyTop) / range * 100.0, (bodyTop - bodyBottom) / range * 100.0, (bodyBottom - l) / range * 100.0,
+					bodyTop > bodyBottom);
+		} else if ((pivotLowBar = this.bullishPivotalLowsTriggerBar(instrument,	pPeriod, filter, side, time)) != null) {
+			lastBullishTrigger = TriggerType.BULLISH_3_BARS;
+			List<IBar> bars = history.getBars(instrument, pPeriod, side, filter, 3, time, 0);
+			IBar firstBar = bars.get(0);
+			IBar middleBar = bars.get(1);
+			IBar currBar = bars.get(2);
+			IBar[] patternBars = new IBar[3];
+			patternBars[0] = firstBar;
+			patternBars[1] = middleBar;
+			patternBars[2] = currBar;
+			// calc % of the combined candle
+			double 
+				h = Math.max(Math.max(firstBar.getHigh(), middleBar.getHigh()),	currBar.getHigh()), l = pivotLowBar.getLow(), 
+				o = firstBar.getOpen(), c = currBar.getClose(), 
+				range = h - l, 
+				bodyTop = Math.max(o, c), 
+				bodyBottom = Math.min(o, c);
+			double[] bBandsDesc = priceChannelPos(instrument, pPeriod, filter, side, time, pivotLowBar.getLow(), 1);
+
+			return new TriggerDesc(TriggerType.BULLISH_3_BARS, 3, patternBars,
+					pivotLowBar.getLow(),
+					getBullishPivotalThreeBarsSRLevel(middleBar),
+					bBandsDesc[0], bBandsDesc[1], bBandsDesc[2], bBandsDesc[3],
+					priceKeltnerChannelPos(instrument, pPeriod, filter, side, time,	pivotLowBar.getLow(), 1), 
+					(h - bodyTop) / range * 100.0, 
+					(bodyTop - bodyBottom) / range * 100.0,
+					(bodyBottom - l) / range * 100.0, c > o);
+		} else if ((pivotLowBar = this.bullishMaribouzuBar(instrument, pPeriod,	filter, side, time)) != null) {
+			lastBullishTrigger = TriggerType.BULLISH_1_BAR;
+			IBar[] patternBars = new IBar[1];
+			patternBars[0] = pivotLowBar;
+			// calc % of the combined candle
+			double range = pivotLowBar.getHigh() - pivotLowBar.getLow(), bodyTop = Math
+					.max(pivotLowBar.getOpen(), pivotLowBar.getClose()), bodyBottom = Math
+					.min(pivotLowBar.getOpen(), pivotLowBar.getClose());
+			double[] bBandsDesc = priceChannelPos(instrument, pPeriod, filter, side, time, pivotLowBar.getLow(), 0);
+
+			return new TriggerDesc(TriggerType.BULLISH_1_BAR, 1, patternBars,
+					pivotLowBar.getLow(), getLowerHandleMiddle(pivotLowBar),
+					bBandsDesc[0], bBandsDesc[1], bBandsDesc[2], bBandsDesc[3],
+					priceKeltnerChannelPos(instrument, pPeriod, filter, side, time,	pivotLowBar.getLow(), 0),
+					(pivotLowBar.getHigh() - bodyTop) / range * 100.0,
+					(bodyTop - bodyBottom) / range * 100.0,
+					(bodyBottom - pivotLowBar.getLow()) / range * 100.0,
+					pivotLowBar.getClose() > pivotLowBar.getOpen());
+		} else
+			return null;
+	}
+
+	public TriggerDesc bearishReversalCandlePatternDesc(Instrument instrument, Period pPeriod, Filter filter, OfferSide side, long time) throws JFException {
+		double pivotHigh = Double.MAX_VALUE;
+		lastBearishTrigger = TriggerType.NONE;
+
+		if ((pivotHigh = this.oneBarBearishTrigger(instrument, pPeriod, filter, side, time)) != Double.MAX_VALUE) {
+			lastBearishTrigger = TriggerType.BEARISH_1_BAR;
+			List<IBar> bars = history.getBars(instrument, pPeriod, side, filter, 1, time, 0);
+			IBar[] patternBars = new IBar[1];
+			patternBars[0] = bars.get(0);
+			// calc % of the combined candle
+			double range = patternBars[0].getHigh() - patternBars[0].getLow(), bodyTop = Math
+					.max(patternBars[0].getOpen(), patternBars[0].getClose()), bodyBottom = Math
+					.min(patternBars[0].getOpen(), patternBars[0].getClose());
+			double[] bBandsDesc = priceChannelPos(instrument, pPeriod, filter, side, time, pivotHigh, 0);
+
+			return new TriggerDesc(TriggerType.BEARISH_1_BAR, 1, patternBars,
+					pivotHigh,
+					getUpperHandleMiddle(history.getBars(instrument, pPeriod, side, filter, 1, time, 0).get(0)),
+					bBandsDesc[0], bBandsDesc[1], bBandsDesc[2], bBandsDesc[3],
+					priceKeltnerChannelPos(instrument, pPeriod, filter, side, time,	pivotHigh, 0), 
+					(patternBars[0].getHigh() - bodyTop) / range * 100.0, 
+					(bodyTop - bodyBottom) / range * 100.0, (bodyBottom - patternBars[0].getLow()) / range * 100.0,
+					patternBars[0].getClose() > patternBars[0].getOpen());
+		} else if ((pivotHigh = this.twoBarsBearishTrigger(instrument, pPeriod,	filter, side, time)) != Double.MAX_VALUE) {
+			List<IBar> bars = history.getBars(instrument, pPeriod, side, filter, 2, time, 0);
+			IBar prevBar = bars.get(0);
+			IBar currBar = bars.get(1);
+			IBar[] patternBars = new IBar[2];
+			patternBars[0] = prevBar;
+			patternBars[1] = currBar;
+			// calc % of the combined candle
+			double h = Math.max(prevBar.getHigh(), currBar.getHigh()), l = Math
+					.min(prevBar.getLow(), currBar.getLow()), o = prevBar
+					.getOpen(), c = currBar.getClose(), range = h - l, bodyTop = Math
+					.max(o, c), bodyBottom = Math.min(o, c);
+			double[] bBandsDesc = priceChannelPos(instrument, pPeriod, filter, side, time, pivotHigh, prevBar.getHigh() > currBar.getHigh() ? 1	: 0);
+
+			lastBearishTrigger = TriggerType.BEARISH_2_BARS;
+			return new TriggerDesc(TriggerType.BEARISH_2_BARS, 2,
+					patternBars,
+					pivotHigh,
+					// srLevel is simply last bar middle. Maybe something more
+					// precise (with handles) can be done...
+					currBar.getLow() + (currBar.getHigh() - currBar.getLow())
+							/ 2, bBandsDesc[0], bBandsDesc[1], bBandsDesc[2],
+					bBandsDesc[3], priceKeltnerChannelPos(instrument, pPeriod, filter, 	side, time, pivotHigh,	prevBar.getHigh() > currBar.getHigh() ? 1 : 0),
+					(h - bodyTop) / range * 100.0, (bodyTop - bodyBottom) / range * 100.0, (bodyBottom - l) / range * 100.0,
+					c > o);
+
+		} else if ((pivotHigh = this.triggerFoundBearishPivotalHighs(instrument, pPeriod, filter, side, time)) != Double.MAX_VALUE) {
+			List<IBar> bars = history.getBars(instrument, pPeriod, side, filter, 3, time, 0);
+			IBar firstBar = bars.get(0);
+			IBar middleBar = bars.get(1);
+			IBar currBar = bars.get(2);
+			IBar[] patternBars = new IBar[3];
+			patternBars[0] = firstBar;
+			patternBars[1] = middleBar;
+			patternBars[2] = currBar;
+			// calc % of the combined candle
+			double h = pivotHigh, l = Math.min(
+					Math.min(firstBar.getLow(), middleBar.getLow()),
+					currBar.getLow()), o = firstBar.getOpen(), c = currBar
+					.getClose(), range = h - l, bodyTop = Math.max(o, c), bodyBottom = Math
+					.min(o, c);
+			double[] bBandsDesc = priceChannelPos(instrument, pPeriod, filter, side, time, pivotHigh, 1);
+
+			lastBearishTrigger = TriggerType.BEARISH_3_BARS;
+			return new TriggerDesc(TriggerType.BEARISH_3_BARS, 3,
+					patternBars,
+					pivotHigh,
+					// S/R level for bearish 3-bar is middle of middle bar's
+					// UPPER handle
+					getUpperHandleMiddle(middleBar), bBandsDesc[0],
+					bBandsDesc[1], bBandsDesc[2], bBandsDesc[3],
+					priceKeltnerChannelPos(instrument, pPeriod, filter, side, time,	pivotHigh, 1), (h - bodyTop) / range * 100.0,
+					(bodyTop - bodyBottom) / range * 100.0, (bodyBottom - l) / range * 100.0, c > o);
+		} else if ((pivotHigh = this.bearishMaribouzuBar(instrument, pPeriod, filter, side, time)) != Double.MAX_VALUE) {
+			lastBearishTrigger = TriggerType.BEARISH_1_BAR;
+			List<IBar> bars = history.getBars(instrument, pPeriod, side, filter, 1, time, 0);
+			IBar[] patternBars = new IBar[1];
+			patternBars[0] = bars.get(0);
+			// calc % of the combined candle
+			double range = patternBars[0].getHigh() - patternBars[0].getLow(), bodyTop = Math
+					.max(patternBars[0].getOpen(), patternBars[0].getClose()), bodyBottom = Math
+					.min(patternBars[0].getOpen(), patternBars[0].getClose());
+			double[] bBandsDesc = priceChannelPos(instrument, pPeriod, filter, side, time, pivotHigh, 0);
+
+			return new TriggerDesc(TriggerType.BEARISH_1_BAR, 1, patternBars,
+					pivotHigh,
+					getUpperHandleMiddle(history.getBars(instrument, pPeriod, side, filter, 1, time, 0).get(0)),
+					bBandsDesc[0], bBandsDesc[1], bBandsDesc[2], bBandsDesc[3],
+					priceKeltnerChannelPos(instrument, pPeriod, filter, side, time,	pivotHigh, 0), (patternBars[0].getHigh() - bodyTop)
+							/ range * 100.0, (bodyTop - bodyBottom) / range
+							* 100.0, (bodyBottom - patternBars[0].getLow())
+							/ range * 100.0,
+					patternBars[0].getClose() > patternBars[0].getOpen());
+		} else
+			return null;
 	}
 }

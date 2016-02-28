@@ -422,16 +422,13 @@ public class Momentum {
 		return SINGLE_LINE_STATE.NONE;
 	}
 
-	public double[] getStochs(Instrument instrument, Period pPeriod,
-			OfferSide side, long time) throws JFException {
+	public double[] getStochs(Instrument instrument, Period pPeriod, Filter filter, OfferSide side, long time) throws JFException {
 		int fastKPeriod = 14;
 		int slowKPeriod = 3;
 		MaType slowKMaType = MaType.SMA;
 		int slowDPeriod = 3;
 		MaType slowDMaType = MaType.SMA;
-		double[][] stoch2 = indicators.stoch(instrument, pPeriod, side,
-				fastKPeriod, slowKPeriod, slowKMaType, slowDPeriod,
-				slowDMaType, Filter.WEEKENDS, 1, time, 0);
+		double[][] stoch2 = indicators.stoch(instrument, pPeriod, side,	fastKPeriod, slowKPeriod, slowKMaType, slowDPeriod,	slowDMaType, filter, 1, time, 0);
 		double fastStoch = stoch2[0][0];
 		double slowStoch = stoch2[1][0];
 
@@ -439,17 +436,23 @@ public class Momentum {
 		stochs[1] = slowStoch;
 		return stochs;
 	}
+	
+	public double[] getStochs(Instrument instrument, Period pPeriod, OfferSide side, long time) throws JFException {
+		return getStochs(instrument, pPeriod, Filter.WEEKENDS, side, time);
+	}
 
-	public double[][] getStochs(Instrument instrument, Period pPeriod,
-			OfferSide side, long time, int lookBack) throws JFException {
+
+	public double[][] getStochs(Instrument instrument, Period pPeriod, Filter filter, OfferSide side, long time, int lookBack) throws JFException {
 		int fastKPeriod = 14;
 		int slowKPeriod = 3;
 		MaType slowKMaType = MaType.SMA;
 		int slowDPeriod = 3;
 		MaType slowDMaType = MaType.SMA;
-		return indicators.stoch(instrument, pPeriod, side, fastKPeriod,
-				slowKPeriod, slowKMaType, slowDPeriod, slowDMaType,
-				Filter.WEEKENDS, lookBack, time, 0);
+		return indicators.stoch(instrument, pPeriod, side, fastKPeriod,	slowKPeriod, slowKMaType, slowDPeriod, slowDMaType,	filter, lookBack, time, 0);
+	}
+	
+	public double[][] getStochs(Instrument instrument, Period pPeriod, OfferSide side, long time, int lookBack) throws JFException {
+		return getStochs(instrument, pPeriod, Filter.WEEKENDS, side, time, lookBack);
 	}
 
 	public STOCH_STATE getStochState(Instrument instrument, Period pPeriod,
@@ -479,7 +482,11 @@ public class Momentum {
 	public STOCH_STATE getStochCross(Instrument instrument, Period pPeriod,
 			OfferSide side, long time) throws JFException {
 		double[][] lastTwoStochs = getStochs(instrument, pPeriod, side, time, 2);
-		double fastStochLast = lastTwoStochs[0][1], slowStochLast = lastTwoStochs[1][1], fastStochPrev = lastTwoStochs[0][0], slowStochPrev = lastTwoStochs[1][0];
+		double 
+			fastStochLast = lastTwoStochs[0][1], 
+			slowStochLast = lastTwoStochs[1][1], 
+			fastStochPrev = lastTwoStochs[0][0], 
+			slowStochPrev = lastTwoStochs[1][0];
 
 		// bullish cross
 		if (fastStochLast > slowStochLast && fastStochPrev < slowStochPrev) {
