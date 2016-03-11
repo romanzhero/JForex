@@ -24,6 +24,7 @@ public class SmiTradeSetup extends TradeSetup {
 	private double 
 		flatPercThreshold,
 		bBandsSqueezeThreshold;
+	private double lastSL = 0.0;
 
 	public SmiTradeSetup(IEngine engine, boolean mktEntry, double pFlatPercThreshold, double pBBandsSqueezeThreshold) {
 		super(engine);
@@ -55,23 +56,31 @@ public class SmiTradeSetup extends TradeSetup {
 				|| (!order.isLong() && cancelSignal.equals(EntryDirection.SHORT))
 				|| oppositeFlatEntrySignal
 				|| oppositePUPBSignal) {
-				lastTradingEvent = "cancel due to opposite flat signal";
+				lastTradingEvent = "SMI cancel due to opposite flat signal";
 				order.close();
 				order.waitForUpdate(null);
 			}				
 			return;
 		}
+		
 		TAEventDesc signal = checkEntry(instrument, period,	askBar, bidBar, filter, taValues);
 		if (order.isLong() && signal != null && !signal.isLong) {
-			lastTradingEvent = "long breakeven signal";
-			if (bidBar.getClose() > order.getOpenPrice()) {
-				FXUtils.setStopLoss(order, order.getOpenPrice(), bidBar.getTime(), getClass());
-			}
-			else if (bidBar.getLow() > order.getStopLossPrice() || order.getStopLossPrice() == 0.0) {
-				FXUtils.setStopLoss(order, bidBar.getLow(), bidBar.getTime(), getClass());
+			if (order.getProfitLossInPips() < 2.5 * taValues.get(FlexTASource.ATR).getDoubleValue() * Math.pow(10, instrument.getPipScale())) { 
+				lastTradingEvent = "SMI long breakeven signal";
+				if (bidBar.getClose() > order.getOpenPrice()) {
+					FXUtils.setStopLoss(order, order.getOpenPrice(), bidBar.getTime(), getClass());
+				}
+				else if (bidBar.getLow() > order.getStopLossPrice() || order.getStopLossPrice() == 0.0) {
+					FXUtils.setStopLoss(order, bidBar.getLow(), bidBar.getTime(), getClass());
+				}
+			} else {
+				lastTradingEvent = "SMI long profit protect signal (profit = 2.5 ATR)";
+				if (bidBar.getLow() > order.getStopLossPrice() || order.getStopLossPrice() == 0.0) {
+					FXUtils.setStopLoss(order, bidBar.getLow(), bidBar.getTime(), getClass());
+				}
 			}
 		} else if (!order.isLong()	&& signal != null && signal.isLong) {
-			lastTradingEvent = "short breakeven signal";
+			lastTradingEvent = "SMI short breakeven signal";
 			if (askBar.getClose() < order.getOpenPrice()) {
 				FXUtils.setStopLoss(order, order.getOpenPrice(), bidBar.getTime(), getClass());
 			}
@@ -79,6 +88,20 @@ public class SmiTradeSetup extends TradeSetup {
 				FXUtils.setStopLoss(order, askBar.getHigh(), bidBar.getTime(), getClass());
 			}
 		}
+		if (order.isLong()) {
+			longProtectProfitDueToBigBearishCandle(bidBar, order, 4, taValues);
+			longProtectProfitOnATRCount(instrument, bidBar, order, taValues, 4);
+			longMoveSLDueToBigBearishCandle(bidBar, order, taValues);
+			longSetBreakEvenOnProfit(instrument, bidBar, order, taValues, 2);
+			longMoveSLDueToExtremeRSI3(bidBar, order, taValues);			
+		} else {
+			shortProtectProfitDueToBigBullishCandle(askBar, order, 4, taValues);
+			shortProtectProfitOnATRCount(instrument, askBar, order, taValues, 4);
+			shortMoveSLDueToBigBullishCandle(bidBar, order, taValues);
+			shortSetBreakEvenOnProfit(instrument, bidBar, order, taValues, 2);
+			shortMoveSLDueToExtremeRSI3(bidBar, order, taValues);			
+		}
+		double bBandsSqueeze = taValues.get(FlexTASource.BBANDS_SQUEEZE_PERC).getDoubleValue();	
 		// check market events. Get out if opposite flat signal occurs - it will take over immediately !
 		for (TAEventDesc taEvent : marketEvents) {
 			if (taEvent.eventType.equals(TAEventType.ENTRY_SIGNAL) && taEvent.eventName.equals("Flat")
@@ -99,18 +122,20 @@ public class SmiTradeSetup extends TradeSetup {
 				boolean 
 					continueLong = order.getProfitLossInPips() < 2.5 * atr * Math.pow(10, instrument.getPipScale())
 									&& ((currSlow > prevSlow && currFast > currSlow && bidBar.getClose() > ma20)
-										|| (bidBar.getClose() > ma20 && bidBar.getClose() > ma50 && bidBar.getClose() > ma100)),
+										|| (bidBar.getClose() > ma20 && bidBar.getClose() > ma50 && bidBar.getClose() > ma100)
+										|| bBandsSqueeze < 30),
 					continueShort = order.getProfitLossInPips() < 2.5 * atr * Math.pow(10, instrument.getPipScale())
-									&& (currSlow < prevSlow && currFast < currSlow && bidBar.getClose() < ma20)
-										|| (bidBar.getClose() < ma20 && bidBar.getClose() < ma50 && bidBar.getClose() < ma100);
+									&& ((currSlow < prevSlow && currFast < currSlow && bidBar.getClose() < ma20)
+										|| (bidBar.getClose() < ma20 && bidBar.getClose() < ma50 && bidBar.getClose() < ma100)
+										|| bBandsSqueeze < 30);
 				if ((order.isLong() && !continueLong) || (!order.isLong() && !continueShort)) {
-					lastTradingEvent = "move SL due to opposite flat signal";
+					lastTradingEvent = "SMI move SL due to opposite flat signal";
 					FXUtils.setStopLoss(order, order.isLong() ? bidBar.getLow() : askBar.getHigh(), bidBar.getTime(), getClass());
 				}
 			}
 			else if (taEvent.eventType.equals(TAEventType.ENTRY_SIGNAL) && taEvent.eventName.equals("PUPB")
 					&& ((order.isLong() && !taEvent.isLong) || (!order.isLong() && taEvent.isLong))) {
-					lastTradingEvent = "close due to opposite PUPB signal";
+					lastTradingEvent = "SMI close due to opposite PUPB signal";
 					order.close();
 					order.waitForUpdate(null);
 			}
@@ -137,12 +162,16 @@ public class SmiTradeSetup extends TradeSetup {
 		FLAT_REGIME_CAUSE isFlat = (FLAT_REGIME_CAUSE)taValues.get(FlexTASource.FLAT_REGIME).getValue();
 	
 		if (buySignal(instrument, period, prevSlow, currSlow, prevFast, currFast, ma20, ma50, ma100, ma200, bidBar, channelPos, isFlat, bBandsSqueezePerc)) {
+			double stopLossOffset = FXUtils.roundToPip(2 * taValues.get(FlexTASource.ATR).getDoubleValue() / Math.pow(10, instrument.getPipValue()), instrument);
+			lastSL = bidBar.getClose() - stopLossOffset;			
 			TAEventDesc result = new TAEventDesc(TAEventType.ENTRY_SIGNAL, getName(), instrument, true, askBar, bidBar, period);
-			lastTradingEvent = "buy signal";			
+			//lastTradingEvent = "buy signal";			
 			return result;
 		} else if (sellSignal(instrument, period, prevSlow, currSlow, prevFast, currFast, ma20, ma50, ma100, ma200, askBar, channelPos, isFlat, bBandsSqueezePerc)) {
+			double stopLossOffset = FXUtils.roundToPip(2 * taValues.get(FlexTASource.ATR).getDoubleValue() / Math.pow(10, instrument.getPipValue()), instrument);
+			lastSL = askBar.getClose() + stopLossOffset;
 			TAEventDesc result = new TAEventDesc(TAEventType.ENTRY_SIGNAL, getName(), instrument, false, askBar, bidBar, period);
-			lastTradingEvent = "sell signal";			
+			//lastTradingEvent = "sell signal";			
 			return result;
 		}
 		return null;
@@ -159,11 +188,11 @@ public class SmiTradeSetup extends TradeSetup {
 			currFast = smis[0][2], 		
 			ma20 = mas[1][0];
 		if (exitLong(currSlow, prevFast, currFast, ma20, instrument, period, filter, bidBar)) {
-			lastTradingEvent = "long exit signal";
+			//lastTradingEvent = "long exit signal";
 			return ITradeSetup.EntryDirection.LONG;
 		}
 		else if (exitShort(currSlow, prevFast, currFast, ma20, instrument, period, filter, askBar)) {
-			lastTradingEvent = "short exit signal";
+			//lastTradingEvent = "short exit signal";
 			return ITradeSetup.EntryDirection.SHORT;
 		}
 		return ITradeSetup.EntryDirection.NONE;
@@ -236,7 +265,7 @@ public class SmiTradeSetup extends TradeSetup {
 			return false;
 
 		return !(currFast < -60.0 && currSlow < -60.0) // no long entries in heavily oversold !
-				&& currSlow > prevSlow  && currFast > prevFast;
+				&& currSlow > prevSlow && (currFast > prevFast || currFast > currSlow);
 	}
 
 	boolean sellSignalWeak(double prevSlow, double currSlow, double prevFast, double currFast, double ma20,	double ma50, double ma100, double ma200, IBar bidBar) {
@@ -245,7 +274,7 @@ public class SmiTradeSetup extends TradeSetup {
 			return false;
 
 		return !(currFast > 60.0 && currSlow > 60.0) // no short entries in heavily overbought !
-				&& currSlow < prevSlow && currFast < prevFast;
+				&& currSlow < prevSlow && (currFast < prevFast || currFast < currSlow);
 	}
 
 	@Override
@@ -275,10 +304,10 @@ public class SmiTradeSetup extends TradeSetup {
 
 	@Override
 	public IOrder submitOrder(String label, Instrument instrument, boolean isLong, double amount, IBar bidBar, IBar askBar)	throws JFException {
-		if (mktEntry)
-			return submitMktOrder(label, instrument, isLong, amount, bidBar, askBar);
+		if (this.mktEntry)
+			return submitMktOrder(label, instrument, isLong, amount, bidBar, askBar, lastSL);
 		else
-			return submitStpOrder(label, instrument, isLong, amount, bidBar, askBar, 0);
+			return submitStpOrder(label, instrument, isLong, amount, bidBar, askBar, lastSL);
 	}
 
 }

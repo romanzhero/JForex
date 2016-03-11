@@ -5,10 +5,8 @@ import java.util.Map;
 
 import jforex.events.TAEventDesc;
 import jforex.events.TAEventDesc.TAEventType;
-import jforex.techanalysis.Momentum;
 import jforex.techanalysis.TradeTrigger;
 import jforex.techanalysis.Trend;
-import jforex.techanalysis.Volatility;
 import jforex.techanalysis.source.FlexTASource;
 import jforex.techanalysis.source.FlexTAValue;
 import jforex.utils.FXUtils;
@@ -16,8 +14,6 @@ import jforex.utils.FXUtils;
 import com.dukascopy.api.Filter;
 import com.dukascopy.api.IBar;
 import com.dukascopy.api.IEngine;
-import com.dukascopy.api.IHistory;
-import com.dukascopy.api.IIndicators;
 import com.dukascopy.api.IOrder;
 import com.dukascopy.api.Instrument;
 import com.dukascopy.api.JFException;
@@ -35,8 +31,6 @@ public class FlatTradeSetup extends TradeSetup implements ITradeSetup {
 		lastLongSignal = null,
 		lastShortSignal = null;
 	protected boolean aggressive = false;
-	protected Volatility vola = null;
-	protected Trend trend = null;
 
 	public FlatTradeSetup(IEngine engine, boolean aggressive) {
 		super(engine);
@@ -61,17 +55,17 @@ public class FlatTradeSetup extends TradeSetup implements ITradeSetup {
 		if (currLongSignal == null && currShortSignal == null)
 			return null;
 
-		Trend.FLAT_REGIME_CAUSE currBarFlat = trend.isFlatRegime(instrument, period, OfferSide.BID, IIndicators.AppliedPrice.CLOSE, filter,	bidBar.getTime(), FXUtils.YEAR_WORTH_OF_4H_BARS, 30.0);
+		Trend.FLAT_REGIME_CAUSE currBarFlat = (Trend.FLAT_REGIME_CAUSE)taValues.get(FlexTASource.FLAT_REGIME).getValue();
 		if (currBarFlat.equals(Trend.FLAT_REGIME_CAUSE.NONE))
 			return null;
 
-		Trend.TREND_STATE trendState = trend.getTrendState(instrument, period, OfferSide.BID, IIndicators.AppliedPrice.CLOSE, bidBar.getTime());
+		Trend.TREND_STATE trendState = taValues.get(FlexTASource.TREND_ID).getTrendStateValue();
 		boolean 
-			isMA200Highest = trend.isMA200Highest(instrument, period, OfferSide.BID,IIndicators.AppliedPrice.CLOSE, bidBar.getTime()), 
-			isMA200Lowest = trend.isMA200Lowest(instrument, period, OfferSide.BID, IIndicators.AppliedPrice.CLOSE, bidBar.getTime());
+			isMA200Highest = taValues.get(FlexTASource.MA200_HIGHEST).getBooleanValue(), 
+			isMA200Lowest = taValues.get(FlexTASource.MA200_LOWEST).getBooleanValue();
 		double 
-			trendStrengthPerc = trend.getMAsMaxDiffPercentile(instrument, period, OfferSide.BID, IIndicators.AppliedPrice.CLOSE, bidBar.getTime(), FXUtils.YEAR_WORTH_OF_4H_BARS), 
-			bBandsSquezeePerc = vola.getBBandsSqueezePercentile(instrument, period, OfferSide.BID, IIndicators.AppliedPrice.CLOSE, filter, bidBar.getTime(), 20, FXUtils.YEAR_WORTH_OF_4H_BARS);
+			trendStrengthPerc = taValues.get(FlexTASource.MAs_DISTANCE_PERC).getDoubleValue(), 
+			bBandsSquezeePerc = taValues.get(FlexTASource.BBANDS_SQUEEZE_PERC).getDoubleValue();
 		if (bBandsSquezeePerc > 75.0
 			&& ((trendState.equals(Trend.TREND_STATE.UP_STRONG) && isMA200Lowest)
 				|| (trendState.equals(Trend.TREND_STATE.UP_STRONG) && trendStrengthPerc > 30.0)
@@ -85,13 +79,13 @@ public class FlatTradeSetup extends TradeSetup implements ITradeSetup {
 			bearishSignal = currShortSignal != null && currShortSignal.channelPosition > 100;
 		locked = bulishSignal || bearishSignal;
 		if (bulishSignal) {
-			lastTradingEvent = "buy signal";
+			//lastTradingEvent = "buy signal";
 			lastLongSignal = currLongSignal;
 			TAEventDesc result = new TAEventDesc(TAEventType.ENTRY_SIGNAL, getName(), instrument, true, askBar, bidBar, period);
 			result.candles = currLongSignal;
 			return result;
 		} else if (bearishSignal) {
-			lastTradingEvent = "sell signal";
+			//lastTradingEvent = "sell signal";
 			lastShortSignal = currShortSignal;
 			TAEventDesc result = new TAEventDesc(TAEventType.ENTRY_SIGNAL, getName(), instrument, false, askBar, bidBar, period);
 			result.candles = currShortSignal;
@@ -118,20 +112,22 @@ public class FlatTradeSetup extends TradeSetup implements ITradeSetup {
 		else
 			barToCheck = askBar;
 		if (order.getState().equals(IOrder.State.OPENED)) {
-			// still waiting. Cancel if price already exceeded SL level without
-			// triggering entry stop
+			// still waiting. Cancel if price already exceeded SL level without triggering entry stop
 			if ((order.isLong() && barToCheck.getClose() < order.getStopLossPrice())
-					|| (!order.isLong() && barToCheck.getClose() > order.getStopLossPrice())) {
+				|| (!order.isLong() && barToCheck.getClose() > order.getStopLossPrice())) {
+				lastTradingEvent = "Cancel entry, SL exceeded";
 				order.close();
 				order.waitForUpdate(null);
-				afterTradeReset(instrument);
+				return;
+				//afterTradeReset(instrument);
 			}
+			
 		} else if (order.getState().equals(IOrder.State.FILLED)) {
 			// check whether to unlock the trade - price exceeded opposite
 			// channel border at the time of the signal
 			if ((order.isLong() && askBar.getClose() > lastLongSignal.bBandsTop)
 				|| (!order.isLong() && bidBar.getClose() < lastShortSignal.bBandsBottom)) {
-				lastTradingEvent = "unlock setup (other setups allowed)";
+				lastTradingEvent = "Unlock setup (other setups allowed)";
 				locked = false;
 				// do not reset trade completely ! Keep control over order until
 				// other setups take over !
@@ -143,7 +139,6 @@ public class FlatTradeSetup extends TradeSetup implements ITradeSetup {
 				currLongSignal = longCmd.checkEntry(instrument, period, OfferSide.BID, filter, bidBar, askBar, taValues), 
 				currShortSignal = shortCmd.checkEntry(instrument, period, OfferSide.BID, filter, bidBar, askBar, taValues);
 			double ma20 = taValues.get(FlexTASource.MAs).getDa2DimValue()[1][0]; 
-					// indicators.sma(instrument, period, OfferSide.BID, IIndicators.AppliedPrice.CLOSE, 20, filter, 1, bidBar.getTime(), 0)[0];
 			boolean
 				longExitSignal = currShortSignal != null && currShortSignal.channelPosition > 100,
 				shortExitSignal = currLongSignal != null && currLongSignal.channelPosition < 0, 
@@ -158,15 +153,14 @@ public class FlatTradeSetup extends TradeSetup implements ITradeSetup {
 				lastTradingEvent = "short move SL signal";				
 				FXUtils.setStopLoss(order, askBar.getHigh(), bidBar.getTime(), this.getClass());
 			}
-			// check for opposite signal. Depending on the configuration either
-			// set break even or close the trade
+			// check for opposite signal. Depending on the configuration either set break even or close the trade
 			else if (aggressive) {
 				if ((order.isLong() && longExitSignal)
 					|| (!order.isLong() && shortExitSignal)) {
 					lastTradingEvent = "exit due to opposite flat signal";				
 					order.close();
 					order.waitForUpdate(null);
-					afterTradeReset(instrument);
+					//afterTradeReset(instrument);
 				}
 			} else {
 				// set to break even. However check if current price allows it !
@@ -202,6 +196,14 @@ public class FlatTradeSetup extends TradeSetup implements ITradeSetup {
 	@Override
 	public IOrder submitOrder(String label, Instrument instrument, boolean isLong, double amount, IBar bidBar, IBar askBar)	throws JFException {
 		return submitStpOrder(label, instrument, isLong, amount, bidBar, askBar, isLong ? lastLongSignal.pivotLevel : lastShortSignal.pivotLevel);
+	}
+
+	public TradeTrigger.TriggerDesc getLastLongSignal() {
+		return lastLongSignal;
+	}
+
+	public TradeTrigger.TriggerDesc getLastShortSignal() {
+		return lastShortSignal;
 	}
 
 }

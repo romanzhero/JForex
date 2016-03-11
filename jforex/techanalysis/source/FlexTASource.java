@@ -36,7 +36,9 @@ public class FlexTASource {
 		MAs_DISTANCE_PERC = "MAs distance percentile",
 		UPTREND_MAs_DISTANCE_PERC = "Uptrend MAs distance percentile",
 		DOWNTREND_MAs_DISTANCE_PERC = "Downtrend MAs distance percentile",
-		ATR = "ATR";
+		ATR = "ATR",
+		ICHI = "Ichi",
+		MA200MA100_TREND_DISTANCE_PERC = "MA200 MA100 Distance percentile";
 	
 	protected IIndicators indicators = null;
 	protected IHistory history = null;
@@ -83,6 +85,8 @@ public class FlexTASource {
 		result.put(UPTREND_MAs_DISTANCE_PERC, new FlexTAValue(UPTREND_MAs_DISTANCE_PERC, new Double(trend.getUptrendMAsMaxDiffPercentile(instrument, period, filter, OfferSide.BID, IIndicators.AppliedPrice.CLOSE, bidBar.getTime(), FXUtils.YEAR_WORTH_OF_4H_BARS)), FXUtils.df1));
 		result.put(DOWNTREND_MAs_DISTANCE_PERC, new FlexTAValue(DOWNTREND_MAs_DISTANCE_PERC, new Double(trend.getDowntrendMAsMaxDiffPercentile(instrument, period, filter, OfferSide.BID, IIndicators.AppliedPrice.CLOSE, bidBar.getTime(), FXUtils.YEAR_WORTH_OF_4H_BARS)), FXUtils.df1));
 		result.put(ATR, new FlexTAValue(ATR, new Double(vola.getATR(instrument, period, filter, OfferSide.BID, bidBar.getTime(), 14)), FXUtils.df1));
+		result.put(ICHI, new FlexTAValue(ICHI, trend.getIchi(history, instrument, period, OfferSide.BID, filter, bidBar.getTime())));
+		result.put(MA200MA100_TREND_DISTANCE_PERC, new FlexTAValue(MA200MA100_TREND_DISTANCE_PERC, new Double(trend.getMA200MA100TrendDiffPercentile(instrument, period, filter, OfferSide.BID, IIndicators.AppliedPrice.CLOSE, bidBar.getTime(), FXUtils.YEAR_WORTH_OF_4H_BARS)), FXUtils.df1));
 
 		lastResult = result;
 		return result;
@@ -90,9 +94,9 @@ public class FlexTASource {
 
 	private void addSMI(Instrument instrument, Period period, IBar bidBar, Map<String, FlexTAValue> result) throws JFException {
 		double[][] 
-				slowSMI = indicators.smi(instrument, period, OfferSide.BID,	50, 15, 5, 3, filter, 3, bidBar.getTime(), 0), 
-				fastSMI = indicators.smi(instrument, period, OfferSide.BID, 10, 3, 5, 3, filter, 3,	bidBar.getTime(), 0),
-				smis = new double[2][3];
+			slowSMI = indicators.smi(instrument, period, OfferSide.BID,	50, 15, 5, 3, filter, 3, bidBar.getTime(), 0), 
+			fastSMI = indicators.smi(instrument, period, OfferSide.BID, 10, 3, 5, 3, filter, 3,	bidBar.getTime(), 0),
+			smis = new double[2][3];
 		
 		// first fast SMIs in chronological order, then slow ones
 		smis[0][0] = fastSMI[0][0];
@@ -123,7 +127,7 @@ public class FlexTASource {
 		mas[1][1] = mas50[1];
 		mas[1][2] = mas100[1];
 		mas[1][3] = mas200[1];
-		result.put(MAs, new FlexTAValue(MAs, mas, FXUtils.df5));
+		result.put(MAs, new FlexTAValue(MAs, mas, instrument.getPipScale() == 5 ? FXUtils.df5 : FXUtils.df2));
 	}
 
 }

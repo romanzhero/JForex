@@ -101,4 +101,8 @@ public class FlexLogEntry {
 		else
 			return "'" + value.toString() + "'";
 	}
+
+	public String getHeaderLabel() {
+		return getLabel();
+	}
 }

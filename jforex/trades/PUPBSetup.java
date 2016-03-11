@@ -7,9 +7,8 @@ import jforex.events.TAEventDesc;
 import jforex.events.TAEventDesc.TAEventType;
 import jforex.techanalysis.TradeTrigger;
 import jforex.techanalysis.Trend;
+import jforex.techanalysis.source.FlexTASource;
 import jforex.techanalysis.source.FlexTAValue;
-import jforex.utils.FXUtils;
-
 import com.dukascopy.api.Filter;
 import com.dukascopy.api.IBar;
 import com.dukascopy.api.IEngine;
@@ -42,15 +41,15 @@ public class PUPBSetup extends FlatTradeSetup implements ITradeSetup {
 		if (currLongSignal == null && currShortSignal == null)
 			return null;
 	
-		Trend.FLAT_REGIME_CAUSE currBarFlat = trend.isFlatRegime(instrument, period, OfferSide.BID, IIndicators.AppliedPrice.CLOSE, filter,	bidBar.getTime(), FXUtils.YEAR_WORTH_OF_4H_BARS, 30.0);
+		Trend.FLAT_REGIME_CAUSE currBarFlat = (Trend.FLAT_REGIME_CAUSE)taValues.get(FlexTASource.FLAT_REGIME).getValue();
 		// no entries in flat regime
 		if (!currBarFlat.equals(Trend.FLAT_REGIME_CAUSE.NONE))
 			return null;
 	
-		Trend.TREND_STATE trendState = trend.getTrendState(instrument, period, OfferSide.BID, IIndicators.AppliedPrice.CLOSE, bidBar.getTime());
+		Trend.TREND_STATE trendState = taValues.get(FlexTASource.TREND_ID).getTrendStateValue();
 		boolean 
-			isMA200Highest = trend.isMA200Highest(instrument, period, OfferSide.BID,IIndicators.AppliedPrice.CLOSE, bidBar.getTime()), 
-			isMA200Lowest = trend.isMA200Lowest(instrument, period, OfferSide.BID, IIndicators.AppliedPrice.CLOSE, bidBar.getTime()),
+			isMA200Highest = taValues.get(FlexTASource.MA200_HIGHEST).getBooleanValue(), 
+			isMA200Lowest = taValues.get(FlexTASource.MA200_LOWEST).getBooleanValue(),
 			uptrend = (trendState.equals(Trend.TREND_STATE.UP_STRONG) || trendState.equals(Trend.TREND_STATE.UP_MILD)) && isMA200Lowest,
 			downtrend = (trendState.equals(Trend.TREND_STATE.DOWN_STRONG) || trendState.equals(Trend.TREND_STATE.DOWN_STRONG)) && isMA200Highest;
 		if (!uptrend && !downtrend) {
@@ -89,7 +88,7 @@ public class PUPBSetup extends FlatTradeSetup implements ITradeSetup {
 				|| (!order.isLong() && barToCheck.getClose() > order.getStopLossPrice())) {
 				order.close();
 				order.waitForUpdate(null);
-				afterTradeReset(instrument);
+				//afterTradeReset(instrument);
 			}
 		} else if (order.getState().equals(IOrder.State.FILLED)) {
 			// continue executing just to keep pace

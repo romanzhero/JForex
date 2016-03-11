@@ -47,13 +47,9 @@ public class TradeLog {
 		orderLabel = order.getLabel();
 		isLong = order.isLong();
 		entryPrice = order.getOpenPrice();
-		fillPrice = entryPrice; // needed for risk calc of unfilled orders,
-								// which can get new SL while waiting due to
-								// changes in the clould borders !
+		fillPrice = entryPrice; // needed for risk calc of unfilled orders, which can get new SL while waiting due to changes in the clould borders !
 		SL = order.getStopLossPrice();
-		initialRisk = order.getStopLossPrice() == 0 ? (order.getOpenPrice() - order
-				.getStopLossPrice())
-				* Math.pow(10, order.getInstrument().getPipScale()) : 0.0;
+		initialRisk = order.getStopLossPrice() != 0 ? Math.abs(order.getOpenPrice() - order.getStopLossPrice()) : 0.0;
 	}
 
 	public double missedProfit(Instrument instrument) {
@@ -160,26 +156,12 @@ public class TradeLog {
 						+ (instrument.getPipScale() != 2 ? FXUtils.df5.format(maxProfitPrice) : FXUtils.df2.format(maxProfitPrice)) + ";"						
 						+ FXUtils.df1.format(maxLoss * Math.pow(10, instrument.getPipScale()))	+ ";"
 						+ FXUtils.df2.format(maxLossATR) + ";"
-						+ (instrument.getPipScale() == 2 ? FXUtils.df2
-								.format(entryPrice) : FXUtils.df5
-								.format(entryPrice))
-						+ ";"
-						+ (instrument.getPipScale() == 2 ? FXUtils.df2
-								.format(fillPrice) : FXUtils.df5
-								.format(fillPrice))
-						+ ";"
-						+ (instrument.getPipScale() == 2 ? FXUtils.df2
-								.format(SL) : FXUtils.df5.format(SL))
-						+ ";"
-						+ FXUtils.df1.format(initialRisk
-								* Math.pow(10, instrument.getPipScale()))
-						+ ";"
-						+ FXUtils.df1.format(maxRisk
-								* Math.pow(10, instrument.getPipScale()))
-						+ ";"
-						+ FXUtils.df1.format(maxDD
-								* Math.pow(10, instrument.getPipScale()))
-						+ ";"
+						+ (instrument.getPipScale() == 2 ? FXUtils.df2.format(entryPrice) : FXUtils.df5.format(entryPrice)) + ";"
+						+ (instrument.getPipScale() == 2 ? FXUtils.df2.format(fillPrice) : FXUtils.df5.format(fillPrice)) + ";"
+						+ (instrument.getPipScale() == 2 ? FXUtils.df2.format(SL) : FXUtils.df5.format(SL))	+ ";"
+						+ FXUtils.df1.format(initialRisk * Math.pow(10, instrument.getPipScale()))	+ ";"
+						+ FXUtils.df1.format(maxRisk * Math.pow(10, instrument.getPipScale())) + ";"
+						+ FXUtils.df1.format(maxDD	* Math.pow(10, instrument.getPipScale())) + ";"
 						+ FXUtils.df2.format(maxDDATR)	+ ";"
 						+ FXUtils.getFileTimeStamp(maxDDTime));
 		for (FlexLogEntry e : entryData)
@@ -214,7 +196,7 @@ public class TradeLog {
 						+ "maxDDATR;"
 						+ "maxDDTime");
 		for (FlexLogEntry e : entryData)
-			result += ";" + e.getLabel();
+			result += ";" + e.getHeaderLabel();
 		return result;
 
 	}

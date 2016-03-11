@@ -287,6 +287,7 @@ public class SmiSmaTradeSetup extends TradeSetup {
 
 	@Override
 	public void afterTradeReset(Instrument instrument) {
+		super.afterTradeReset(instrument);
 		ma50TrailFlags.put(instrument.name(), new Boolean(false));
 	}
 }

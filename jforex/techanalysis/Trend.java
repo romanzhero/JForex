@@ -36,7 +36,10 @@ public class Trend {
 	}
 
 	public class IchiDesc {
-		public double widthPips, widthToATR, widthRel;
+		public double 
+			widthPips, widthToATR, widthRel,
+			cloudTop, cloudBottom, prevCloudTop, prevCloudBottom,
+			fastLine, slowLine;
 		public boolean isBullishSlowLineCross = false,
 				isBearishSlowLineCross = false,
 
@@ -260,18 +263,14 @@ public class Trend {
 	}
 
 	protected double[] getRawUptrendMAsDifferences(Instrument instrument, Period pPeriod, Filter filter, OfferSide side, IIndicators.AppliedPrice appliedPrice, long time, int lookBack) throws JFException {
-		double[] MAs20 = indicators.sma(instrument, pPeriod, side,
-				appliedPrice, 20, filter, lookBack, time, 0);
-		double[] MAs50 = indicators.sma(instrument, pPeriod, side,
-				appliedPrice, 50, filter, lookBack, time, 0);
-		double[] MAs100 = indicators.sma(instrument, pPeriod, side,
-				appliedPrice, 100, filter, lookBack, time, 0);
+		double[] MAs20 = indicators.sma(instrument, pPeriod, side, appliedPrice, 20, filter, lookBack, time, 0);
+		double[] MAs50 = indicators.sma(instrument, pPeriod, side, appliedPrice, 50, filter, lookBack, time, 0);
+		double[] MAs100 = indicators.sma(instrument, pPeriod, side,	appliedPrice, 100, filter, lookBack, time, 0);
 
 		List<Double> upTrendValues = new ArrayList<Double>();
 		for (int i = 0; i < MAs20.length; i++) {
 			if (MAs50[i] > MAs100[i] && MAs20[i] > MAs100[i]) {
-				upTrendValues.add(new Double(maxMAsDifference(MAs20[i],
-						MAs50[i], MAs100[i])));
+				upTrendValues.add(new Double(maxMAsDifference(MAs20[i],	MAs50[i], MAs100[i])));
 			}
 		}
 		double[] result = new double[upTrendValues.size()];
@@ -443,6 +442,22 @@ public class Trend {
 		return result;
 	}
 	
+	protected double[] getMA200MA100TrendDifferences(Instrument instrument, Period pPeriod, Filter filter, OfferSide side, IIndicators.AppliedPrice appliedPrice, long time, int lookBack) throws JFException {
+		double[] MAs20 = indicators.sma(instrument, pPeriod, side, appliedPrice, 20, filter, lookBack, time, 0);
+		double[] MAs50 = indicators.sma(instrument, pPeriod, side, appliedPrice, 50, filter, lookBack, time, 0);
+		double[] MAs100 = indicators.sma(instrument, pPeriod, side,	appliedPrice, 100, filter, lookBack, time, 0);
+		double[] MAs200 = indicators.sma(instrument, pPeriod, side, appliedPrice, 200, filter, lookBack, time, 0);
+
+		double[] result = new double[MAs200.length];
+		for (int i = 0; i < MAs200.length; i++) {
+			// valid only for clear trends, OK if MA20 below MA50
+			if ((MAs20[i] > MAs100[i] && MAs50[i] > MAs100[i] && MAs100[i] > MAs200[i])
+				|| (MAs20[i] < MAs100[i] && MAs50[i] < MAs100[i] && MAs100[i] < MAs200[i]))
+			result[i] = Math.abs(MAs200[i] - MAs100[i]);
+		}
+		return result;
+	}
+	
 	protected double[] getRawMAsDifferences(Instrument instrument, Period pPeriod, OfferSide side, IIndicators.AppliedPrice appliedPrice, long time, int lookBack) throws JFException {
 		return getRawMAsDifferences(instrument, pPeriod, Filter.WEEKENDS, side, appliedPrice, time, lookBack);
 	}
@@ -472,6 +487,26 @@ public class Trend {
 		// biggest etc. Percentile is simply rank / array size * 100
 		return rank[rank.length - 1] / rank.length * 100.0;
 	}
+	
+	public double getMA200MA100TrendDiffPercentile(Instrument instrument, Period pPeriod, Filter filter, OfferSide side, IIndicators.AppliedPrice appliedPrice, long time, int lookback) throws JFException {
+		double[] MAs20 = indicators.sma(instrument, pPeriod, side, appliedPrice, 20, filter, 1, time, 0);
+		double[] MAs50 = indicators.sma(instrument, pPeriod, side, appliedPrice, 50, filter, 1, time, 0);
+		double[] MAs100 = indicators.sma(instrument, pPeriod, side,	appliedPrice, 100, filter, 1, time, 0);
+		double[] MAs200 = indicators.sma(instrument, pPeriod, side, appliedPrice, 200, filter, 1, time, 0);
+
+		// valid only for clear trends, OK if MA20 below MA50
+		if (!(MAs20[0] > MAs100[0] && MAs50[0] > MAs100[0] && MAs100[0] > MAs200[0])
+			&& !(MAs20[0] < MAs100[0] && MAs50[0] < MAs100[0] && MAs100[0] < MAs200[0]))
+			return -1;
+		
+		double[] rawData = getMA200MA100TrendDifferences(instrument, pPeriod, filter, side, appliedPrice, time, lookback);
+		double[] rank = new NaturalRanking().rank(rawData);
+
+		// the last in rawData should be the latest bar. Rank 1 means it is the
+		// biggest etc. Percentile is simply rank / array size * 100
+		return rank[rank.length - 1] / rank.length * 100.0;
+	}
+
 	
 	public double getMAsMaxDiffPercentile(Instrument instrument, Period pPeriod, OfferSide side,	IIndicators.AppliedPrice appliedPrice, long time, int lookback)	throws JFException {
 		return getMAsMaxDiffPercentile(instrument, pPeriod, Filter.WEEKENDS, side, appliedPrice, time, lookback);
@@ -627,56 +662,61 @@ public class Trend {
 		return bar.getClose() > cloudBottom;
 	}
 
-	public IchiDesc getIchi(IHistory history, Instrument instrument,
-			Period pPeriod, OfferSide side, long time) throws JFException {
+	public IchiDesc getIchi(IHistory history, Instrument instrument, Period pPeriod, OfferSide side, long time) throws JFException 
+	{ 
+		return getIchi(history, instrument, pPeriod, side, Filter.WEEKENDS, time);
+	}
+
+	public IchiDesc getIchi(IHistory history, Instrument instrument, Period pPeriod, OfferSide side, Filter filter, long time) throws JFException {
 		double[][]
 		// used for cloud borders, therefore moved kijun periods in past ! Cloud
 		// is drawn in future !
-		i_sh = indicators.ichimoku(instrument, pPeriod, side, tenkan, kijun,
-				senkou, Filter.WEEKENDS, 1 + kijun, time, 0), i_sh_1 = indicators
-				.ichimoku(instrument, pPeriod, side, tenkan, kijun, senkou,
-						Filter.WEEKENDS, 2 + kijun, time, 0), i_sh_2 = indicators
-				.ichimoku(instrument, pPeriod, side, tenkan, kijun, senkou,
-						Filter.WEEKENDS, 3 + kijun, time, 0),
+		i_sh = indicators.ichimoku(instrument, pPeriod, side, tenkan, kijun, senkou, filter, kijun, time, 0), 
+		i_sh_1 = indicators.ichimoku(instrument, pPeriod, side, tenkan, kijun, senkou, filter, 1 + kijun, time, 0), 
+		i_sh_2 = indicators.ichimoku(instrument, pPeriod, side, tenkan, kijun, senkou, filter, 2 + kijun, time, 0),
+		/*
+		i_sh = indicators.ichimoku(instrument, pPeriod, side, tenkan, kijun, senkou, filter, 1 + kijun, time, 0), 
+		i_sh_1 = indicators.ichimoku(instrument, pPeriod, side, tenkan, kijun, senkou, filter, 2 + kijun, time, 0), 
+		i_sh_2 = indicators.ichimoku(instrument, pPeriod, side, tenkan, kijun, senkou, filter, 3 + kijun, time, 0),
+		*/
 		// lines are normally drawn...
-		lines = indicators.ichimoku(instrument, pPeriod, side, tenkan, kijun,
-				senkou, Filter.WEEKENDS, 3, time, 0);
+		lines = indicators.ichimoku(instrument, pPeriod, side, tenkan, kijun, senkou, filter, 3, time, 0);
 
 		double
-		// must be rounded to 0.1 pips since used as SL !
-		i_cloudTop = Math.round(Math.max(i_sh[SENOKU_A][0], i_sh[SENOKU_B][0])
-				* Math.pow(10, instrument.getPipScale())), i_cloudBottom = Math
-				.round(Math.min(i_sh[SENOKU_A][0], i_sh[SENOKU_B][0])
-						* Math.pow(10, instrument.getPipScale())), i_cloudTop_1 = Math
-				.round(Math.max(i_sh_1[SENOKU_A][0], i_sh_1[SENOKU_B][0])
-						* Math.pow(10, instrument.getPipScale())), i_cloudBottom_1 = Math
-				.round(Math.min(i_sh_1[SENOKU_A][0], i_sh_1[SENOKU_B][0])
-						* Math.pow(10, instrument.getPipScale())), i_cloudTop_2 = Math
-				.round(Math.max(i_sh_2[SENOKU_A][0], i_sh_1[SENOKU_B][0])
-						* Math.pow(10, instrument.getPipScale())), i_cloudBottom_2 = Math
-				.round(Math.min(i_sh_2[SENOKU_A][0], i_sh_1[SENOKU_B][0])
-						* Math.pow(10, instrument.getPipScale())), i_kumo_A = Math
-				.round(i_sh[CLOUD_A][0]
-						* Math.pow(10, instrument.getPipScale())), i_kumo_B = Math
-				.round(i_sh[CLOUD_B][0]
-						* Math.pow(10, instrument.getPipScale()));
+			// must be rounded to 0.1 pips since used as SL !
+			i_cloudTop = Math.max(i_sh[SENOKU_A][0], i_sh[SENOKU_B][0]), 
+			i_cloudBottom = Math.min(i_sh[SENOKU_A][0], i_sh[SENOKU_B][0]), 
+			i_cloudTop_1 = Math.max(i_sh_1[SENOKU_A][0], i_sh_1[SENOKU_B][0]), 
+			i_cloudBottom_1 = Math.min(i_sh_1[SENOKU_A][0], i_sh_1[SENOKU_B][0]), 
+			i_cloudTop_2 = Math.max(i_sh_2[SENOKU_A][0], i_sh_1[SENOKU_B][0]), 
+			i_cloudBottom_2 = Math.min(i_sh_2[SENOKU_A][0], i_sh_1[SENOKU_B][0]), 
+			i_kumo_A = i_sh[CLOUD_A][0]	* Math.pow(10, instrument.getPipScale()), 
+			i_kumo_B = i_sh[CLOUD_B][0];
 
-		double cloudTop = i_cloudTop / Math.pow(10, instrument.getPipScale()), cloudBottom = i_cloudBottom
-				/ Math.pow(10, instrument.getPipScale()), cloudWidth = cloudTop
-				- cloudBottom, cloudTop_1 = i_cloudTop_1
-				/ Math.pow(10, instrument.getPipScale()), cloudBottom_1 = i_cloudBottom_1
-				/ Math.pow(10, instrument.getPipScale()), kumo_A = i_kumo_A
-				/ Math.pow(10, instrument.getPipScale()), kumo_B = i_kumo_B
-				/ Math.pow(10, instrument.getPipScale()),
+		double 
+			cloudTop = i_cloudTop, 
+			cloudBottom = i_cloudBottom, 
+			cloudWidth = cloudTop - cloudBottom, 
+			cloudTop_1 = i_cloudTop_1, 
+			cloudBottom_1 = i_cloudBottom_1, 
+			kumo_A = i_kumo_A , kumo_B = i_kumo_B,
 
-		fastLine = lines[TENKAN][2], prevFastLine = lines[TENKAN][1], firstFastLine = lines[TENKAN][0],
-
-		slowLine = lines[KIJUN][2], prevSlowLine = lines[KIJUN][1], firstSlowLine = lines[KIJUN][0],
-
-		ATR = indicators.atr(instrument, pPeriod, side, 14, Filter.WEEKENDS, 1,
-				time, 0)[0] * Math.pow(10, instrument.getPipScale());
+			fastLine = lines[TENKAN][2], 
+			prevFastLine = lines[TENKAN][1], 
+			firstFastLine = lines[TENKAN][0],
+			slowLine = lines[KIJUN][2], 
+			prevSlowLine = lines[KIJUN][1], 
+			firstSlowLine = lines[KIJUN][0],
+	
+			ATR = indicators.atr(instrument, pPeriod, side, 14, filter, 1, time, 0)[0];
 
 		IchiDesc res = new IchiDesc();
+		res.cloudBottom = cloudBottom;
+		res.cloudTop = cloudTop;
+		res.prevCloudBottom = i_cloudBottom_1;
+		res.prevCloudTop = i_cloudTop_1;
+		res.fastLine = fastLine;
+		res.slowLine = slowLine;
 
 		if (fastLine > prevFastLine && prevFastLine > firstFastLine)
 			res.fastLineState = new String("RAISING");
@@ -736,8 +776,8 @@ public class Trend {
 			res.bottomBorderDirection = new String("ticked_down");
 		else
 			res.bottomBorderDirection = new String("I do not know ?");
-		List<IBar> last2bars = history.getBars(instrument, pPeriod, side,
-				Filter.WEEKENDS, 2, time, 0);
+		
+		List<IBar> last2bars = history.getBars(instrument, pPeriod, side, filter, 2, time, 0);
 		IBar bar = last2bars.get(1);
 		IBar prevBar = last2bars.get(0);
 

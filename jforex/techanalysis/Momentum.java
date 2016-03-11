@@ -479,8 +479,7 @@ public class Momentum {
 			return STOCH_STATE.FALLING_IN_MIDDLE;
 	}
 
-	public STOCH_STATE getStochCross(Instrument instrument, Period pPeriod,
-			OfferSide side, long time) throws JFException {
+	public STOCH_STATE getStochCross(Instrument instrument, Period pPeriod,	OfferSide side, long time) throws JFException {
 		double[][] lastTwoStochs = getStochs(instrument, pPeriod, side, time, 2);
 		double 
 			fastStochLast = lastTwoStochs[0][1], 

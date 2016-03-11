@@ -3,6 +3,8 @@ package jforex.techanalysis;
 import java.text.DecimalFormat;
 import java.util.List;
 
+import org.apache.commons.math3.stat.ranking.NaturalRanking;
+
 import jforex.utils.FXUtils;
 import jforex.utils.Logger;
 
@@ -35,22 +37,21 @@ public class TradeTrigger {
 
 	public class TriggerDesc {
 		public TriggerType type;
-		public double pivotLevel,
-				srLevel, // support-resistance defined by this candle pattern
-				reversalSize, channelPosition, bBandsTop,
-				bBandsBottom,
-				bBandsWidth, // bBands values at signal time
-				keltnerChannelPosition,
-				// for 2- and 3-bar triggers - total values when combined into 1
-				// bar
-				combinedUpperHandlePerc, combinedRealBodyPerc,
-				combinedLowerHandlePerc;
+		public double 
+			pivotLevel,
+			srLevel, // support-resistance defined by this candle pattern
+			reversalSize, 
+			sizePercentile, 
+			channelPosition, bBandsTop, bBandsBottom, bBandsWidth, // bBands values at signal time
+			keltnerChannelPosition,
+			// for 2- and 3-bar triggers - total values when combined into 1 bar
+			combinedUpperHandlePerc, combinedRealBodyPerc, combinedLowerHandlePerc;
 		public boolean combinedRealBodyDirection; // true bullish, false bearish
 
 		protected int numberOfBars = 0;
 		protected IBar patternBars[] = null;
 
-		public TriggerDesc(TriggerType type, int noOfBars, IBar[] patternBars,
+		public TriggerDesc(TriggerType type, int noOfBars, double sizePercentile, IBar[] patternBars,
 				double pivotLevel, double srLevel, double channelPosition,
 				double bBandsTop, double bBandsBottom, double bBandsWidth,
 				double keltnerChannelPosition, double pCombinedUHPerc,
@@ -58,6 +59,7 @@ public class TradeTrigger {
 				boolean pCombinedRealBodyDirection) {
 			super();
 			this.numberOfBars = noOfBars;
+			this.sizePercentile = sizePercentile;
 			this.patternBars = patternBars;
 			this.type = type;
 			this.pivotLevel = pivotLevel;
@@ -763,9 +765,25 @@ public class TradeTrigger {
 			barLengths[i++] = currBar.getHigh() - currBar.getLow();
 		}
 		double[] stDevStats = FXUtils.sdFast(barLengths);
-		return ((forBar.getHigh() - forBar.getLow()) - stDevStats[0])
-				/ stDevStats[1];
+		return ((forBar.getHigh() - forBar.getLow()) - stDevStats[0]) / stDevStats[1];
 	}
+	
+	public double barLengthPercentile(Instrument instrument, Period pPeriod, Filter filter, OfferSide side, long time, double barRange, int lookBack) throws JFException {
+		List<IBar> bars = history.getBars(instrument, pPeriod, side, filter, lookBack, time, 0);
+		double[] barLengths = new double[bars.size()];
+		int i = 0;
+		for (IBar currBar : bars) {
+			barLengths[i++] = currBar.getHigh() - currBar.getLow();
+		}
+		// EXCLUDE current bar from calc and put the test value instead - that way the rank will work properly !
+		// method is used also for combined signals !
+		barLengths[barLengths.length - 1] = barRange;
+		double[] rank = new NaturalRanking().rank(barLengths);
+
+		// the last in rawData should be the latest bar. Rank 1 means it is the
+		// biggest etc. Percentile is simply rank / array size * 100
+		return rank[rank.length - 1] / rank.length * 100.0;
+	}	
 	
 	public double barLengthStatPos(Instrument instrument, Period pPeriod, OfferSide side, IBar forBar, double combinedHigh, double combinedLow, int lookBack) throws JFException {
 		List<IBar> bars = history.getBars(instrument, pPeriod, side, Filter.WEEKENDS, lookBack - 1, forBar.getTime(), 0);
@@ -1043,7 +1061,9 @@ public class TradeTrigger {
 					.min(pivotLowBar.getOpen(), pivotLowBar.getClose());
 			double[] bBandsDesc = priceChannelPos(instrument, pPeriod, filter, side, time, pivotLowBar.getLow(), 0);
 
-			return new TriggerDesc(TriggerType.BULLISH_1_BAR, 1, patternBars,
+			return new TriggerDesc(TriggerType.BULLISH_1_BAR, 1, 
+					barLengthPercentile(instrument, pPeriod, filter, OfferSide.ASK, time, range, FXUtils.YEAR_WORTH_OF_4H_BARS), 
+					patternBars,
 					pivotLowBar.getLow(), getLowerHandleMiddle(pivotLowBar),
 					bBandsDesc[0], bBandsDesc[1], bBandsDesc[2], bBandsDesc[3],
 					priceKeltnerChannelPos(instrument, pPeriod, filter, side, time,	pivotLowBar.getLow(), 0),
@@ -1067,6 +1087,7 @@ public class TradeTrigger {
 
 			lastBullishTrigger = TriggerType.BULLISH_2_BARS;
 			return new TriggerDesc(TriggerType.BULLISH_2_BARS, 2,
+					barLengthPercentile(instrument, pPeriod, filter, OfferSide.ASK, time, range, FXUtils.YEAR_WORTH_OF_4H_BARS), 
 					patternBars,
 					pivotLowBar.getLow(),
 					// srLevel is simply last bar middle. Maybe something more
@@ -1096,7 +1117,8 @@ public class TradeTrigger {
 				bodyBottom = Math.min(o, c);
 			double[] bBandsDesc = priceChannelPos(instrument, pPeriod, filter, side, time, pivotLowBar.getLow(), 1);
 
-			return new TriggerDesc(TriggerType.BULLISH_3_BARS, 3, patternBars,
+			return new TriggerDesc(TriggerType.BULLISH_3_BARS, 3, barLengthPercentile(instrument, pPeriod, filter, OfferSide.ASK, time, range, FXUtils.YEAR_WORTH_OF_4H_BARS), 
+					patternBars,
 					pivotLowBar.getLow(),
 					getBullishPivotalThreeBarsSRLevel(middleBar),
 					bBandsDesc[0], bBandsDesc[1], bBandsDesc[2], bBandsDesc[3],
@@ -1114,7 +1136,8 @@ public class TradeTrigger {
 					.min(pivotLowBar.getOpen(), pivotLowBar.getClose());
 			double[] bBandsDesc = priceChannelPos(instrument, pPeriod, filter, side, time, pivotLowBar.getLow(), 0);
 
-			return new TriggerDesc(TriggerType.BULLISH_1_BAR, 1, patternBars,
+			return new TriggerDesc(TriggerType.BULLISH_1_BAR, 1, barLengthPercentile(instrument, pPeriod, filter, OfferSide.ASK, time, range, FXUtils.YEAR_WORTH_OF_4H_BARS), 
+					patternBars,
 					pivotLowBar.getLow(), getLowerHandleMiddle(pivotLowBar),
 					bBandsDesc[0], bBandsDesc[1], bBandsDesc[2], bBandsDesc[3],
 					priceKeltnerChannelPos(instrument, pPeriod, filter, side, time,	pivotLowBar.getLow(), 0),
@@ -1141,7 +1164,8 @@ public class TradeTrigger {
 					.min(patternBars[0].getOpen(), patternBars[0].getClose());
 			double[] bBandsDesc = priceChannelPos(instrument, pPeriod, filter, side, time, pivotHigh, 0);
 
-			return new TriggerDesc(TriggerType.BEARISH_1_BAR, 1, patternBars,
+			return new TriggerDesc(TriggerType.BEARISH_1_BAR, 1, barLengthPercentile(instrument, pPeriod, filter, OfferSide.BID, time, range, FXUtils.YEAR_WORTH_OF_4H_BARS),
+					patternBars,
 					pivotHigh,
 					getUpperHandleMiddle(history.getBars(instrument, pPeriod, side, filter, 1, time, 0).get(0)),
 					bBandsDesc[0], bBandsDesc[1], bBandsDesc[2], bBandsDesc[3],
@@ -1165,6 +1189,7 @@ public class TradeTrigger {
 
 			lastBearishTrigger = TriggerType.BEARISH_2_BARS;
 			return new TriggerDesc(TriggerType.BEARISH_2_BARS, 2,
+					barLengthPercentile(instrument, pPeriod, filter, OfferSide.BID, time, range, FXUtils.YEAR_WORTH_OF_4H_BARS), 
 					patternBars,
 					pivotHigh,
 					// srLevel is simply last bar middle. Maybe something more
@@ -1194,6 +1219,7 @@ public class TradeTrigger {
 
 			lastBearishTrigger = TriggerType.BEARISH_3_BARS;
 			return new TriggerDesc(TriggerType.BEARISH_3_BARS, 3,
+					barLengthPercentile(instrument, pPeriod, filter, OfferSide.BID, time, range, FXUtils.YEAR_WORTH_OF_4H_BARS), 
 					patternBars,
 					pivotHigh,
 					// S/R level for bearish 3-bar is middle of middle bar's
@@ -1213,7 +1239,8 @@ public class TradeTrigger {
 					.min(patternBars[0].getOpen(), patternBars[0].getClose());
 			double[] bBandsDesc = priceChannelPos(instrument, pPeriod, filter, side, time, pivotHigh, 0);
 
-			return new TriggerDesc(TriggerType.BEARISH_1_BAR, 1, patternBars,
+			return new TriggerDesc(TriggerType.BEARISH_1_BAR, 1, barLengthPercentile(instrument, pPeriod, filter, OfferSide.BID, time, range, FXUtils.YEAR_WORTH_OF_4H_BARS), 
+					patternBars,
 					pivotHigh,
 					getUpperHandleMiddle(history.getBars(instrument, pPeriod, side, filter, 1, time, 0).get(0)),
 					bBandsDesc[0], bBandsDesc[1], bBandsDesc[2], bBandsDesc[3],
