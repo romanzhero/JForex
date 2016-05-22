@@ -65,8 +65,7 @@ public abstract class BasicStrategy {
 		pairsTimeFrames = new HashMap<Instrument, String>();
 		// parse timeframes per pair, they are in format
 		// <pair>,<timeframe>;<pair>,<timeframe>...
-		StringTokenizer st = new StringTokenizer(
-				conf.getProperty("pairsToCheck"), ";");
+		StringTokenizer st = new StringTokenizer(conf.getProperty("pairsToCheck"), ";");
 		while (st.hasMoreTokens()) {
 			String nextPair = st.nextToken();
 			StringTokenizer st2 = new StringTokenizer(nextPair, ",");
@@ -78,11 +77,9 @@ public abstract class BasicStrategy {
 		}
 
 		skipPairs = new HashSet<Instrument>();
-		StringTokenizer stSkipPairs = new StringTokenizer(conf.getProperty(
-				"skipPairs", ""), ";");
+		StringTokenizer stSkipPairs = new StringTokenizer(conf.getProperty("skipPairs", ""), ";");
 		while (stSkipPairs.hasMoreTokens()) {
-			Instrument nextInstrument = Instrument.fromString(stSkipPairs
-					.nextToken());
+			Instrument nextInstrument = Instrument.fromString(stSkipPairs.nextToken());
 			skipPairs.add(nextInstrument);
 
 		}
@@ -91,11 +88,9 @@ public abstract class BasicStrategy {
 		String tsString = ts.toString("yyyy_MM_dd_HH_mm_ss");
 		this.log = conf.getProperty("logToFileOnly", "no").equals("yes") ? new Logger(
 				reportDir + "//" + getReportFileName() + tsString + ".txt")
-				: new Logger(console, reportDir + "//" + getReportFileName()
-						+ tsString + ".txt");
+				: new Logger(console, reportDir + "//" + getReportFileName() + tsString + ".txt");
 		// Print header of the logfile
-		log.print("Starting strategy " + getStrategyName() + "; Logging to "
-				+ reportDir + "//" + getReportFileName() + tsString + ".txt");
+		log.print("Starting strategy " + getStrategyName() + "; Logging to " + reportDir + "//" + getReportFileName() + tsString + ".txt");
 		log.print("Configuration:");
 		Enumeration<Object> e = conf.keys();
 		while (e.hasMoreElements()) {

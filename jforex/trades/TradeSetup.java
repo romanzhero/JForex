@@ -218,7 +218,7 @@ public abstract class TradeSetup implements ITradeSetup {
 				double newSL = bidBar.getClose() < order.getOpenPrice() ? bidBar.getLow() : order.getOpenPrice();
 				if (newSL > order.getStopLossPrice()) {
 					lastTradingEvent = "(Long) Moved SL due to big bearish candle (size perc: " 
-							+ FXUtils.df1.format(candles.sizePercentile + ", reversal size: " + FXUtils.df1.format(candles.reversalSize) + "%)") ;
+							+ FXUtils.df1.format(candles.sizePercentile) + ", reversal size: " + FXUtils.df1.format(candles.reversalSize) + "%)";
 					FXUtils.setStopLoss(order, newSL, bidBar.getTime(), getClass());
 				}
 		}
@@ -244,7 +244,7 @@ public abstract class TradeSetup implements ITradeSetup {
 			double newSL = bidBar.getHigh();
 			if (newSL < order.getStopLossPrice()) {
 				lastTradingEvent = "(Short) Protect profit (" + FXUtils.df1.format(howManyATRs) + ") due to big bullish candle (size perc: " 
-						+ FXUtils.df1.format(candles.sizePercentile + ", reversal size: " + FXUtils.df1.format(candles.reversalSize) + "%)") ;
+						+ FXUtils.df1.format(candles.sizePercentile) + ", reversal size: " + FXUtils.df1.format(candles.reversalSize) + "%)" ;
 				FXUtils.setStopLoss(order, newSL, bidBar.getTime(), getClass());
 			}
 		}

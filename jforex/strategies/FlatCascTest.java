@@ -3,6 +3,7 @@ package jforex.strategies;
 import java.awt.Color;
 import java.awt.Font;
 import java.io.File;
+import java.math.BigDecimal;
 import java.util.*;
 
 import com.dukascopy.api.*;
@@ -18,8 +19,6 @@ import jforex.utils.FlexLogEntry;
 import jforex.utils.Logger;
 import jforex.events.CandleMomentumEvent;
 import jforex.events.ITAEvent;
-import jforex.events.LongCandlesEvent;
-import jforex.events.ShortCandlesEvent;
 import jforex.events.TAEventDesc;
 import jforex.logging.TradeLog;
 import jforex.techanalysis.Trend;
@@ -33,14 +32,14 @@ import jforex.trades.*;
 public class FlatCascTest implements IStrategy {
 	@Configurable(value = "Period", description = "Choose the time frame")
 	public Period 
-		selectedPeriod = Period.FOUR_HOURS,
-		orderSubmitPeriod = Period.TEN_MINS;
+		selectedPeriod = Period.FIVE_MINS,
+		orderSubmitPeriod = Period.ONE_MIN;
 
 	@Configurable(value = "Filter", description = "Choose the candle filter")
-	public Filter selectedFilter = Filter.WEEKENDS;
+	public Filter selectedFilter = Filter.ALL_FLATS;
 
 	@Configurable(value = "Amount", stepSize = 0.0001, description = "Choose amount (step size 0.0001)")
-	public double selectedAmount = 0.1;
+	public double selectedAmount = 100000;
 
 	protected Instrument selectedInstrument = null;
 	protected boolean visualMode = false, showIndicators = false;
@@ -105,14 +104,12 @@ public class FlatCascTest implements IStrategy {
 		this.history = context.getHistory();
 		this.indicators = context.getIndicators();
 		this.context = context;
+		
+		FXUtils.setProfitLossHelper(context.getAccount().getAccountCurrency(), history);
 
 		dataService = context.getDataService();
 
 		taSource = new FlexTASource(indicators, history, selectedFilter);
-		new Trend(indicators);
-		new Volatility(indicators);
-		new Channel(context.getHistory(), indicators);
-		new TradeTrigger(indicators, context.getHistory(), null);
 
 		log = new Logger(reportDir + "//Casc_report_" + FXUtils.getFileTimeStamp(System.currentTimeMillis()) + ".txt");
 		statsLog = new Logger(reportDir + "//Casc_stat_report_" + FXUtils.getFileTimeStamp(System.currentTimeMillis()) + ".txt");
@@ -141,9 +138,7 @@ public class FlatCascTest implements IStrategy {
 			chart = context.getChart(selectedInstrument);
 			if (chart == null) {
 				// chart is not opened, we can't plot an object
-				console.getOut().println(
-						"Can't open the chart for "
-								+ selectedInstrument.toString() + ", stop !");
+				console.getOut().println("Can't open the chart for " + selectedInstrument.toString() + ", stop !");
 				context.stop();
 			}
 			if (showIndicators) {
@@ -329,7 +324,9 @@ public class FlatCascTest implements IStrategy {
 					String orderLabel = getOrderLabel(instrument, bidBar.getTime(),	signal.isLong ? "BUY" : "SELL");
 					createTradeLog(instrument, period, askBar, OfferSide.ASK, orderLabel, signal.isLong, lastTaValues);
 					if (tradingAllowed(bidBar.getTime(), period)) {
-						order = currentSetup.submitOrder(orderLabel, instrument, signal.isLong, selectedAmount, bidBar, askBar);
+						double inTargetCurrency = FXUtils.convertByBar(BigDecimal.valueOf(selectedAmount), context.getAccount().getAccountCurrency(), selectedInstrument.getSecondaryJFCurrency(), selectedPeriod, OfferSide.BID, bidBar.getTime()).doubleValue();
+						double amountToTrade = Math.round(inTargetCurrency / bidBar.getClose()) / 1e6; 
+						order = currentSetup.submitOrder(orderLabel, instrument, signal.isLong, amountToTrade, bidBar, askBar);
 						order.waitForUpdate(null);
 	
 						orderPerPair.put(instrument.name(), order);

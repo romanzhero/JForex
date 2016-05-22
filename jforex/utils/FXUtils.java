@@ -34,6 +34,7 @@ import org.joda.time.DateTimeZone;
 
 import com.dukascopy.api.Filter;
 import com.dukascopy.api.IBar;
+import com.dukascopy.api.ICurrency;
 import com.dukascopy.api.IHistory;
 import com.dukascopy.api.IOrder;
 import com.dukascopy.api.ITick;
@@ -76,26 +77,47 @@ public class FXUtils {
 	};
 
 	private static Currency baseCurrency;
+	private static ICurrency baseCurrency2;
 	private static IHistory history;
 	private static BigDecimal DukaLotSize = BigDecimal.valueOf(1000000);
-	protected static Map<Currency, Instrument> pairs = new HashMap<Currency, Instrument>();
+	protected static Map<Currency, Instrument> pairsDepr = new HashMap<Currency, Instrument>();
 
 	static {
-		pairs.put(Currency.getInstance("AUD"), Instrument.AUDUSD);
-		pairs.put(Currency.getInstance("CAD"), Instrument.USDCAD);
-		pairs.put(Currency.getInstance("CHF"), Instrument.USDCHF);
-		pairs.put(Currency.getInstance("DKK"), Instrument.USDDKK);
-		pairs.put(Currency.getInstance("EUR"), Instrument.EURUSD);
-		pairs.put(Currency.getInstance("GBP"), Instrument.GBPUSD);
-		pairs.put(Currency.getInstance("HKD"), Instrument.USDHKD);
-		pairs.put(Currency.getInstance("JPY"), Instrument.USDJPY);
-		pairs.put(Currency.getInstance("MXN"), Instrument.USDMXN);
-		pairs.put(Currency.getInstance("NOK"), Instrument.USDNOK);
-		pairs.put(Currency.getInstance("NZD"), Instrument.NZDUSD);
-		pairs.put(Currency.getInstance("SEK"), Instrument.USDSEK);
-		pairs.put(Currency.getInstance("SGD"), Instrument.USDSGD);
-		pairs.put(Currency.getInstance("TRY"), Instrument.USDTRY);
+		pairsDepr.put(Currency.getInstance("AUD"), Instrument.AUDUSD);
+		pairsDepr.put(Currency.getInstance("CAD"), Instrument.USDCAD);
+		pairsDepr.put(Currency.getInstance("CHF"), Instrument.USDCHF);
+		pairsDepr.put(Currency.getInstance("DKK"), Instrument.USDDKK);
+		pairsDepr.put(Currency.getInstance("EUR"), Instrument.EURUSD);
+		pairsDepr.put(Currency.getInstance("GBP"), Instrument.GBPUSD);
+		pairsDepr.put(Currency.getInstance("HKD"), Instrument.USDHKD);
+		pairsDepr.put(Currency.getInstance("JPY"), Instrument.USDJPY);
+		pairsDepr.put(Currency.getInstance("MXN"), Instrument.USDMXN);
+		pairsDepr.put(Currency.getInstance("NOK"), Instrument.USDNOK);
+		pairsDepr.put(Currency.getInstance("NZD"), Instrument.NZDUSD);
+		pairsDepr.put(Currency.getInstance("SEK"), Instrument.USDSEK);
+		pairsDepr.put(Currency.getInstance("SGD"), Instrument.USDSGD);
+		pairsDepr.put(Currency.getInstance("TRY"), Instrument.USDTRY);
 	}
+	
+	protected static Map<ICurrency, Instrument> pairs = new HashMap<ICurrency, Instrument>();
+
+	static {
+		pairs.put(Instrument.AUDUSD.getPrimaryJFCurrency(), Instrument.AUDUSD);
+		pairs.put(Instrument.USDCAD.getSecondaryJFCurrency(), Instrument.USDCAD);
+		pairs.put(Instrument.USDCHF.getSecondaryJFCurrency(), Instrument.USDCHF);
+		pairs.put(Instrument.USDDKK.getSecondaryJFCurrency(), Instrument.USDDKK);
+		pairs.put(Instrument.EURUSD.getPrimaryJFCurrency(), Instrument.EURUSD);
+		pairs.put(Instrument.GBPUSD.getPrimaryJFCurrency(), Instrument.GBPUSD);
+		pairs.put(Instrument.USDHKD.getSecondaryJFCurrency(), Instrument.USDHKD);
+		pairs.put(Instrument.USDJPY.getSecondaryJFCurrency(), Instrument.USDJPY);
+		pairs.put(Instrument.USDMXN.getSecondaryJFCurrency(), Instrument.USDMXN);
+		pairs.put(Instrument.USDNOK.getSecondaryJFCurrency(), Instrument.USDNOK);
+		pairs.put(Instrument.NZDUSD.getPrimaryJFCurrency(), Instrument.NZDUSD);
+		pairs.put(Instrument.USDSEK.getSecondaryJFCurrency(), Instrument.USDSEK);
+		pairs.put(Instrument.USDSGD.getSecondaryJFCurrency(), Instrument.USDSGD);
+		pairs.put(Instrument.USDTRY.getSecondaryJFCurrency(), Instrument.USDTRY);
+	}
+	
 
 	public static Period lowestTimeframeSupported = Period.TEN_MINS;
 	public static Period secondLowestTimeframeSupported = Period.FIFTEEN_MINS; // needed
@@ -314,12 +336,15 @@ public class FXUtils {
 		return curr_ema;
 	}
 
-	public static void setProfitLossHelper(Currency pBaseCurrency,
-			IHistory pHistory) {
+	public static void setProfitLossHelper(Currency pBaseCurrency, IHistory pHistory) {
 		baseCurrency = pBaseCurrency;
 		history = pHistory;
 	}
-
+	
+	public static void setProfitLossHelper(ICurrency pBaseCurrency, IHistory pHistory) {
+		baseCurrency2 = pBaseCurrency;
+		history = pHistory;
+	}
 	public static double calculateProfitLoss(IOrder order) throws JFException {
 		double closePrice;
 		if (order.getState() == IOrder.State.CLOSED) {
@@ -334,27 +359,15 @@ public class FXUtils {
 		}
 		BigDecimal profLossInSecondaryCCY;
 		if (order.getOrderCommand().isLong()) {
-			profLossInSecondaryCCY = BigDecimal
-					.valueOf(closePrice)
-					.subtract(BigDecimal.valueOf(order.getOpenPrice()))
-					.multiply(
-							BigDecimal.valueOf(order.getAmount()).multiply(
-									DukaLotSize))
-					.setScale(2, BigDecimal.ROUND_HALF_EVEN);
+			profLossInSecondaryCCY = BigDecimal.valueOf(closePrice).subtract(BigDecimal.valueOf(order.getOpenPrice())).multiply(
+							BigDecimal.valueOf(order.getAmount()).multiply(DukaLotSize)).setScale(2, BigDecimal.ROUND_HALF_EVEN);
 		} else {
-			profLossInSecondaryCCY = BigDecimal
-					.valueOf(order.getOpenPrice())
-					.subtract(BigDecimal.valueOf(closePrice))
-					.multiply(
-							BigDecimal.valueOf(order.getAmount()).multiply(
-									DukaLotSize))
-					.setScale(2, BigDecimal.ROUND_HALF_EVEN);
+			profLossInSecondaryCCY = BigDecimal.valueOf(order.getOpenPrice()).subtract(BigDecimal.valueOf(closePrice)).multiply(
+							BigDecimal.valueOf(order.getAmount()).multiply(DukaLotSize)).setScale(2, BigDecimal.ROUND_HALF_EVEN);
 		}
-		OfferSide side = order.getOrderCommand().isLong() ? OfferSide.ASK
-				: OfferSide.BID;
+		OfferSide side = order.getOrderCommand().isLong() ? OfferSide.ASK : OfferSide.BID;
 		BigDecimal convertedProfLoss = convertByTick(profLossInSecondaryCCY,
-				order.getInstrument().getSecondaryCurrency(), baseCurrency,
-				side).setScale(2, BigDecimal.ROUND_HALF_EVEN);
+				order.getInstrument().getSecondaryCurrency(), baseCurrency, side).setScale(2, BigDecimal.ROUND_HALF_EVEN);
 		return convertedProfLoss.doubleValue();
 	}
 
@@ -416,8 +429,7 @@ public class FXUtils {
 		return res;
 	}
 
-	public static BigDecimal convertByTick(BigDecimal amount,
-			Currency sourceCurrency, Currency targetCurrency, OfferSide side)
+	public static BigDecimal convertByTick(BigDecimal amount, Currency sourceCurrency, Currency targetCurrency, OfferSide side)
 			throws JFException {
 		if (targetCurrency.equals(sourceCurrency)) {
 			return amount;
@@ -427,7 +439,7 @@ public class FXUtils {
 		if (sourceCurrency.equals(Instrument.EURUSD.getSecondaryCurrency())) {
 			dollarValue = amount;
 		} else {
-			Instrument helperSourceCurrencyPair = pairs.get(sourceCurrency);
+			Instrument helperSourceCurrencyPair = pairsDepr.get(sourceCurrency);
 			if (helperSourceCurrencyPair == null) {
 				throw new IllegalArgumentException(
 						"No currency pair found for " + sourceCurrency);
@@ -449,7 +461,7 @@ public class FXUtils {
 			return dollarValue;
 		}
 
-		Instrument pair = pairs.get(targetCurrency);
+		Instrument pair = pairsDepr.get(targetCurrency);
 		BigDecimal price = getLastTickPrice(pair, side);
 		if (null == price)
 			return null;
@@ -474,9 +486,7 @@ public class FXUtils {
 		}
 	}
 
-	public static BigDecimal convertByBar(BigDecimal amount,
-			Currency sourceCurrency, Currency targetCurrency, Period period,
-			OfferSide side, long time) throws JFException {
+	public static BigDecimal convertByBar(BigDecimal amount, Currency sourceCurrency, Currency targetCurrency, Period period, OfferSide side, long time) throws JFException {
 		if (targetCurrency.equals(sourceCurrency)) {
 			return amount;
 		}
@@ -485,7 +495,7 @@ public class FXUtils {
 		if (sourceCurrency.equals(Instrument.EURUSD.getSecondaryCurrency())) {
 			dollarValue = amount;
 		} else {
-			Instrument helperSourceCurrencyPair = pairs.get(sourceCurrency);
+			Instrument helperSourceCurrencyPair = pairsDepr.get(sourceCurrency);
 			if (helperSourceCurrencyPair == null) {
 				throw new IllegalArgumentException(
 						"No currency pair found for " + sourceCurrency);
@@ -517,7 +527,7 @@ public class FXUtils {
 			return dollarValue;
 		}
 
-		Instrument pair = pairs.get(targetCurrency);
+		Instrument pair = pairsDepr.get(targetCurrency);
 		BigDecimal price = getLastBarPrice(pair, side, period, time);
 		if (null == price) {
 			System.out.println("Can't get last bar price for "
@@ -536,12 +546,66 @@ public class FXUtils {
 
 		return result;
 	}
+	
+	public static BigDecimal convertByBar(BigDecimal amount, ICurrency sourceCurrency, ICurrency targetCurrency, Period period, OfferSide side, long time) throws JFException {
+		if (targetCurrency.equals(sourceCurrency)) {
+			return amount;
+		}
 
-	protected static BigDecimal getLastBarPrice(Instrument pair,
-			OfferSide side, Period period, long time) throws JFException {
+		BigDecimal dollarValue;
+		if (sourceCurrency.equals(Instrument.EURUSD.getSecondaryJFCurrency())) {
+			dollarValue = amount;
+		} else {
+			Instrument helperSourceCurrencyPair = pairs.get(sourceCurrency);
+			if (helperSourceCurrencyPair == null) {
+				throw new IllegalArgumentException("No currency pair found for " + sourceCurrency);
+			}
+
+			BigDecimal helperSourceCurrencyPrice = getLastBarPrice(helperSourceCurrencyPair, side, period, time);
+			if (null == helperSourceCurrencyPrice) {
+				System.out.println("Can't get last bar price for "
+						+ helperSourceCurrencyPair.toString() + ", timeframe "
+						+ period.toString() + ", bar "
+						+ FXUtils.getFormatedTimeGMT(time));
+				System.err.println("Can't get last bar price for "
+						+ helperSourceCurrencyPair.toString() + ", timeframe "
+						+ period.toString() + ", bar "
+						+ FXUtils.getFormatedTimeGMT(time));
+				System.exit(1);
+				return null;
+			}
+
+			dollarValue = helperSourceCurrencyPair.toString().indexOf("USD") == 0 ? amount.divide(helperSourceCurrencyPrice, 2,	RoundingMode.HALF_EVEN) 
+					: amount.multiply(helperSourceCurrencyPrice).setScale(2, RoundingMode.HALF_EVEN);
+		}
+
+		if (targetCurrency.equals(Instrument.EURUSD.getSecondaryJFCurrency())) {
+			return dollarValue;
+		}
+
+		Instrument pair = pairs.get(targetCurrency);
+		BigDecimal price = getLastBarPrice(pair, side, period, time);
+		if (null == price) {
+			System.out.println("Can't get last bar price for "
+					+ pair.toString() + ", timeframe " + period.toString()
+					+ ", bar " + FXUtils.getFormatedTimeGMT(time));
+			System.err.println("Can't get last bar price for "
+					+ pair.toString() + ", timeframe " + period.toString()
+					+ ", bar " + FXUtils.getFormatedTimeGMT(time));
+			System.exit(1);
+			return null;
+		}
+
+		BigDecimal result = pair.toString().indexOf("USD") == 0 ? dollarValue.multiply(price).setScale(2, RoundingMode.HALF_EVEN)
+				: dollarValue.divide(price, 2, RoundingMode.HALF_EVEN);
+
+		return result;
+	}
+	
+
+	protected static BigDecimal getLastBarPrice(Instrument pair, OfferSide side, Period period, long time) throws JFException {
 		long lastBarTime = history.getPreviousBarStart(period, time);
-		List<IBar> bars = history.getBars(pair, period, side, Filter.WEEKENDS,
-				1, lastBarTime, 0);
+		List<IBar> bars = history.getBars(pair, period, side, Filter.WEEKENDS, 1, lastBarTime, 0);
 		if (bars == null || bars.size() == 0) {
 			return null;
 		}
@@ -1291,5 +1355,9 @@ public class FXUtils {
 		}
 		
 		return new String(entryTrendID.toString());
+	}
+	
+	public static boolean isFlat(IBar bar) {
+		return bar.getClose() == bar.getOpen() && bar.getClose() == bar.getLow() && bar.getClose() == bar.getHigh();
 	}
 }

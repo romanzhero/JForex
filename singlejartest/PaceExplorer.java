@@ -50,6 +50,7 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.Future;
 
+import jforex.explorers.CFDRangeExplorer;
 import jforex.explorers.PaceStatsCollector;
 import jforex.utils.ClimberProperties;
 import jforex.utils.FXUtils;
@@ -99,8 +100,7 @@ public class PaceExplorer {
 		try {
 			properties.load(new FileInputStream(args[0]));
 		} catch (IOException e) {
-			LOGGER.error("Can't open or can't read properties file " + args[0]
-					+ "...");
+			LOGGER.error("Can't open or can't read properties file " + args[0]	+ "...");
 			System.exit(1);
 		}
 
@@ -159,7 +159,7 @@ public class PaceExplorer {
 		future.get();
 		// start the strategy
 		LOGGER.info("Starting strategy");
-		IStrategy strategyToRun = new PaceStatsCollector(properties);
+		IStrategy strategyToRun = new CFDRangeExplorer(properties);
 		client.startStrategy(strategyToRun, new LoadingProgressListener() {
 			@Override
 			public void dataLoaded(long startTime, long endTime,

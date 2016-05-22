@@ -111,7 +111,7 @@ public class Logger {
 		print(output);
 	}
 
-	public void printValuesFlex(List<FlexLogEntry> line) {
+	public void printValuesFlex(List<FlexLogEntry> line, boolean flush) {
 		String output = new String();
 		int cnt = 0;
 		for (FlexLogEntry e : line) {
@@ -120,7 +120,11 @@ public class Logger {
 			else
 				output += e.getFormattedValue();
 		}
-		print(output);
+		print(output, flush);
+	}
+	
+	public void printValuesFlex(List<FlexLogEntry> line) {
+		printValuesFlex(line, false);
 	}
 
 	public void print(String message) {

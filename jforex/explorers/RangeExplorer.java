@@ -56,8 +56,7 @@ public class RangeExplorer extends BasicTAStrategy implements IStrategy {
 	}
 
 	@Override
-	public void onBar(Instrument instrument, Period period, IBar askBar,
-			IBar bidBar) throws JFException {
+	public void onBar(Instrument instrument, Period period, IBar askBar, IBar bidBar) throws JFException {
 		// for all subscribed instruments i.e. no filtering there
 		if (!period.equals(selectedPeriod)) {
 			return;

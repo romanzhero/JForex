@@ -94,7 +94,7 @@ public class TesterMainGUIMode extends JFrame implements ITesterUserInterface,
 			zoomInButton = null, zoomOutButton = null, indisButton = null;
 
 	// url of the DEMO jnlp
-	private static String jnlpUrl = "http://platform.dukascopy.com/demo/jforex.jnlp";
+	private static String jnlpUrl = "http://platform.dukascopy.com/live/jforex.jnlp";
 
 	private Instrument instrument = null;
 
@@ -110,9 +110,9 @@ public class TesterMainGUIMode extends JFrame implements ITesterUserInterface,
 			IChart chart = entry.getKey();
 			ITesterGui currGui = entry.getValue();
 			currGui.getTesterChartController().addOHLCInformer();
-			currGui.getTesterChartController().setFilter(Filter.WEEKENDS);
-			IFeedDescriptor fd = new TimePeriodAggregationFeedDescriptor(null, Period.FOUR_HOURS, null);
-			fd.setFilter(Filter.WEEKENDS);
+			currGui.getTesterChartController().setFilter(Filter.ALL_FLATS);
+			IFeedDescriptor fd = new TimePeriodAggregationFeedDescriptor(null, Period.FIVE_MINS, null);
+			fd.setFilter(Filter.ALL_FLATS);
 			currGui.getTesterChartController().setFeedDescriptor(fd);
 			JPanel chartPanel = currGui.getChartPanel();
 			if (chart.getFeedDescriptor().getInstrument().equals(instrument)) {
@@ -191,21 +191,19 @@ public class TesterMainGUIMode extends JFrame implements ITesterUserInterface,
 
 		// set instruments that will be used in testing
 		final Set<Instrument> instruments = new HashSet<>();
-		String pair = properties.getProperty("pairsToCheck").substring(0, 7);
-		instrument = Instrument.fromString(pair);
+//		String pair = properties.getProperty("pairsToCheck").substring(0, 7);
+//		instrument = Instrument.fromString(pair);
+//		instruments.add(instrument);
+		instrument = Instrument.JPNIDXJPY;
 		instruments.add(instrument);
+
 
 		LOGGER.info("Subscribing instruments...");
 		client.setCacheDirectory(new File(properties.getProperty("cachedir")));
 		client.setSubscribedInstruments(instruments);
 		// setting initial deposit
-		client.setInitialDeposit(Instrument.EURUSD.getSecondaryJFCurrency(),
-				Double.parseDouble(properties.getProperty("initialdeposit",
-						"100000.0")));
-		client.setDataInterval(Period.ONE_MIN, null,
-				InterpolationMethod.CUBIC_SPLINE, properties
-						.getTestIntervalStart().getMillis(), properties
-						.getTestIntervalEnd().getMillis());
+		client.setInitialDeposit(Instrument.EURUSD.getSecondaryJFCurrency(), Double.parseDouble(properties.getProperty("initialdeposit", "100000.0")));
+		client.setDataInterval(Period.TICK, null, InterpolationMethod.CUBIC_SPLINE, properties.getTestIntervalStart().getMillis(), properties.getTestIntervalEnd().getMillis());
 		// load data
 		LOGGER.info("Downloading data");
 		Future<?> future = client.downloadData(null);
