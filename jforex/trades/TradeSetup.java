@@ -206,7 +206,7 @@ public abstract class TradeSetup implements ITradeSetup {
 					double newSL = bidBar.getClose() > order.getOpenPrice() ? bidBar.getHigh() : order.getOpenPrice();
 					if (newSL < order.getStopLossPrice()) {
 						lastTradingEvent = "(Short) Moved SL due to big bullish candle (size perc: " 
-									+ FXUtils.df1.format(candles.sizePercentile + ", reversal size: " + FXUtils.df1.format(candles.reversalSize) + "%)") ;
+									+ FXUtils.df1.format(candles.sizePercentile) + ", reversal size: " + FXUtils.df1.format(candles.reversalSize) + "%)";
 						FXUtils.setStopLoss(order, newSL, bidBar.getTime(), getClass());
 					}
 				}

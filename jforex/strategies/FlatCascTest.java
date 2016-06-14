@@ -22,9 +22,6 @@ import jforex.events.ITAEvent;
 import jforex.events.TAEventDesc;
 import jforex.logging.TradeLog;
 import jforex.techanalysis.Trend;
-import jforex.techanalysis.Volatility;
-import jforex.techanalysis.Channel;
-import jforex.techanalysis.TradeTrigger;
 import jforex.techanalysis.source.FlexTASource;
 import jforex.techanalysis.source.FlexTAValue;
 import jforex.trades.*;
@@ -266,7 +263,7 @@ public class FlatCascTest implements IStrategy {
 							console.getOut().println(logLine);
 							log.print(logLine);
 							setup.takeTradingOver(order);
-							showTradingEventOnGUI("Trade takeover by " + currentSetup.getName(), order.isLong(), bidBar, askBar, instrument);
+							showTradingEventOnGUI(orderCnt, "Trade takeover by " + currentSetup.getName(), order.isLong(), bidBar, askBar, instrument);
 							break;
 						}
 					}
@@ -280,7 +277,7 @@ public class FlatCascTest implements IStrategy {
 					&& !currentSetup.getLastTradingEvent().equals(lastTradingEvent)
 					&& !currentSetup.getLastTradingEvent().equals("none")) {
 					lastTradingEvent = currentSetup.getLastTradingEvent();
-					showTradingEventOnGUI(currentSetup.getLastTradingEvent() + " with " + currentSetup.getName(), order.isLong(), bidBar, askBar, instrument);
+					showTradingEventOnGUI(orderCnt, currentSetup.getLastTradingEvent() + " with " + currentSetup.getName(), order.isLong(), bidBar, askBar, instrument);
 				}
 				
 				// inTradeProcessing might CLOSE the order, onMessage will set to null !
@@ -293,7 +290,7 @@ public class FlatCascTest implements IStrategy {
 					ITradeSetup.EntryDirection exitSignal = currentSetup.checkExit(instrument, period, askBar, bidBar, selectedFilter, order, lastTaValues);
 					if ((order.isLong() && exitSignal.equals(ITradeSetup.EntryDirection.LONG))
 							|| (!order.isLong() && exitSignal.equals(ITradeSetup.EntryDirection.SHORT))) {
-						showTradingEventOnGUI((order.isLong() ? "Long " : "Short ") + "exit signal with " + currentSetup.getName(), exitSignal.equals(ITradeSetup.EntryDirection.LONG), bidBar, askBar, instrument);
+						showTradingEventOnGUI(orderCnt, (order.isLong() ? "Long " : "Short ") + "exit signal with " + currentSetup.getName(), exitSignal.equals(ITradeSetup.EntryDirection.LONG), bidBar, askBar, instrument);
 
 						
 						if (tradeLog != null)
@@ -336,14 +333,14 @@ public class FlatCascTest implements IStrategy {
 						console.getOut().println(logLine);
 						log.print(logLine);
 						
-						showTradingEventOnGUI((signal.isLong ? "Long" : "Short") + " entry signal with " + currentSetup.getName(), signal.isLong, bidBar, askBar, instrument);
+						showTradingEventOnGUI(orderCnt, (signal.isLong ? "Long" : "Short") + " entry signal with " + currentSetup.getName(), signal.isLong, bidBar, askBar, instrument);
 					} else {
 						// put in the order in the "queue" to be submitted on Sunday
 						orderWaitinginQueue = true;
 						queueOrderLabel = orderLabel;
 						queueOrderIsLong = signal.isLong;
 						
-						showTradingEventOnGUI((signal.isLong ? "Long" : "Short") + " entry signal with " + currentSetup.getName() + " (queued)", signal.isLong, bidBar, askBar, instrument);
+						showTradingEventOnGUI(orderCnt, (signal.isLong ? "Long" : "Short") + " entry signal with " + currentSetup.getName() + " (queued)", signal.isLong, bidBar, askBar, instrument);
 					}
 
 					break;
@@ -352,7 +349,7 @@ public class FlatCascTest implements IStrategy {
 		}
 	}
 
-	private void showTradingEventOnGUI(String textToShow, boolean direction, IBar bidBar, IBar askBar, Instrument instrument) {
+	private void showTradingEventOnGUI(long tradeID, String textToShow, boolean direction, IBar bidBar, IBar askBar, Instrument instrument) {
 		if (visualMode) {
 			chart = context.getChart(instrument);
 			if (chart == null) {
@@ -362,7 +359,7 @@ public class FlatCascTest implements IStrategy {
 			}
 			ITextChartObject txt = chart.getChartObjectFactory().createText();
 			txt.setMenuEnabled(true);
-			txt.setText(commentCnt++ + ": " + textToShow, new Font("Helvetica", Font.BOLD, 14));
+			txt.setText(tradeID + "." + commentCnt++ + ": " + textToShow, new Font("Helvetica", Font.BOLD, 14));
 			txt.setTime(0, bidBar.getTime());
 			double level = 0;
 			if (direction) {
@@ -543,7 +540,7 @@ public class FlatCascTest implements IStrategy {
 				guiLabel = (message.getOrder().isLong() ? "Long " : "Short ") + currentSetup.getName() + " order canceled" + (addLastTradingEvent ? " (" + lastTradingEvent + ")" : "");
 			else 
 				guiLabel = (message.getOrder().isLong() ? "Long " : "Short ") + currentSetup.getName() + " trade closed" + (addLastTradingEvent ? " (" + lastTradingEvent + ")" : "");
-			showTradingEventOnGUI(guiLabel + " with " + currentSetup.getName(), message.getOrder().isLong(), history.getBar(message.getOrder().getInstrument(), selectedPeriod, OfferSide.BID, 1), history.getBar(message.getOrder().getInstrument(), selectedPeriod, OfferSide.ASK, 1), message.getOrder().getInstrument());
+			showTradingEventOnGUI(orderCnt, guiLabel + " with " + currentSetup.getName(), message.getOrder().isLong(), history.getBar(message.getOrder().getInstrument(), selectedPeriod, OfferSide.BID, 1), history.getBar(message.getOrder().getInstrument(), selectedPeriod, OfferSide.ASK, 1), message.getOrder().getInstrument());
 			// might be cancel of unfilled order or SL close
 			Set<IMessage.Reason> reasons = message.getReasons();
 			String reasonsStr = new String();
@@ -575,6 +572,7 @@ public class FlatCascTest implements IStrategy {
 			for (ITradeSetup setup : tradeSetups)
 				setup.afterTradeReset(message.getOrder().getInstrument());
 			currentSetup = null;
+			commentCnt = 1;
 		}
 		if (message.getType().equals(IMessage.Type.ORDER_FILL_OK)) {
 			tradeLog.setOrder(message.getOrder()); // needed for Mkt orders, tradeLog was created without order being created

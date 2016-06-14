@@ -75,8 +75,7 @@ import com.dukascopy.api.system.tester.ITesterUserInterface;
  * a strategy in GUI mode
  */
 @SuppressWarnings("serial")
-public class TesterMainGUIMode extends JFrame implements ITesterUserInterface,
-		ITesterExecution {
+public class TesterMainGUIMode extends JFrame implements ITesterUserInterface, ITesterExecution {
 	private static final Logger LOGGER = LoggerFactory.getLogger(TesterMainGUIMode.class);
 	final static ClimberProperties properties = new ClimberProperties();
 
@@ -94,14 +93,13 @@ public class TesterMainGUIMode extends JFrame implements ITesterUserInterface,
 			zoomInButton = null, zoomOutButton = null, indisButton = null;
 
 	// url of the DEMO jnlp
-	private static String jnlpUrl = "http://platform.dukascopy.com/live/jforex.jnlp";
+	private static String jnlpUrl = "http://platform.dukascopy.com/demo/jforex.jnlp";
 
 	private Instrument instrument = null;
 
 	public TesterMainGUIMode() {
 		setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-		getContentPane().setLayout(
-				new BoxLayout(getContentPane(), BoxLayout.Y_AXIS));
+		getContentPane().setLayout(new BoxLayout(getContentPane(), BoxLayout.Y_AXIS));
 	}
 
 	@Override
@@ -175,8 +173,7 @@ public class TesterMainGUIMode extends JFrame implements ITesterUserInterface,
 		LOGGER.info("Connecting...");
 		// connect to the server using jnlp, user name and password
 		// connection is needed for data downloading
-		client.connect(jnlpUrl, properties.getProperty("username"),
-				properties.getProperty("password"));
+		client.connect(jnlpUrl, properties.getProperty("username"),	properties.getProperty("password"));
 
 		// wait for it to connect
 		int i = 10; // wait max ten seconds
@@ -191,11 +188,11 @@ public class TesterMainGUIMode extends JFrame implements ITesterUserInterface,
 
 		// set instruments that will be used in testing
 		final Set<Instrument> instruments = new HashSet<>();
-//		String pair = properties.getProperty("pairsToCheck").substring(0, 7);
-//		instrument = Instrument.fromString(pair);
-//		instruments.add(instrument);
-		instrument = Instrument.JPNIDXJPY;
+		String pair = properties.getProperty("pairsToCheck");
+		instrument = Instrument.fromString(pair);
 		instruments.add(instrument);
+//		instrument = Instrument.DEUIDXEUR;
+//		instruments.add(instrument);
 
 
 		LOGGER.info("Subscribing instruments...");
@@ -203,7 +200,7 @@ public class TesterMainGUIMode extends JFrame implements ITesterUserInterface,
 		client.setSubscribedInstruments(instruments);
 		// setting initial deposit
 		client.setInitialDeposit(Instrument.EURUSD.getSecondaryJFCurrency(), Double.parseDouble(properties.getProperty("initialdeposit", "100000.0")));
-		client.setDataInterval(Period.TICK, null, InterpolationMethod.CUBIC_SPLINE, properties.getTestIntervalStart().getMillis(), properties.getTestIntervalEnd().getMillis());
+		client.setDataInterval(Period.ONE_MIN, null, InterpolationMethod.CUBIC_SPLINE, properties.getTestIntervalStart().getMillis(), properties.getTestIntervalEnd().getMillis());
 		// load data
 		LOGGER.info("Downloading data");
 		Future<?> future = client.downloadData(null);
@@ -252,11 +249,9 @@ public class TesterMainGUIMode extends JFrame implements ITesterUserInterface,
 		removecurrentChartPanel();
 
 		this.currentChartPanel = chartPanel;
-		chartPanel.setPreferredSize(new Dimension(frameWidth, frameHeight
-				- controlPanelHeight));
+		chartPanel.setPreferredSize(new Dimension(frameWidth, frameHeight - controlPanelHeight));
 		chartPanel.setMinimumSize(new Dimension(frameWidth, 200));
-		chartPanel.setMaximumSize(new Dimension(Short.MAX_VALUE,
-				Short.MAX_VALUE));
+		chartPanel.setMaximumSize(new Dimension(Short.MAX_VALUE, Short.MAX_VALUE));
 		getContentPane().add(chartPanel);
 		this.validate();
 		chartPanel.repaint();
