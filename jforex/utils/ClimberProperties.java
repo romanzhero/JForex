@@ -51,45 +51,54 @@ public class ClimberProperties extends SortedProperties {
 		}
 
 		DateTime now = new DateTime();
-		if (!containsKey("testIntervalStart")) {
-			pLog.info("No start of test interval set, setting interval to 6 months before up to now...");
-			testIntervalStart = now.minusMonths(6);
-			testIntervalEnd = now;
+		if (getProperty("today", "no").equals("yes")) {
+			DateTime 
+				dayStart = new DateTime(now.getYear(), now.getMonthOfYear(), now.getDayOfMonth(), 0, 0, 0, 0),
+				dayEnd = dayStart.plusDays(1);
+			testIntervalStart = dayStart;
+			testIntervalEnd = dayEnd;
+			pLog.info("Test interval set to current day...");
 		} else {
-			// TODO: enable entering hours and minutes !
-			DateTimeFormatter fmt = DateTimeFormat
-					.forPattern("dd.MM.yyyy HH:mm");
-			try {
-				testIntervalStart = fmt
-						.parseDateTime(getProperty("testIntervalStart"));
-			} catch (IllegalArgumentException e2) {
-				pLog.error("Format of test interval start date wrong: "
-						+ getProperty("testIntervalStart") + ", exception "
-						+ e2.getMessage());
-				System.exit(1);
-			} catch (UnsupportedOperationException e1) {
-				pLog.error("Format of test interval start date wrong: "
-						+ getProperty("testIntervalStart") + ", exception "
-						+ e1.getMessage());
-				System.exit(1);
-			}
-			if (!containsKey("testIntervalEnd")) {
-				pLog.info("No end of test interval set, setting to now...");
+			if (!containsKey("testIntervalStart")) {
+				pLog.info("No start of test interval set, setting interval to 6 months before up to now...");
+				testIntervalStart = now.minusMonths(6);
 				testIntervalEnd = now;
 			} else {
+				// TODO: enable entering hours and minutes !
+				DateTimeFormatter fmt = DateTimeFormat
+						.forPattern("dd.MM.yyyy HH:mm");
 				try {
-					testIntervalEnd = fmt
-							.parseDateTime(getProperty("testIntervalEnd"));
+					testIntervalStart = fmt
+							.parseDateTime(getProperty("testIntervalStart"));
 				} catch (IllegalArgumentException e2) {
-					pLog.error("Format of test interval end date wrong: "
-							+ getProperty("testIntervalEnd") + ", exception "
+					pLog.error("Format of test interval start date wrong: "
+							+ getProperty("testIntervalStart") + ", exception "
 							+ e2.getMessage());
 					System.exit(1);
 				} catch (UnsupportedOperationException e1) {
-					pLog.error("Format of test interval end date wrong: "
-							+ getProperty("testIntervalEnd") + ", exception "
+					pLog.error("Format of test interval start date wrong: "
+							+ getProperty("testIntervalStart") + ", exception "
 							+ e1.getMessage());
 					System.exit(1);
+				}
+				if (!containsKey("testIntervalEnd")) {
+					pLog.info("No end of test interval set, setting to now...");
+					testIntervalEnd = now;
+				} else {
+					try {
+						testIntervalEnd = fmt
+								.parseDateTime(getProperty("testIntervalEnd"));
+					} catch (IllegalArgumentException e2) {
+						pLog.error("Format of test interval end date wrong: "
+								+ getProperty("testIntervalEnd") + ", exception "
+								+ e2.getMessage());
+						System.exit(1);
+					} catch (UnsupportedOperationException e1) {
+						pLog.error("Format of test interval end date wrong: "
+								+ getProperty("testIntervalEnd") + ", exception "
+								+ e1.getMessage());
+						System.exit(1);
+					}
 				}
 			}
 		}

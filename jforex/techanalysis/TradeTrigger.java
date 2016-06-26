@@ -245,14 +245,10 @@ public class TradeTrigger {
 	 *         otherwise -1
 	 */
 	public double bullishPivotalLowsTrigger(Instrument instrument, Period pPeriod, OfferSide side, long time) throws JFException {
-		List<IBar> bars = history.getBars(instrument, pPeriod, side,Filter.WEEKENDS, 3, time, 0);
-		IBar currBar = bars.get(2);
-		IBar prevBar1 = bars.get(1);
-		IBar prevBar2 = bars.get(0);
+		IBar resultBar = null;
 
-		if (currBar.getLow() > prevBar1.getLow()
-				&& prevBar1.getLow() <= prevBar2.getLow()) {
-			return prevBar1.getLow();
+		if ((resultBar = bullishPivotalLowsTriggerBar(instrument, pPeriod, Filter.WEEKENDS, OfferSide.ASK, time)) != null) {
+			return resultBar.getLow();
 		} else {
 			return Double.MIN_VALUE;
 		}
@@ -267,6 +263,11 @@ public class TradeTrigger {
 		IBar currBar = bars.get(2);
 		IBar prevBar1 = bars.get(1);
 		IBar prevBar2 = bars.get(0);
+		
+		// check gap
+		if ((currBar.getLow() > prevBar1.getHigh() && currBar.getOpen() > prevBar1.getHigh())
+			|| (prevBar2.getLow() > prevBar1.getHigh() && prevBar1.getOpen() < prevBar2.getLow()))
+			return null;
 
 		if (currBar.getLow() > prevBar1.getLow() && prevBar1.getLow() <= prevBar2.getLow()) {
 			return prevBar1;
@@ -637,6 +638,11 @@ public class TradeTrigger {
 		IBar prevBar1 = bars.get(1);
 		IBar prevBar2 = bars.get(0);
 
+		// mind the gap
+		if ((currBar.getHigh() < prevBar1.getLow() && currBar.getOpen() < prevBar1.getLow())
+			|| (prevBar2.getHigh() < prevBar1.getLow() && prevBar1.getOpen() > prevBar2.getHigh()))
+			return Double.MAX_VALUE;
+		
 		if (currBar.getHigh() < prevBar1.getHigh()
 				&& prevBar1.getHigh() > prevBar2.getHigh()) {
 			return prevBar1.getHigh();

@@ -187,7 +187,7 @@ public class TesterMainGUIMode extends JFrame implements ITesterUserInterface, I
 		}
 
 		// set instruments that will be used in testing
-		final Set<Instrument> instruments = new HashSet<>();
+		final Set<Instrument> instruments = new HashSet<Instrument>();
 		String pair = properties.getProperty("pairsToCheck");
 		instrument = Instrument.fromString(pair);
 		instruments.add(instrument);
@@ -200,7 +200,7 @@ public class TesterMainGUIMode extends JFrame implements ITesterUserInterface, I
 		client.setSubscribedInstruments(instruments);
 		// setting initial deposit
 		client.setInitialDeposit(Instrument.EURUSD.getSecondaryJFCurrency(), Double.parseDouble(properties.getProperty("initialdeposit", "100000.0")));
-		client.setDataInterval(Period.ONE_MIN, null, InterpolationMethod.CUBIC_SPLINE, properties.getTestIntervalStart().getMillis(), properties.getTestIntervalEnd().getMillis());
+		client.setDataInterval(Period.ONE_MIN, null, InterpolationMethod.FOUR_TICKS, properties.getTestIntervalStart().getMillis(), properties.getTestIntervalEnd().getMillis());
 		// load data
 		LOGGER.info("Downloading data");
 		Future<?> future = client.downloadData(null);

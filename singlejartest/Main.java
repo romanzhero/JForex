@@ -127,7 +127,7 @@ public class Main {
 		}
 
 		// subscribe to the instruments
-		Set<Instrument> instruments = new HashSet<>();
+		Set<Instrument> instruments = new HashSet<Instrument>();
 		instruments.add(Instrument.EURUSD);
 		LOGGER.info("Subscribing instruments...");
 		client.setSubscribedInstruments(instruments);

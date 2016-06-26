@@ -1,11 +1,10 @@
 package jforex.explorers;
 
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Properties;
-import java.util.Set;
+import java.util.SortedMap;
+import java.util.TreeMap;
 
 import com.dukascopy.api.IAccount;
 import com.dukascopy.api.IBar;
@@ -19,31 +18,30 @@ import com.dukascopy.api.Period;
 
 import jforex.BasicStrategy;
 import jforex.utils.FXUtils;
-import jforex.utils.FlexLogEntry;
 
 public class CFDRangeExplorer extends BasicStrategy implements IStrategy{
-	public final Period selectedPeriod = Period.FIVE_MINS;
+	public final Period selectedPeriod = Period.TEN_MINS;
 	public class CFDRangeData {
-		public IBar 
-			prevBar = null,
-			earliestBar = null,
-			latestBar = null;
+		public String instrument;
 		public double 
 			currMax = -1.0,
-			currMin = -1.0;
-		public CFDRangeData() {
-			prevBar = null;
-			earliestBar = null;
-			latestBar = null;
+			currMin = Double.MAX_VALUE,
+			currRange = 0.0;
+		public long
+			lowTime = 0,
+			highTime = 0;
+		public CFDRangeData(String pInstrument) {
+			instrument = pInstrument;
 			currMax = -1.0;
-			currMin = -1.0;			
+			currMin = Double.MAX_VALUE;
 		}		
+		public void recalcRange() {
+			if (currMax == -1.0 && currMin == Double.MAX_VALUE)
+				return;
+			currRange = (currMax - currMin) / currMin * 100;
+		}
 	}
 	protected Map<Instrument, CFDRangeData> instData = new HashMap<Instrument, CFDRangeData>();
-
-	public CFDRangeExplorer() {
-		super();
-	}
 
 	public CFDRangeExplorer(Properties props) {
 		super(props);
@@ -62,11 +60,9 @@ public class CFDRangeExplorer extends BasicStrategy implements IStrategy{
 	@Override
 	public void onStart(IContext context) throws JFException {
 		super.onStartExec(context);
-		Set<Instrument> insts = context.getSubscribedInstruments();
-		for (Instrument i : insts) {
-			instData.put(i, new CFDRangeData());
+		for (Instrument i : pairsTimeFrames.keySet()) {
+			instData.put(i, new CFDRangeData(i.name()));
 		}
-		log.print("ticker;time;firstBar;lastBar;low;high;rangePerc", true);
 	}
 
 	@Override
@@ -76,50 +72,22 @@ public class CFDRangeExplorer extends BasicStrategy implements IStrategy{
 
 	@Override
 	public void onBar(Instrument instrument, Period period, IBar askBar, IBar bidBar) throws JFException {
-		if (!period.equals(selectedPeriod) || skipPairs.contains(instrument))
+		if (!period.equals(selectedPeriod)
+			|| !pairsTimeFrames.containsKey(instrument)
+			|| skipPairs.contains(instrument)
+			|| (bidBar.getOpen() == bidBar.getClose() && bidBar.getClose() == bidBar.getLow() && bidBar.getLow() == bidBar.getHigh()))
 			return;
 		
 		CFDRangeData currInstData = instData.get(instrument);
-		if (currInstData.prevBar == null && FXUtils.isFlat(bidBar)) {
-			return;
-		}
-
-		if (currInstData.prevBar == null && !FXUtils.isFlat(bidBar)) {
-			currInstData.prevBar = bidBar;
-			currInstData.earliestBar = bidBar;
-			currInstData.latestBar = bidBar;
+		if (bidBar.getHigh() > currInstData.currMax) {
 			currInstData.currMax = bidBar.getHigh();
-			currInstData.currMin = bidBar.getLow();
-			return;
+			currInstData.highTime = bidBar.getTime();
 		}
-		if (bidBar.getHigh() > currInstData.currMax)
-			currInstData.currMax = bidBar.getHigh();
-		if (bidBar.getLow() < currInstData.currMin)
+		if (bidBar.getLow() < currInstData.currMin) {
 			currInstData.currMin = bidBar.getLow();
-		if (bidBar.getTime() > currInstData.latestBar.getTime())
-			currInstData.latestBar = bidBar;
-		if (FXUtils.isFlat(bidBar) && !FXUtils.isFlat(currInstData.prevBar)) {
-			// this should be the last day bar. Print out the data
-			FlexLogEntry 
-				ticker = new FlexLogEntry("ticker", instrument.name()),
-				time = new FlexLogEntry("time", FXUtils.getFormatedTimeGMT(bidBar.getTime())),
-				earliest = new FlexLogEntry("firstBar", FXUtils.getFormatedTimeGMT(currInstData.earliestBar.getTime())),
-				latest = new FlexLogEntry("lastBar", FXUtils.getFormatedTimeGMT(currInstData.latestBar.getTime())),
-				low = new FlexLogEntry("low", currInstData.currMin, FXUtils.df2),
-				high = new FlexLogEntry("high", currInstData.currMax, FXUtils.df2),
-				rangePerc = new FlexLogEntry("rangePerc", (currInstData.currMax - currInstData.currMin) / currInstData.currMin * 100.0, FXUtils.df2);
-			List<FlexLogEntry> line = new ArrayList<FlexLogEntry>();
-			line.add(ticker);
-			line.add(time);
-			line.add(earliest);
-			line.add(latest);
-			line.add(low);
-			line.add(high);
-			line.add(rangePerc);
-			log.printValuesFlex(line);
-			instData.put(instrument, new CFDRangeData());
-		} else
-			currInstData.prevBar = bidBar;		
+			currInstData.lowTime = bidBar.getTime();
+		}
+		currInstData.recalcRange();
 	}
 
 	@Override
@@ -134,6 +102,22 @@ public class CFDRangeExplorer extends BasicStrategy implements IStrategy{
 
 	@Override
 	public void onStop() throws JFException {
+		SortedMap<String, Instrument> rangesHitParade = new TreeMap<String, Instrument>();
+		for (Instrument i : instData.keySet()) {
+			rangesHitParade.put(FXUtils.df2.format(instData.get(i).currRange) + "_" + i.name(), i);
+		}
+		String keys[] = new String[rangesHitParade.keySet().size()]; 
+		keys = rangesHitParade.keySet().toArray(keys);
+		log.print("Instrument   ;Range;Low;Time of low;High;Time of high");
+		for (int i = keys.length - 1; i >= 0; i--) {
+			CFDRangeData currData = instData.get(rangesHitParade.get(keys[i]));
+			log.print(rangesHitParade.get(keys[i]) 
+						+ ";" + keys[i].substring(0, keys[i].indexOf("_")) + "%"
+						+ ";" + currData.currMin
+						+ ";" + FXUtils.getFormatedTimeGMT(currData.lowTime)
+						+ ";" + currData.currMax
+						+ ";" + FXUtils.getFormatedTimeGMT(currData.highTime));
+		}
 		super.onStopExec();
 	}
 

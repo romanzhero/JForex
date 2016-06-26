@@ -108,7 +108,7 @@ public class TesterMain {
 		}
 
 		// set instruments that will be used in testing
-		Set<Instrument> instruments = new HashSet<>();
+		Set<Instrument> instruments = new HashSet<Instrument>();
 		instruments.add(Instrument.EURUSD);
 		LOGGER.info("Subscribing instruments...");
 		client.setSubscribedInstruments(instruments);

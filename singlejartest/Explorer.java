@@ -38,7 +38,6 @@ import com.dukascopy.api.system.ISystemListener;
 import com.dukascopy.api.system.ITesterClient;
 import com.dukascopy.api.system.ITesterClient.InterpolationMethod;
 import com.dukascopy.api.system.TesterFactory;
-import com.dukascopy.api.system.ITesterClient.DataLoadingMethod;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -48,7 +47,6 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.util.HashSet;
 import java.util.Set;
-import java.util.StringTokenizer;
 import java.util.concurrent.Future;
 
 import jforex.explorers.CFDByDayExplorer;
@@ -147,40 +145,17 @@ public class Explorer {
 
 		// set instruments that will be used in testing. To set different
 		// timeframe per pair format is <pair>,<timeframe>;<pair>,<timeframe>...
-		StringTokenizer st = new StringTokenizer(properties.getProperty("pairsToCheck"), ";");
 		Set<Instrument> instruments = new HashSet<Instrument>();
-		while (st.hasMoreTokens()) {
-			String nextPair = st.nextToken();
-			StringTokenizer st2 = new StringTokenizer(nextPair, ",");
-			//instruments.add(Instrument.fromString(st2.nextToken()));
-		}
+		FXUtils.parseInstrumentsWithTimeFrames(properties.getProperty("pairsToCheck"), instruments);
 
 		LOGGER.info("Subscribing instruments...");
-		//client.setSubscribedInstruments(instruments);
-//		//instruments.add(Instrument.DEUIDXEUR);
-//		//instruments.add(Instrument.AUSIDXAUD);
-//		//instruments.add(Instrument.ESPIDXEUR);
-//		//instruments.add(Instrument.EUSIDXEUR);
-//		//instruments.add(Instrument.HKGIDXHKD);
-//		instruments.add(Instrument.FRAIDXEUR);
-//		instruments.add(Instrument.CHEIDXCHF);
-//		instruments.add(Instrument.GBRIDXGBP);
-//		instruments.add(Instrument.JPNIDXJPY);
-//		//instruments.add(Instrument.USA30IDXUSD);
-//		instruments.add(Instrument.USA500IDXUSD);
-//		instruments.add(Instrument.USATECHIDXUSD);
-		
-		instruments.add(Instrument.XAGUSD); 
-		instruments.add(Instrument.XAUUSD);
-		instruments.add(Instrument.BRENTCMDUSD);
-		instruments.add(Instrument.LIGHTCMDUSD);
 		
 		client.setSubscribedInstruments(instruments);
 		// setting initial deposit
 		client.setInitialDeposit(Instrument.EURUSD.getSecondaryJFCurrency(), Double.parseDouble(properties.getProperty("initialdeposit", "50000.0")));
 		client.setCacheDirectory(new File(properties.getProperty("cachedir")));
 		//client.setDataInterval(DataLoadingMethod.ALL_TICKS, properties.getTestIntervalStart().getMillis(), properties.getTestIntervalEnd().getMillis());
-		client.setDataInterval(Period.DAILY, OfferSide.BID, InterpolationMethod.FOUR_TICKS, properties.getTestIntervalStart().getMillis(), properties.getTestIntervalEnd().getMillis());
+		client.setDataInterval(Period.ONE_MIN, OfferSide.BID, InterpolationMethod.FOUR_TICKS, properties.getTestIntervalStart().getMillis(), properties.getTestIntervalEnd().getMillis());
 
 		// load data
 		LOGGER.info("Downloading data");
@@ -200,7 +175,7 @@ public class Explorer {
 		else if (args[1].equals("Ichi"))
 			strategyToRun = new JForexIchiStrategy(properties);
 		else if (args[1].equals("sandbox"))
-			strategyToRun = new CFDByDayExplorer(properties);
+			strategyToRun = new CFDRangeExplorer(properties);
 		else {
 			LOGGER.error("explorer class ID not valid. Valid values: [mailer, SRlevels, flex, Ichi, sandbox]");
 			System.exit(1);

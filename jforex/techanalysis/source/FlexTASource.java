@@ -14,6 +14,8 @@ import com.dukascopy.api.Filter;
 import com.dukascopy.api.IBar;
 import com.dukascopy.api.IHistory;
 import com.dukascopy.api.IIndicators;
+import com.dukascopy.api.IIndicators.AppliedPrice;
+import com.dukascopy.api.IIndicators.MaType;
 import com.dukascopy.api.Instrument;
 import com.dukascopy.api.JFException;
 import com.dukascopy.api.OfferSide;
@@ -38,7 +40,8 @@ public class FlexTASource {
 		DOWNTREND_MAs_DISTANCE_PERC = "Downtrend MAs distance percentile",
 		ATR = "ATR",
 		ICHI = "Ichi",
-		MA200MA100_TREND_DISTANCE_PERC = "MA200 MA100 Distance percentile";
+		MA200MA100_TREND_DISTANCE_PERC = "MA200 MA100 Distance percentile",
+		BBANDS = "BBands";
 	
 	protected IIndicators indicators = null;
 	protected IHistory history = null;
@@ -88,8 +91,15 @@ public class FlexTASource {
 		result.put(ICHI, new FlexTAValue(ICHI, trend.getIchi(history, instrument, period, OfferSide.BID, filter, bidBar.getTime())));
 		result.put(MA200MA100_TREND_DISTANCE_PERC, new FlexTAValue(MA200MA100_TREND_DISTANCE_PERC, new Double(trend.getMA200MA100TrendDiffPercentile(instrument, period, filter, OfferSide.BID, IIndicators.AppliedPrice.CLOSE, bidBar.getTime(), FXUtils.YEAR_WORTH_OF_4H_BARS)), FXUtils.df1));
 
+		addBBands(instrument, period, bidBar, result);
+		
 		lastResult = result;
 		return result;
+	}
+
+	private void addBBands(Instrument instrument, Period period, IBar bidBar, Map<String, FlexTAValue> result) throws JFException {
+		double[][] bBands = indicators.bbands(instrument, period, OfferSide.BID, AppliedPrice.CLOSE, 20, 2.0, 2.0, MaType.SMA, filter, 1, bidBar.getTime(), 0);
+		result.put(BBANDS, new FlexTAValue(BBANDS, bBands, instrument.getPipScale() == 5 ? FXUtils.df5 : FXUtils.df2));
 	}
 
 	private void addSMI(Instrument instrument, Period period, IBar bidBar, Map<String, FlexTAValue> result) throws JFException {
@@ -107,7 +117,7 @@ public class FlexTASource {
 		smis[1][1] = slowSMI[0][1];
 		smis[1][2] = slowSMI[0][2];
 		
-		result.put(SMI, new FlexTAValue(SMI, smis, FXUtils.df5));
+		result.put(SMI, new FlexTAValue(SMI, smis, instrument.getPipScale() == 5 ? FXUtils.df5 : FXUtils.df2));
 	}
 
 	protected void addMAs(Instrument instrument, Period period, IBar bidBar, Map<String, FlexTAValue> result) throws JFException {

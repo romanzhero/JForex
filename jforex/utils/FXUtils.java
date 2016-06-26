@@ -23,6 +23,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
+import java.util.Set;
+import java.util.StringTokenizer;
 import java.util.TimeZone;
 
 import jforex.techanalysis.Trend.FLAT_REGIME_CAUSE;
@@ -1359,5 +1361,14 @@ public class FXUtils {
 	
 	public static boolean isFlat(IBar bar) {
 		return bar.getClose() == bar.getOpen() && bar.getClose() == bar.getLow() && bar.getClose() == bar.getHigh();
+	}
+
+	public static void parseInstrumentsWithTimeFrames(String pairsList, Set<Instrument> instruments) {
+		StringTokenizer st = new StringTokenizer(pairsList, ";");
+		while (st.hasMoreTokens()) {
+			String nextPair = st.nextToken();
+			StringTokenizer st2 = new StringTokenizer(nextPair, ",");
+			instruments.add(Instrument.fromString(st2.nextToken()));
+		}
 	}
 }

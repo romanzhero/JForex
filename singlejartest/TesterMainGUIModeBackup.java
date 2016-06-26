@@ -194,7 +194,7 @@ public class TesterMainGUIModeBackup extends JFrame implements ITesterUserInterf
 		}
 
 		// set instruments that will be used in testing
-		final Set<Instrument> instruments = new HashSet<>();
+		final Set<Instrument> instruments = new HashSet<Instrument>();
 		String pair = properties.getProperty("pairsToCheck").substring(0, 7);
 		instrument = Instrument.fromString(pair);
 		instruments.add(instrument);

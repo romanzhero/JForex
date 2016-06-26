@@ -44,7 +44,8 @@ public class FlexTAValue extends FlexLogEntry {
 	public double[][] getDa2DimValue() {
 		if (getLabel().equals(FlexTASource.MAs)
 			|| getLabel().equals(FlexTASource.SMI)
-			|| getLabel().equals(FlexTASource.STOCH)) {
+			|| getLabel().equals(FlexTASource.STOCH)
+			|| getLabel().equals(FlexTASource.BBANDS)) {
 			return da2dim_values;
 		} else
 			return null;
@@ -113,6 +114,12 @@ public class FlexTAValue extends FlexLogEntry {
 				res += ";" + df.format(da2dim_values[0][1]);
 				res += ";" + df.format(da2dim_values[1][1]);
 				res += ";" + (da2dim_values[0][1] > da2dim_values[1][1] ? "fast" : "slow");
+				return res;						
+			}  else if (getLabel().equals(FlexTASource.BBANDS)) {
+				String res = new String();
+				res += df.format(da2dim_values[0][0]);
+				res += ";" + df.format(da2dim_values[1][0]);
+				res += ";" + df.format(da2dim_values[2][0]);
 				return res;						
 			} else if (getLabel().equals(FlexTASource.ICHI)) {
 				Trend.IchiDesc ichi = (Trend.IchiDesc)getValue();

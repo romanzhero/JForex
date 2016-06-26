@@ -14,6 +14,7 @@ import com.dukascopy.api.indicators.IIndicator;
 import com.dukascopy.api.indicators.IndicatorInfo;
 import com.dukascopy.api.indicators.OutputParameterInfo;
 
+
 import jforex.utils.FXUtils;
 import jforex.utils.FlexLogEntry;
 import jforex.utils.Logger;
@@ -75,8 +76,18 @@ public class FlatCascTest implements IStrategy {
 	private IContext context;
 
 	private String lastTradingEvent = new String();
-	private double lastCommentLevel = 0;
 	private int commentCnt = 1;
+//	private SortedSet<Double> commentLevels = new TreeSet<Double>();
+//	private class CommentLevelBarsCount {
+//		public double commentLevel;
+//		public int barCount = 0;
+//		public CommentLevelBarsCount(double pCommentLevel, int pBarCount) {
+//			commentLevel = pCommentLevel;
+//			barCount = pBarCount;
+//		}
+//	}
+	private SortedMap<Double, Integer> commentLevelsCounts = new TreeMap<Double, Integer>();
+	private static final double SCREEN_H = 1080;
 
 	public FlatCascTest(Instrument selectedInstrument, boolean visualMode,	boolean showIndicators, String reportDir) {
 		super();
@@ -241,8 +252,10 @@ public class FlatCascTest implements IStrategy {
 			|| (bidBar.getClose() == bidBar.getOpen() && bidBar.getClose() == bidBar.getHigh() && bidBar.getClose() == bidBar.getLow()))
 			return;
 		
+		incCommentLevelsCount();
+		removeOldCommentLevel(15);
 		lastTaValues = taSource.calcTAValues(instrument, period, askBar, bidBar);
-
+		
 		IOrder order = orderPerPair.get(instrument.name());
 		if (order != null) {
 			// there is an open order, might be pending (waiting) or filled !
@@ -322,7 +335,7 @@ public class FlatCascTest implements IStrategy {
 					createTradeLog(instrument, period, askBar, OfferSide.ASK, orderLabel, signal.isLong, lastTaValues);
 					if (tradingAllowed(bidBar.getTime(), period)) {
 						double inTargetCurrency = FXUtils.convertByBar(BigDecimal.valueOf(selectedAmount), context.getAccount().getAccountCurrency(), selectedInstrument.getSecondaryJFCurrency(), selectedPeriod, OfferSide.BID, bidBar.getTime()).doubleValue();
-						double amountToTrade = Math.round(inTargetCurrency / bidBar.getClose()) / 1e6; 
+						double amountToTrade = Math.round(inTargetCurrency / bidBar.getClose()) / (instrument.toString().contains(".CMD") ? 1e8 : 1e6); 
 						order = currentSetup.submitOrder(orderLabel, instrument, signal.isLong, amountToTrade, bidBar, askBar);
 						order.waitForUpdate(null);
 	
@@ -349,6 +362,23 @@ public class FlatCascTest implements IStrategy {
 		}
 	}
 
+	private void incCommentLevelsCount() {
+		for (Double commentLevel : commentLevelsCounts.keySet()) {
+			Integer currCnt = commentLevelsCounts.get(commentLevel);
+			commentLevelsCounts.put(commentLevel, new Integer(++currCnt));
+		}
+	}
+
+	private void removeOldCommentLevel(int defineOld) {
+		SortedMap<Double, Integer> filtered = new TreeMap<Double, Integer>();
+		for (Double commentLevel : commentLevelsCounts.keySet()) {
+			Integer currCnt = commentLevelsCounts.get(commentLevel);
+			if (currCnt < defineOld)
+				filtered.put(commentLevel, currCnt);
+		}
+		commentLevelsCounts = filtered;
+	}
+	
 	private void showTradingEventOnGUI(long tradeID, String textToShow, boolean direction, IBar bidBar, IBar askBar, Instrument instrument) {
 		if (visualMode) {
 			chart = context.getChart(instrument);
@@ -362,18 +392,86 @@ public class FlatCascTest implements IStrategy {
 			txt.setText(tradeID + "." + commentCnt++ + ": " + textToShow, new Font("Helvetica", Font.BOLD, 14));
 			txt.setTime(0, bidBar.getTime());
 			double level = 0;
-			if (direction) {
-				level = bidBar.getLow() - 20 / Math.pow(10, instrument.getPipScale());
-			} else {
-				level = askBar.getHigh() + 20 / Math.pow(10, instrument.getPipScale());				
-			}
-			if (level < lastCommentLevel + 20 / Math.pow(10, instrument.getPipScale())
-				&& level > lastCommentLevel - 20 / Math.pow(10, instrument.getPipScale()))
-				level += (direction ? -1 : 1) * 30 / Math.pow(10, instrument.getPipScale());
+			if (direction)
+				level = calcNextLongLevel(bidBar, instrument, chart);
+			else
+				level = calcNextShortLevel(askBar, instrument, chart);
 			txt.setPrice(0, level);
-			lastCommentLevel  = level;
 			chart.add(txt);
 		}
+	}
+
+	private double calcNextShortLevel(IBar askBar, Instrument instrument, IChart chart) {
+		Double levels[] = new Double[commentLevelsCounts.size()];
+		levels = commentLevelsCounts.keySet().toArray(levels);
+		// COMMENT_OFFSET_PERC / Math.pow(10, instrument.getPipScale());
+		double
+			bBands[][] = lastTaValues.get(FlexTASource.BBANDS).getDa2DimValue(),
+			offset = 15 / (SCREEN_H / (chart.getMaxPrice() - chart.getMinPrice())),
+			levelToCheck = (askBar.getHigh() > bBands[0][0] ? askBar.getHigh() : bBands[0][0]) + offset;
+		boolean overLapFound = false;
+		for (int i = 0; i < levels.length && !overLapFound; i++) {
+			double currLevel = levels[i].doubleValue();
+			if ((levelToCheck + offset >= currLevel 
+				&& levelToCheck + offset <= currLevel + offset)
+				|| 
+				(levelToCheck >= currLevel 
+				&& levelToCheck <= currLevel + offset)) {
+				// overlap found. Now traverse the array backwards to find first free slot in levels
+				overLapFound = true;
+				boolean freeLevelFound = false;
+				// in case it never enters the loop
+				levelToCheck = levels[i].doubleValue() + offset;
+				for (int j = i; j < levels.length - 1 && !freeLevelFound; j++) {
+					double curr2ndLevel = levels[j + 1];
+					levelToCheck = levels[j].doubleValue() + offset;
+					freeLevelFound = 
+							!((levelToCheck + offset >= curr2ndLevel 
+								&& levelToCheck + offset <= curr2ndLevel + offset)
+							|| (levelToCheck >= curr2ndLevel 
+								&& levelToCheck <= curr2ndLevel + offset)); 
+ 
+				}
+			}
+		}
+		commentLevelsCounts.put(new Double(levelToCheck), new Integer(1));
+		return levelToCheck;
+	}
+
+	private double calcNextLongLevel(IBar bidBar, Instrument instrument, IChart chart) {	
+		Double levels[] = new Double[commentLevelsCounts.size()];
+		levels = commentLevelsCounts.keySet().toArray(levels);
+		double
+			bBands[][] = lastTaValues.get(FlexTASource.BBANDS).getDa2DimValue(),
+			offset = 15 / (SCREEN_H / (chart.getMaxPrice() - chart.getMinPrice())),
+			levelToCheck = (bidBar.getLow() < bBands[2][0] ? bidBar.getLow() : bBands[2][0]) - offset;
+		boolean overLapFound = false;
+		for (int i = 0; i < levels.length && !overLapFound; i++) {
+			double currLevel = levels[i].doubleValue();
+			if ((levelToCheck + offset >= currLevel 
+				&& levelToCheck + offset <= currLevel + offset)
+				|| 
+				(levelToCheck >= currLevel 
+				&& levelToCheck <= currLevel + offset)) {
+				// overlap found. Now traverse the array backwards to find first free slot in levels
+				overLapFound = true;
+				boolean freeLevelFound = false;
+				// in case it never enters the loop
+				levelToCheck = levels[i].doubleValue() - offset;
+				for (int j = i; j > 0 && !freeLevelFound; j--) {
+					double curr2ndLevel = levels[j - 1];
+					levelToCheck = levels[j].doubleValue() - offset;
+					freeLevelFound = 
+							!((levelToCheck + offset >= curr2ndLevel 
+								&& levelToCheck + offset <= curr2ndLevel + offset)
+							|| (levelToCheck >= curr2ndLevel 
+								&& levelToCheck <= curr2ndLevel + offset)); 
+ 
+				}
+			}
+		}
+		commentLevelsCounts.put(new Double(levelToCheck), new Integer(1));
+		return levelToCheck;
 	}
 
 	private void createTradeLog(Instrument instrument, Period period, IBar bar, OfferSide side, String orderLabel, boolean isLong, Map<String, FlexTAValue> taValues) {

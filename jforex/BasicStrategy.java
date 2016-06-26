@@ -37,7 +37,7 @@ public abstract class BasicStrategy {
 	protected IContext context;
 	protected IEngine engine;
 
-	protected Map<Instrument, String> pairsTimeFrames;
+	protected Map<Instrument, String> pairsTimeFrames = new HashMap<Instrument, String>();
 	protected Set<Instrument> skipPairs;
 	protected Connection logDB = null;
 
@@ -62,7 +62,6 @@ public abstract class BasicStrategy {
 		this.history = context.getHistory();
 		this.indicators = context.getIndicators();
 
-		pairsTimeFrames = new HashMap<Instrument, String>();
 		// parse timeframes per pair, they are in format
 		// <pair>,<timeframe>;<pair>,<timeframe>...
 		StringTokenizer st = new StringTokenizer(conf.getProperty("pairsToCheck"), ";");
