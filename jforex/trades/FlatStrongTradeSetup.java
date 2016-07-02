@@ -158,7 +158,7 @@ public class FlatStrongTradeSetup extends TradeSetup implements ITradeSetup {
 			boolean
 				longProtectSignal = lastTwoBars.get(0).getClose() > ichi.prevCloudTop && lastTwoBars.get(1).getClose() > ichi.cloudTop,
 				shortProtectSignal = lastTwoBars.get(0).getClose() < ichi.prevCloudBottom && lastTwoBars.get(1).getClose() < ichi.cloudBottom;				
-			if (order.isLong() && longProtectSignal) {
+/*			if (order.isLong() && longProtectSignal) {
 				lastTradingEvent = "long move SL signal";	
 				if (ichi.cloudBottom > order.getStopLossPrice())
 					FXUtils.setStopLoss(order, ichi.cloudBottom, bidBar.getTime(), this.getClass());
@@ -166,7 +166,7 @@ public class FlatStrongTradeSetup extends TradeSetup implements ITradeSetup {
 				lastTradingEvent = "short move SL signal";				
 				if (ichi.cloudTop < order.getStopLossPrice())
 					FXUtils.setStopLoss(order, ichi.cloudTop, bidBar.getTime(), this.getClass());
-			}
+			}*/
 			
 			// 2. move SL to protect profit. Goal is to let  starting trends develop ("let your profits run"), not to take a lot of profit in this setup
 			// Events to move SL are: 

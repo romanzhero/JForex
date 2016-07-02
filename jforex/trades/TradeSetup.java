@@ -93,7 +93,7 @@ public abstract class TradeSetup implements ITradeSetup {
 			stopLossPrice = stopLoss;
 		stpPrice = FXUtils.roundToPip(stpPrice, instrument);
 		stopLossPrice = FXUtils.roundToPip(stopLossPrice, instrument);
-		IOrder order = engine.submitOrder(label, instrument, isLong ? IEngine.OrderCommand.BUYSTOP: IEngine.OrderCommand.SELLSTOP, amount,	stpPrice, -1, stopLossPrice, 0);
+		IOrder order = engine.submitOrder(label, instrument, isLong ? IEngine.OrderCommand.BUYSTOP: IEngine.OrderCommand.SELLSTOP, amount,	stpPrice, Double.NaN, stopLossPrice, 0);
 		//order.waitForUpdate(IOrder.State.OPENED, IOrder.State.FILLED);
 		return order;
 	}

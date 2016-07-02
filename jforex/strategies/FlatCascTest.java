@@ -14,10 +14,12 @@ import com.dukascopy.api.indicators.IIndicator;
 import com.dukascopy.api.indicators.IndicatorInfo;
 import com.dukascopy.api.indicators.OutputParameterInfo;
 
-
+import jforex.utils.DailyPnL;
 import jforex.utils.FXUtils;
 import jforex.utils.FlexLogEntry;
 import jforex.utils.Logger;
+import jforex.utils.RangesStats;
+import jforex.utils.RangesStats.InstrumentRangeStats;
 import jforex.events.CandleMomentumEvent;
 import jforex.events.ITAEvent;
 import jforex.events.TAEventDesc;
@@ -59,7 +61,10 @@ public class FlatCascTest implements IStrategy {
 	private ITradeSetup currentSetup = null;
 
 	private FlexTASource taSource = null;
-	Map<String, FlexTAValue> lastTaValues = null;
+	private Map<String, FlexTAValue> lastTaValues = null;
+	
+	private Map<Instrument, InstrumentRangeStats> dayRanges = null;
+	private DailyPnL dailyPnL = null;	
 	
 	private Logger 
 		log = null,
@@ -141,7 +146,11 @@ public class FlatCascTest implements IStrategy {
 		//taEvents.add(new LongCandlesEvent(indicators, history));
 		//taEvents.add(new ShortCandlesEvent(indicators, history));
 		taEvents.add(new CandleMomentumEvent(indicators, history));
+		
+		showChart(context);
+	}
 
+	protected void showChart(IContext context) {
 		if (visualMode) {
 			chart = context.getChart(selectedInstrument);
 			if (chart == null) {
@@ -251,6 +260,25 @@ public class FlatCascTest implements IStrategy {
 			|| !barProcessingAllowed(bidBar.getTime())
 			|| (bidBar.getClose() == bidBar.getOpen() && bidBar.getClose() == bidBar.getHigh() && bidBar.getClose() == bidBar.getLow()))
 			return;
+		
+		if (dayRanges == null) {
+			dayRanges = new RangesStats(context.getSubscribedInstruments(), history).init(askBar, bidBar);
+			dailyPnL = new DailyPnL(dayRanges);
+			for (Instrument currI : dayRanges.keySet()) {
+				InstrumentRangeStats currStats =  dayRanges.get(currI);
+				if (currStats == null)
+					continue;
+				
+				log.print("Day ranges data");
+				log.print(currI.name()
+						+ " - avg: " + FXUtils.df2.format(currStats.avgRange)
+						+ "/ median: " + FXUtils.df2.format(currStats.medianRange)
+						+ "/ max: " + FXUtils.df2.format(currStats.maxRange)
+						+ "/ min: " + FXUtils.df2.format(currStats.minRange)
+						+ "/ avg + 1 StDev: " + FXUtils.df2.format(currStats.avgRange + currStats.rangeStDev),
+						true);
+			}
+		}
 		
 		incCommentLevelsCount();
 		removeOldCommentLevel(15);

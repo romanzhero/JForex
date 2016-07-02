@@ -174,8 +174,10 @@ public class Explorer {
 			strategyToRun = new FlexStatsCollector(properties);
 		else if (args[1].equals("Ichi"))
 			strategyToRun = new JForexIchiStrategy(properties);
-		else if (args[1].equals("sandbox"))
+		else if (args[1].equals("CFDRanges"))
 			strategyToRun = new CFDRangeExplorer(properties);
+		else if (args[1].equals("sandbox"))
+			strategyToRun = new CFDByDayExplorer(properties);
 		else {
 			LOGGER.error("explorer class ID not valid. Valid values: [mailer, SRlevels, flex, Ichi, sandbox]");
 			System.exit(1);

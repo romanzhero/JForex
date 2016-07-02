@@ -17,6 +17,7 @@ import java.text.DecimalFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Currency;
 import java.util.Date;
 import java.util.HashMap;
@@ -1370,5 +1371,16 @@ public class FXUtils {
 			StringTokenizer st2 = new StringTokenizer(nextPair, ",");
 			instruments.add(Instrument.fromString(st2.nextToken()));
 		}
+	}
+
+	public static double median(double[] values) {
+		double[] copy = Arrays.copyOf(values, values.length);
+		Arrays.sort(copy);
+	    int middle = copy.length / 2;
+	    if (copy.length % 2 == 1) {
+	        return copy[middle];
+	    } else {
+	        return (copy[middle-1] + copy[middle]) / 2.0;
+	    }
 	}
 }
