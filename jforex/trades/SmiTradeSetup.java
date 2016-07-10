@@ -12,6 +12,7 @@ import jforex.utils.FXUtils;
 
 import com.dukascopy.api.Filter;
 import com.dukascopy.api.IBar;
+import com.dukascopy.api.IContext;
 import com.dukascopy.api.IEngine;
 import com.dukascopy.api.IOrder;
 import com.dukascopy.api.Instrument;
@@ -26,8 +27,8 @@ public class SmiTradeSetup extends TradeSetup {
 		bBandsSqueezeThreshold;
 	private double lastSL = 0.0;
 
-	public SmiTradeSetup(IEngine engine, boolean mktEntry, double pFlatPercThreshold, double pBBandsSqueezeThreshold) {
-		super(engine);
+	public SmiTradeSetup(IEngine engine, IContext context, boolean mktEntry, double pFlatPercThreshold, double pBBandsSqueezeThreshold) {
+		super(engine, context);
 		this.mktEntry = mktEntry;
 		flatPercThreshold = pFlatPercThreshold;
 		bBandsSqueezeThreshold = pBBandsSqueezeThreshold;

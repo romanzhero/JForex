@@ -15,10 +15,13 @@ import jforex.utils.FXUtils;
 
 import com.dukascopy.api.Filter;
 import com.dukascopy.api.IBar;
+import com.dukascopy.api.IContext;
 import com.dukascopy.api.IEngine;
+import com.dukascopy.api.IHistory;
 import com.dukascopy.api.IOrder;
 import com.dukascopy.api.Instrument;
 import com.dukascopy.api.JFException;
+import com.dukascopy.api.OfferSide;
 import com.dukascopy.api.Period;
 
 public abstract class AbstractSmaTradeSetup extends TradeSetup {
@@ -40,8 +43,8 @@ public abstract class AbstractSmaTradeSetup extends TradeSetup {
 
 	public abstract String getName();
 
-	public AbstractSmaTradeSetup(IEngine engine, Set<Instrument> subscribedInstruments, boolean mktEntry, boolean onlyCross, double pFlatPercThreshold, double pBBandsSqueezeThreshold, boolean trailsOnMA50) {
-		super(engine);
+	public AbstractSmaTradeSetup(IEngine engine, IContext context, Set<Instrument> subscribedInstruments, boolean mktEntry, boolean onlyCross, double pFlatPercThreshold, double pBBandsSqueezeThreshold, boolean trailsOnMA50) {
+		super(engine, context);
 		this.mktEntry = mktEntry;
 		this.onlyCross = onlyCross;
 		this.flatPercThreshold = pFlatPercThreshold;
@@ -119,11 +122,28 @@ public abstract class AbstractSmaTradeSetup extends TradeSetup {
 		if (order == null)
 			return;
 
+		for (TAEventDesc curr : marketEvents) {
+			if (curr.eventType.equals(TAEventType.PNL_INFO)) {
+				double pnlRangeRatio = curr.pnlDayRangeRatio + FXUtils.currPercPnL(order, bidBar, askBar) / curr.avgPnLRange;
+				if (pnlRangeRatio > 1.5) {
+					startTrailingNBarsBack(context.getHistory(), instrument, period, askBar, bidBar, filter, order, 1);
+					return;
+				} else if (pnlRangeRatio > 1) { 
+					startTrailingNBarsBack(context.getHistory(), instrument, period, askBar, bidBar, filter, order, 3);
+					return;
+				}
+			}
+		}
+		
+		
 		double[][] mas = taValues.get(FlexTASource.MAs).getDa2DimValue();
 		double
 			ma20 = mas[1][0], 
 			ma50 = mas[1][1],
-			ma100 = mas[1][2];
+			ma100 = mas[1][2],
+			ma200ma100dist = taValues.get(FlexTASource.MA200MA100_TREND_DISTANCE_PERC).getDoubleValue(),
+			bBandsSqueeze = taValues.get(FlexTASource.BBANDS_SQUEEZE_PERC).getDoubleValue();
+		Trend.TREND_STATE trendId = taValues.get(FlexTASource.TREND_ID).getTrendStateValue();
 		if (order.isLong()) {
 			//longMoveSLDueToBigBearishCandle(bidBar, order, taValues);
 			//longMoveSLDueToShortFlatSignal(bidBar, order, marketEvents);
@@ -135,6 +155,13 @@ public abstract class AbstractSmaTradeSetup extends TradeSetup {
 				// check all the posibilities of MA100 position at position opening ??!!
 				FXUtils.setStopLoss(order, ma100, bidBar.getTime(), getClass());
 			}
+			
+			boolean isMA200Lowest = taValues.get(FlexTASource.MA200_LOWEST).getBooleanValue();
+			// no trailing if strong uptrend or narrow channel
+			if (bBandsSqueeze < 30
+				|| (isMA200Lowest && trendId.equals(Trend.TREND_STATE.UP_STRONG) && ma200ma100dist >= 70))
+				return;
+			
 			if (shortFlatStrongSignal(askBar, order, marketEvents)) {
 				double newSL = ma50 > order.getOpenPrice() ? ma50 : order.getOpenPrice();
 				if (newSL > order.getStopLossPrice()) {
@@ -161,6 +188,13 @@ public abstract class AbstractSmaTradeSetup extends TradeSetup {
 			if (ma100 < order.getStopLossPrice()) {
 				FXUtils.setStopLoss(order, ma100, bidBar.getTime(), getClass());
 			}
+			boolean isMA200Highest = taValues.get(FlexTASource.MA200_HIGHEST).getBooleanValue();
+			// no trailing if strong uptrend or narrow channel
+			if (bBandsSqueeze < 30
+				|| (isMA200Highest && trendId.equals(Trend.TREND_STATE.DOWN_STRONG) && ma200ma100dist >= 70))
+				return;
+
+			
 			if (longFlatStrongSignal(bidBar, order, marketEvents)) {
 				double newSL = ma50 < order.getOpenPrice() ? ma50 : order.getOpenPrice();
 				if (newSL < order.getStopLossPrice()) {
@@ -178,6 +212,26 @@ public abstract class AbstractSmaTradeSetup extends TradeSetup {
 			startTrailingShort(ma20, ma50, ma100, askBar, order);
 		}
 
+	}
+
+	protected boolean startTrailingNBarsBack(IHistory history, Instrument instrument, Period period, IBar askBar, IBar bidBar, Filter filter, IOrder order, int howManyBars) throws JFException {
+		List<IBar> prevBars = history.getBars(instrument, period, OfferSide.BID, filter, howManyBars, bidBar.getTime(), 0);
+		if (order.isLong()) {
+			if (prevBars.get(0).getLow() > order.getStopLossPrice()) {
+				order.setStopLossPrice(prevBars.get(0).getLow());
+				order.waitForUpdate(null);
+				this.lastTradingEvent = "Moved SL due to big profit compared to daily range";
+				return true;
+			}
+		} else {
+			if (prevBars.get(0).getHigh() < order.getStopLossPrice()) {
+				order.setStopLossPrice(prevBars.get(0).getHigh());
+				order.waitForUpdate(null);
+				this.lastTradingEvent = "Moved SL due to big profit compared to daily range";
+				return true;
+			}			
+		}		
+		return false;
 	}
 
 	boolean startTrailingLong(double ma20, double ma50, double ma100, IBar bidBar, IOrder order) throws JFException {

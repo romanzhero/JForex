@@ -11,6 +11,7 @@ import jforex.techanalysis.source.FlexTASource;
 import jforex.techanalysis.source.FlexTAValue;
 import com.dukascopy.api.Filter;
 import com.dukascopy.api.IBar;
+import com.dukascopy.api.IContext;
 import com.dukascopy.api.IEngine;
 import com.dukascopy.api.IHistory;
 import com.dukascopy.api.IIndicators;
@@ -22,8 +23,8 @@ import com.dukascopy.api.Period;
 
 public class PUPBSetup extends FlatTradeSetup implements ITradeSetup {
 
-	public PUPBSetup(IIndicators indicators, IHistory history, IEngine engine) {
-		super(engine, true);
+	public PUPBSetup(IIndicators indicators, IContext context, IHistory history, IEngine engine) {
+		super(engine, context, true);
 		// TODO Auto-generated constructor stub
 	}
 

@@ -13,6 +13,7 @@ import jforex.utils.FXUtils;
 
 import com.dukascopy.api.Filter;
 import com.dukascopy.api.IBar;
+import com.dukascopy.api.IContext;
 import com.dukascopy.api.IEngine;
 import com.dukascopy.api.IOrder;
 import com.dukascopy.api.Instrument;
@@ -32,8 +33,8 @@ public class FlatTradeSetup extends TradeSetup implements ITradeSetup {
 		lastShortSignal = null;
 	protected boolean aggressive = false;
 
-	public FlatTradeSetup(IEngine engine, boolean aggressive) {
-		super(engine);
+	public FlatTradeSetup(IEngine engine, IContext context, boolean aggressive) {
+		super(engine, context);
 		// this way signals will be generated regardless of the channel position so they can be used both for entry and all exit checks
 		// entry and exit checks must explicitly test channel position !
 		longCmd = new LongCandleAndMomentumDetector(100);

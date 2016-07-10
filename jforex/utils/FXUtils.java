@@ -1383,4 +1383,12 @@ public class FXUtils {
 	        return (copy[middle-1] + copy[middle]) / 2.0;
 	    }
 	}
+
+	public static double currPercPnL(IOrder order, IBar bidBar, IBar askBar) {		
+		if (order.isLong()) {
+		return (bidBar.getClose() - order.getOpenPrice()) / order.getOpenPrice() * 100.0;
+	} else {
+		return (order.getOpenPrice() - askBar.getClose()) / askBar.getClose() * 100.0;			
+	}
+	}
 }

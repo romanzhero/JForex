@@ -200,8 +200,14 @@ public class FlexTAValue extends FlexLogEntry {
 			res += ";cloudBottom"; 
 			res += ";bullishBreakout"; 
 			res += ";bearishBreakout"; 
-			res += ";widthToATR";
+			res += ";widthToATR";			
 			return res;
+		} else if (getLabel().equals(FlexTASource.BBANDS)) {
+			String res = new String();
+			res += "bBandsTop";
+			res += ";bBandsMiddle";
+			res += ";bBandsBottom";
+			return res;						
 		}
 		else
 			return super.getHeaderLabel();

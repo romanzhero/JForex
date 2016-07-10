@@ -7,6 +7,7 @@ import jforex.techanalysis.source.FlexTASource;
 import jforex.techanalysis.source.FlexTAValue;
 import com.dukascopy.api.Filter;
 import com.dukascopy.api.IBar;
+import com.dukascopy.api.IContext;
 import com.dukascopy.api.IEngine;
 import com.dukascopy.api.Instrument;
 import com.dukascopy.api.JFException;
@@ -14,8 +15,8 @@ import com.dukascopy.api.Period;
 
 public class SmaSoloTradeSetup extends AbstractSmaTradeSetup {
 
-	public SmaSoloTradeSetup(IEngine engine, Set<Instrument> subscribedInstruments, boolean mktEntry, boolean onlyCross, double pFlatPercThreshold, double pBBandsSqueezeThreshold, boolean trailsOnMA50) {
-		super(engine, subscribedInstruments, mktEntry, onlyCross, pFlatPercThreshold, pBBandsSqueezeThreshold, trailsOnMA50);
+	public SmaSoloTradeSetup(IEngine engine, IContext context, Set<Instrument> subscribedInstruments, boolean mktEntry, boolean onlyCross, double pFlatPercThreshold, double pBBandsSqueezeThreshold, boolean trailsOnMA50) {
+		super(engine, context, subscribedInstruments, mktEntry, onlyCross, pFlatPercThreshold, pBBandsSqueezeThreshold, trailsOnMA50);
 	}
 
 	@Override

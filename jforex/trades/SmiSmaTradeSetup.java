@@ -14,6 +14,7 @@ import jforex.utils.FXUtils;
 import com.dukascopy.api.Filter;
 import com.dukascopy.api.IBar;
 import com.dukascopy.api.IConsole;
+import com.dukascopy.api.IContext;
 import com.dukascopy.api.IEngine;
 import com.dukascopy.api.IOrder;
 import com.dukascopy.api.Instrument;
@@ -26,8 +27,8 @@ public class SmiSmaTradeSetup extends TradeSetup {
 	protected boolean mktEntry = true;
 	protected Map<String, Boolean> ma50TrailFlags = new HashMap<String, Boolean>();
 
-	public SmiSmaTradeSetup(IEngine engine, IConsole console, Set<Instrument> subscribedInstruments, boolean mktEntry) {
-		super(engine);
+	public SmiSmaTradeSetup(IEngine engine, IContext context, IConsole console, Set<Instrument> subscribedInstruments, boolean mktEntry) {
+		super(engine, context);
 		this.console = console;
 		this.mktEntry = mktEntry;
 

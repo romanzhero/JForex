@@ -12,6 +12,7 @@ import jforex.utils.FXUtils;
 
 import com.dukascopy.api.Filter;
 import com.dukascopy.api.IBar;
+import com.dukascopy.api.IContext;
 import com.dukascopy.api.IEngine;
 import com.dukascopy.api.IMessage;
 import com.dukascopy.api.IOrder;
@@ -21,14 +22,16 @@ import com.dukascopy.api.Period;
 
 public abstract class TradeSetup implements ITradeSetup {
 	protected IEngine engine = null;
+	protected IContext context = null;
 	protected IOrder order = null;
 
 	protected boolean locked = false;
 	protected String lastTradingEvent = "none";
 
-	public TradeSetup(IEngine engine) {
+	public TradeSetup(IEngine engine, IContext context) {
 		super();
 		this.engine = engine;
+		this.context = context;
 	}
 
 	@Override
