@@ -42,8 +42,8 @@ public class FlatStrongTradeSetup extends TradeSetup implements ITradeSetup {
 		this.history = history;
 		// this way signals will be generated regardless of the channel position so they can be used both for entry and all exit checks
 		// entry and exit checks must explicitly test channel position !
-		longCmd = new LongStrongCandleAndMomentumDetector(100);
-		shortCmd = new ShortStrongCandleAndMomentumDetector(0);
+		longCmd = new LongStrongCandleAndMomentumDetector(100, false);
+		shortCmd = new ShortStrongCandleAndMomentumDetector(0, false);
 		this.aggressive = aggressive;
 	}
 

@@ -14,12 +14,8 @@ import jforex.techanalysis.source.FlexTASource;
 import jforex.techanalysis.source.FlexTAValue;
 
 public class ShortStrongCandleAndMomentumDetector extends AbstractCandleAndMomentumDetector {
-	public ShortStrongCandleAndMomentumDetector(double thresholdLevel) {
-		super(thresholdLevel);
-	}
-
-	public ShortStrongCandleAndMomentumDetector() {
-		super(100);
+	public ShortStrongCandleAndMomentumDetector(double thresholdLevel, boolean pStyleAggressive) {
+		super(thresholdLevel, pStyleAggressive);
 	}
 
 	public TradeTrigger.TriggerDesc checkEntry(Instrument instrument, Period pPeriod, OfferSide side, Filter filter, IBar bidBar, IBar askBar, Map<String, FlexTAValue> taValues) throws JFException {

@@ -45,10 +45,9 @@ import java.io.IOException;
 import java.io.PrintStream;
 import java.util.HashSet;
 import java.util.Set;
-import java.util.StringTokenizer;
 import java.util.concurrent.Future;
 
-import jforex.strategies.FlatCascTest;
+import jforex.strategies.MultiPairCasc;
 import jforex.utils.ClimberProperties;
 import jforex.utils.FXUtils;
 
@@ -138,17 +137,8 @@ public class StrategyTester {
 		}
 
 		// set instruments that will be used in testing
-		StringTokenizer st = new StringTokenizer(properties.getProperty("pairsToCheck"), ";");
 		Set<Instrument> instruments = new HashSet<Instrument>();
-		String pair = null;
-		while (st.hasMoreTokens()) {
-			String nextPair = st.nextToken();
-			instruments.add(Instrument.fromString(nextPair));
-			if (pair == null)
-				pair = new String(nextPair);
-		}
-		Instrument selectedInstrument = Instrument.fromString(pair);
-
+		FXUtils.parseInstrumentsWithTimeFrames(properties.getProperty("pairsToCheck"), instruments);
 
 		LOGGER.info("Subscribing instruments...");
 		client.setSubscribedInstruments(instruments);
@@ -167,7 +157,7 @@ public class StrategyTester {
 		// properties.getTestIntervalStart().getMillis(),
 		// properties.getTestIntervalEnd().getMillis(), startTime),
 		client.startStrategy(//new SimpleMAsIDCrossTrendFollow(properties),
-				new FlatCascTest(selectedInstrument, properties),
+				new MultiPairCasc(properties),
 				new LoadingProgressListener() {
 					@Override
 					public void dataLoaded(long startTime, long endTime,

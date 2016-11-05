@@ -21,7 +21,7 @@ import com.dukascopy.api.JFException;
 import com.dukascopy.api.OfferSide;
 import com.dukascopy.api.Period;
 
-public class FlatTradeSetup extends TradeSetup implements ITradeSetup {
+public class FlatDailyTradeSetup extends TradeSetup implements ITradeSetup {
 	// Trade simply generates all long and short canlde-momentum signals. The newest one wins
 	// therefore it must be ensured that their check methods are called for each bar while strategy is running !
 	// Should be OK with successive calls to checkEntry and inTradeProcessing
@@ -33,18 +33,18 @@ public class FlatTradeSetup extends TradeSetup implements ITradeSetup {
 		lastShortSignal = null;
 	protected boolean aggressive = false;
 
-	public FlatTradeSetup(IEngine engine, IContext context, boolean aggressive) {
+	public FlatDailyTradeSetup(IEngine engine, IContext context, boolean aggressive) {
 		super(engine, context);
 		// this way signals will be generated regardless of the channel position so they can be used both for entry and all exit checks
 		// entry and exit checks must explicitly test channel position !
-		longCmd = new LongCandleAndMomentumDetector(100, false);
-		shortCmd = new ShortCandleAndMomentumDetector(0, false);
+		longCmd = new LongCandleAndMomentumDetector(100, true);
+		shortCmd = new ShortCandleAndMomentumDetector(0, true);
 		this.aggressive = aggressive;
 	}
 
 	@Override
 	public String getName() {
-		return new String("Flat");
+		return new String("FlatDaily");
 	}
 
 	@Override
@@ -67,6 +67,9 @@ public class FlatTradeSetup extends TradeSetup implements ITradeSetup {
 		double 
 			trendStrengthPerc = taValues.get(FlexTASource.MAs_DISTANCE_PERC).getDoubleValue(), 
 			bBandsSquezeePerc = taValues.get(FlexTASource.BBANDS_SQUEEZE_PERC).getDoubleValue();
+		if (bBandsSquezeePerc < 30)
+			return null; // no entries in narrow channel
+		
 		if (bBandsSquezeePerc > 75.0
 			&& ((trendState.equals(Trend.TREND_STATE.UP_STRONG) && isMA200Lowest)
 				|| (trendState.equals(Trend.TREND_STATE.UP_STRONG) && trendStrengthPerc > 30.0)

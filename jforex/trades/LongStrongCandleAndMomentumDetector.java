@@ -9,18 +9,13 @@ import com.dukascopy.api.JFException;
 import com.dukascopy.api.OfferSide;
 import com.dukascopy.api.Period;
 
-import jforex.techanalysis.Momentum;
 import jforex.techanalysis.TradeTrigger;
 import jforex.techanalysis.source.FlexTASource;
 import jforex.techanalysis.source.FlexTAValue;
 
 public class LongStrongCandleAndMomentumDetector extends AbstractCandleAndMomentumDetector {
-	public LongStrongCandleAndMomentumDetector(double thresholdLevel) {
-		super(thresholdLevel);
-	}
-
-	public LongStrongCandleAndMomentumDetector(TradeTrigger candles, Momentum momentum) {
-		super(0);
+	public LongStrongCandleAndMomentumDetector(double thresholdLevel, boolean pStyleAggressive) {
+		super(thresholdLevel, pStyleAggressive);
 	}
 
 	public TradeTrigger.TriggerDesc checkEntry(Instrument instrument, Period pPeriod, OfferSide side, Filter filter, IBar bidBar, IBar askBar, Map<String, FlexTAValue> taValues) throws JFException {

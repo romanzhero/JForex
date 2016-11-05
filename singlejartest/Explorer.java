@@ -53,6 +53,7 @@ import jforex.explorers.CFDByDayExplorer;
 import jforex.explorers.CFDRangeExplorer;
 import jforex.explorers.FlexStatsCollector;
 import jforex.explorers.SRLevelsFinder;
+import jforex.explorers.SimpleStatsCollector;
 import jforex.explorers.TwoTFStatsCollector;
 import jforex.strategies.JForexIchiStrategy;
 import jforex.utils.ClimberProperties;
@@ -176,10 +177,12 @@ public class Explorer {
 			strategyToRun = new JForexIchiStrategy(properties);
 		else if (args[1].equals("CFDRanges"))
 			strategyToRun = new CFDRangeExplorer(properties);
+		else if (args[1].equals("SimpleStats"))
+			strategyToRun = new SimpleStatsCollector(properties);
 		else if (args[1].equals("sandbox"))
 			strategyToRun = new CFDByDayExplorer(properties);
 		else {
-			LOGGER.error("explorer class ID not valid. Valid values: [mailer, SRlevels, flex, Ichi, sandbox]");
+			LOGGER.error("explorer class ID not valid. Valid values: [mailer, SRlevels, flex, Ichi, SimpleStats, sandbox]");
 			System.exit(1);
 		}
 		client.startStrategy(strategyToRun, new LoadingProgressListener() {

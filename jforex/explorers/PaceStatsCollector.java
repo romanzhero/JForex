@@ -141,8 +141,7 @@ public class PaceStatsCollector extends AdvancedMailCreator implements
 				if (relevantTimeFrames.contains(FXUtils.toTimeFrameCode(
 						FXUtils.sortedTimeFrames.get(i), logDB, log))) {
 					lowestRelevantTimeFrame = FXUtils.sortedTimeFrames.get(i);
-					if (lowestRelevantTimeFrame
-							.equals(FXUtils.lowestTimeframeSupported))
+					if (lowestRelevantTimeFrame.equals(FXUtils.lowestTimeframeSupported))
 						secondLowestRelevantTimeFrame = FXUtils.secondLowestTimeframeSupported;
 					break;
 				}

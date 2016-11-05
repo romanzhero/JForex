@@ -40,8 +40,7 @@ public class FlexStatsCollector extends BasicTAStrategy implements IStrategy {
 	}
 
 	@Override
-	public void onBar(Instrument instrument, Period period, IBar askBar,
-			IBar bidBar) throws JFException {
+	public void onBar(Instrument instrument, Period period, IBar askBar, IBar bidBar) throws JFException {
 		// log.print("Entered onBar before filtering for timeframe " +
 		// period.toString() + " and bidBar time of " +
 		// FXUtils.getFormatedBarTimeWithSecs(bidBar));
@@ -59,8 +58,7 @@ public class FlexStatsCollector extends BasicTAStrategy implements IStrategy {
 		 * " and bidBar time of " + FXUtils.getFormatedBarTimeWithSecs(bidBar));
 		 * sendReportMail(instrument, period, bidBar, null); return; }
 		 */
-		if (!(period.equals(Period.THIRTY_MINS) || period
-				.equals(Period.FOUR_HOURS))) {
+		if (!(period.equals(Period.THIRTY_MINS) || period.equals(Period.FOUR_HOURS))) {
 			// log.print("onBar - irrelevant timeframe; timeframe " +
 			// period.toString() + " and bidBar time of " +
 			// FXUtils.getFormatedBarTimeWithSecs(bidBar));

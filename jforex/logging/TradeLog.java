@@ -145,9 +145,9 @@ public class TradeLog {
 						+ orderLabel + ";"
 						+ (isLong ? "LONG" : "SHORT") + ";"
 						+ setup + ";"
-						+ FXUtils.getFileTimeStamp(signalTime) + ";"
-						+ FXUtils.getFileTimeStamp(fillTime) + ";"
-						+ FXUtils.getFileTimeStamp(exitTime) + ";"
+						+ FXUtils.getFormatedTimeGMT(signalTime) + ";"
+						+ FXUtils.getFormatedTimeGMT(fillTime) + ";"
+						+ FXUtils.getFormatedTimeGMT(exitTime) + ";"
 						+ exitReason + ";"
 						+ FXUtils.df1.format(PnL) + ";"
 						+ FXUtils.df1.format(maxProfit * Math.pow(10, instrument.getPipScale())) + ";"
@@ -163,7 +163,7 @@ public class TradeLog {
 						+ FXUtils.df1.format(maxRisk * Math.pow(10, instrument.getPipScale())) + ";"
 						+ FXUtils.df1.format(maxDD	* Math.pow(10, instrument.getPipScale())) + ";"
 						+ FXUtils.df2.format(maxDDATR)	+ ";"
-						+ FXUtils.getFileTimeStamp(maxDDTime));
+						+ FXUtils.getFormatedTimeGMT(maxDDTime));
 		for (FlexLogEntry e : entryData)
 			result += ";" + e.getFormattedValue();
 		return result;

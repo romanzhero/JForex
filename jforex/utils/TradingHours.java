@@ -26,20 +26,22 @@ public class TradingHours {
 	
 	protected static Map<Instrument, InstrumentTradingHours> tradingHoursPerInstrument = new TreeMap<Instrument, InstrumentTradingHours>();
 	static {
-		tradingHoursPerInstrument.put(Instrument.AUSIDXAUD, new InstrumentTradingHours(1, 0, 17, 0));
-		tradingHoursPerInstrument.put(Instrument.JPNIDXJPY, new InstrumentTradingHours(1, 0, 17, 0));
-		tradingHoursPerInstrument.put(Instrument.HKGIDXHKD, new InstrumentTradingHours(1, 0, 17, 0));
-		tradingHoursPerInstrument.put(Instrument.DEUIDXEUR, new InstrumentTradingHours(7, 0, 20, 0));
-		tradingHoursPerInstrument.put(Instrument.CHEIDXCHF, new InstrumentTradingHours(7, 0, 20, 0));
-		tradingHoursPerInstrument.put(Instrument.EUSIDXEUR, new InstrumentTradingHours(7, 0, 20, 0));
-		tradingHoursPerInstrument.put(Instrument.ESPIDXEUR, new InstrumentTradingHours(7, 0, 20, 0));
-		tradingHoursPerInstrument.put(Instrument.FRAIDXEUR, new InstrumentTradingHours(7, 0, 20, 0));
-		tradingHoursPerInstrument.put(Instrument.GBRIDXGBP, new InstrumentTradingHours(7, 0, 20, 0));
-		tradingHoursPerInstrument.put(Instrument.USA30IDXUSD, new InstrumentTradingHours(7, 0, 20, 0));
-		tradingHoursPerInstrument.put(Instrument.USA500IDXUSD, new InstrumentTradingHours(7, 0, 20, 0));
-		tradingHoursPerInstrument.put(Instrument.USATECHIDXUSD, new InstrumentTradingHours(7, 0, 20, 0));
-		tradingHoursPerInstrument.put(Instrument.BRENTCMDUSD, new InstrumentTradingHours(1, 0, 22, 0));
-		tradingHoursPerInstrument.put(Instrument.LIGHTCMDUSD, new InstrumentTradingHours(1, 0, 22, 0));
+		tradingHoursPerInstrument.put(Instrument.AUSIDXAUD, new InstrumentTradingHours(22, 50, 20, 0));
+		tradingHoursPerInstrument.put(Instrument.JPNIDXJPY, new InstrumentTradingHours(1, 0, 20, 0));
+		tradingHoursPerInstrument.put(Instrument.HKGIDXHKD, new InstrumentTradingHours(1, 30, 15, 45));
+		tradingHoursPerInstrument.put(Instrument.DEUIDXEUR, new InstrumentTradingHours(6, 0, 20, 0));
+		tradingHoursPerInstrument.put(Instrument.CHEIDXCHF, new InstrumentTradingHours(6, 0, 20, 0));
+		tradingHoursPerInstrument.put(Instrument.EUSIDXEUR, new InstrumentTradingHours(6, 0, 20, 0));
+		tradingHoursPerInstrument.put(Instrument.ESPIDXEUR, new InstrumentTradingHours(7, 0, 18, 0));
+		tradingHoursPerInstrument.put(Instrument.FRAIDXEUR, new InstrumentTradingHours(6, 0, 20, 0));
+		tradingHoursPerInstrument.put(Instrument.GBRIDXGBP, new InstrumentTradingHours(6, 0, 20, 0));
+		tradingHoursPerInstrument.put(Instrument.USA30IDXUSD, new InstrumentTradingHours(6, 0, 20, 0));
+		tradingHoursPerInstrument.put(Instrument.USA500IDXUSD, new InstrumentTradingHours(6, 0, 20, 0));
+		tradingHoursPerInstrument.put(Instrument.USATECHIDXUSD, new InstrumentTradingHours(6, 0, 20, 0));
+		tradingHoursPerInstrument.put(Instrument.BRENTCMDUSD, new InstrumentTradingHours(0, 0, 21, 0));
+		tradingHoursPerInstrument.put(Instrument.LIGHTCMDUSD, new InstrumentTradingHours(0, 0, 21, 0));
+		tradingHoursPerInstrument.put(Instrument.XAGUSD, new InstrumentTradingHours(22, 0, 21, 0));
+		tradingHoursPerInstrument.put(Instrument.XAUUSD, new InstrumentTradingHours(22, 0, 21, 0));
 	}
 	
 	public static boolean withinTradingHours(Instrument instrument, long time) {
@@ -47,17 +49,9 @@ public class TradingHours {
 		if (tradingHours == null)
 			// default 24/7 trading for FX, XAU/USD and XAG/USD
 			return true;
-		DateTime
-			currentDay = new DateTime(time),
-			currentDayStart = new DateTime(currentDay.getYear(), currentDay.getMonthOfYear(), currentDay.getDayOfMonth(), 0, 0, 0, 0),
-			currentDayEnd = new DateTime(currentDay.getYear(), currentDay.getMonthOfYear(), currentDay.getDayOfMonth(), 0, 0, 0, 0),
-			currentTime = new DateTime(time);
-		currentDayStart = currentDayStart.plusHours(tradingHours.startHour);
-		currentDayStart = currentDayStart.plusMinutes(tradingHours.startMinute);
-		currentDayEnd = currentDayEnd.plusHours(tradingHours.endHour);
-		currentDayEnd = currentDay.plusMinutes(tradingHours.endMinute);
-		return currentTime.getMillis() >= currentDayStart.getMillis()
-			   && currentTime.getMillis() < currentDayEnd.getMillis();
+		DateTime currentTime = new DateTime(time);
+		return currentTime.getMillis() >= tradingHoursStart(instrument, time)
+			   && currentTime.getMillis() < tradingHoursEnd(instrument, time);
 	}
 	
 	public static long tradingHoursEnd(Instrument instrument, long time) {
@@ -70,11 +64,14 @@ public class TradingHours {
 			currentDayEnd = currentDayEnd.plusHours(23);
 			currentDayEnd = currentDayEnd.plusMinutes(55);
 		} else {			
+			if (tradingHours.endHour > tradingHours.startHour && currentDay.getHourOfDay() >= tradingHours.endHour)
+				currentDayEnd.plusDays(1);
 			currentDayEnd = currentDayEnd.plusHours(tradingHours.endHour);
 			currentDayEnd = currentDayEnd.plusMinutes(tradingHours.endMinute);
 		}
 		return currentDayEnd.getMillis();
 	}	
+	
 	public static long tradingHoursStart(Instrument instrument, long time) {
 		DateTime
 			currentDay = new DateTime(time),
@@ -85,6 +82,9 @@ public class TradingHours {
 			currentDayStart = currentDayStart.plusHours(0);
 			currentDayStart = currentDayStart.plusMinutes(0);
 		} else {		
+			if (tradingHours.endHour > tradingHours.startHour && currentDay.getHourOfDay() < tradingHours.endHour)
+				// within next day
+				currentDayStart.minusDays(1);
 			currentDayStart = currentDayStart.plusHours(tradingHours.startHour);
 			currentDayStart = currentDayStart.plusMinutes(tradingHours.startMinute);
 		}

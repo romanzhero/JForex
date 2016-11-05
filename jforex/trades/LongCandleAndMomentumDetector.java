@@ -9,18 +9,14 @@ import com.dukascopy.api.JFException;
 import com.dukascopy.api.OfferSide;
 import com.dukascopy.api.Period;
 
-import jforex.techanalysis.Momentum;
 import jforex.techanalysis.TradeTrigger;
 import jforex.techanalysis.source.FlexTASource;
 import jforex.techanalysis.source.FlexTAValue;
 
 public class LongCandleAndMomentumDetector extends AbstractCandleAndMomentumDetector {
-	public LongCandleAndMomentumDetector(double thresholdLevel) {
-		super(thresholdLevel);
-	}
-
-	public LongCandleAndMomentumDetector(TradeTrigger candles, Momentum momentum) {
-		super(0);
+	
+	public LongCandleAndMomentumDetector(double thresholdLevel, boolean pStyleAggressive) {
+		super(thresholdLevel, pStyleAggressive);
 	}
 
 	public TradeTrigger.TriggerDesc checkEntry(Instrument instrument, Period pPeriod, OfferSide side, Filter filter, IBar bidBar, IBar askBar, Map<String, FlexTAValue> taValues) throws JFException {
@@ -43,11 +39,17 @@ public class LongCandleAndMomentumDetector extends AbstractCandleAndMomentumDete
 				reset();
 
 			if (candleSignalAppeared) {
-				double [][] stochs = taValues.get(FlexTASource.STOCH).getDa2DimValue();
+				double [][] 
+						stochs = taValues.get(FlexTASource.STOCH).getDa2DimValue(),
+						smis = taValues.get(FlexTASource.SMI).getDa2DimValue();
 				double 
 					fastStoch = stochs[0][1], 
-					slowStoch = stochs[1][1]; 
-				momentumConfired = fastStoch > slowStoch && fastStoch > 20.0;
+					slowStoch = stochs[1][1],
+					prevSlowSMI = smis[1][1], 
+					currSlowSMI = smis[1][2], 
+					prevFastSMI = smis[0][1], 
+					currFastSMI = smis[0][2];					
+				momentumConfired = styleAggressive ? fastStoch > slowStoch && currFastSMI > prevFastSMI : fastStoch > slowStoch && fastStoch > 20.0;
 			}
 		}
 		if (candleSignalAppeared && momentumConfired) {
@@ -60,11 +62,19 @@ public class LongCandleAndMomentumDetector extends AbstractCandleAndMomentumDete
 				// signal is valid until momentum confirms it. Opposite signals
 				// are ignored for the time being, strategies / setups should
 				// take care about them
-				double [][] stochs = taValues.get(FlexTASource.STOCH).getDa2DimValue();
+				double [][] 
+						stochs = taValues.get(FlexTASource.STOCH).getDa2DimValue(),
+						smis = taValues.get(FlexTASource.SMI).getDa2DimValue();
 				double 
 					fastStoch = stochs[0][1], 
-					slowStoch = stochs[1][1]; 
-				if (!(fastStoch > slowStoch && fastStoch > 20.0) || (fastStoch > 80 && slowStoch > 80))
+					slowStoch = stochs[1][1],
+					prevSlowSMI = smis[1][1], 
+					currSlowSMI = smis[1][2], 
+					prevFastSMI = smis[0][1], 
+					currFastSMI = smis[0][2];
+				if ((!styleAggressive && !(fastStoch > slowStoch && fastStoch > 20.0)) || (fastStoch > 80 && slowStoch > 80))
+					reset();
+				if ((styleAggressive && !(fastStoch > slowStoch && currFastSMI > prevFastSMI)) || (fastStoch > 80 && slowStoch > 80))
 					reset();
 			}
 		}

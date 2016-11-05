@@ -140,6 +140,8 @@ public class FlatCascTest implements IStrategy {
 		//tradeSetups.add(new PUPBSetup(indicators, history, engine));
 		if (conf.getProperty("SMISetup", "no").equals("yes"))
 			tradeSetups.add(new SmiTradeSetup(engine, context, false, 30.0, 30.0));
+		if (conf.getProperty("TrendIDFollowCrossSetup", "no").equals("yes"))
+			tradeSetups.add(new SmaCrossTradeSetup(engine, context, context.getSubscribedInstruments(), true, false, 30.0, 25.0, false));
 		if (conf.getProperty("TrendIDFollowSetup", "no").equals("yes"))
 			tradeSetups.add(new SmaTradeSetup(indicators, context, history, engine, context.getSubscribedInstruments(), true, false, 30.0, 30.0, false));
 		else if (conf.getProperty("TrendIDFollowSoloSetup", "no").equals("yes"))
@@ -370,10 +372,7 @@ public class FlatCascTest implements IStrategy {
 						+ ", StDev vs. avg = " + FXUtils.df2.format(currStats.rangeStDev / currStats.avgRange) + ")",
 						true);
 			}
-		} else {
-			// for backtesting check if the new day has started, reset daily PnL
-			dailyPnL.resetInstrumentDailyPnL(instrument, bidBar.getTime());
-		}
+		} 
 	}
 
 	protected IOrder openOrderProcessing(Instrument instrument, Period period, IBar askBar, IBar bidBar, IOrder order) throws JFException {
