@@ -47,6 +47,7 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.Future;
 
+import jforex.explorers.RangeExplorer;
 import jforex.strategies.MultiPairCasc;
 import jforex.utils.ClimberProperties;
 import jforex.utils.FXUtils;
@@ -156,18 +157,18 @@ public class StrategyTester {
 		// client.startStrategy(new IchiAutoEntry(properties,
 		// properties.getTestIntervalStart().getMillis(),
 		// properties.getTestIntervalEnd().getMillis(), startTime),
-		client.startStrategy(//new SimpleMAsIDCrossTrendFollow(properties),
-				new MultiPairCasc(properties),
+		client.startStrategy(
+				//new SimpleMAsIDCrossTrendFollow(properties),
+				//new MultiPairCasc(properties),
+				new RangeExplorer(properties),
 				new LoadingProgressListener() {
 					@Override
-					public void dataLoaded(long startTime, long endTime,
-							long currentTime, String information) {
+					public void dataLoaded(long startTime, long endTime, long currentTime, String information) {
 						LOGGER.info(information);
 					}
 
 					@Override
-					public void loadingFinished(boolean allDataLoaded,
-							long startTime, long endTime, long currentTime) {
+					public void loadingFinished(boolean allDataLoaded, long startTime, long endTime, long currentTime) {
 					}
 
 					@Override

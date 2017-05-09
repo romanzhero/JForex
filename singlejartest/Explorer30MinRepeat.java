@@ -155,8 +155,7 @@ public class Explorer30MinRepeat {
 		DateTime startInterval = new DateTime(roundedEnd.minusMinutes(60));
 
 		// TODO: trying with just 30min and above...
-		client.setDataInterval(DataLoadingMethod.ALL_TICKS,
-				startInterval.getMillis(), roundedEnd.getMillis());
+		client.setDataInterval(DataLoadingMethod.ALL_TICKS,	startInterval.getMillis(), roundedEnd.getMillis());
 		// client.setDataInterval(Period.THIRTY_MINS, null, null,
 		// startInterval.getMillis(), roundedEnd.getMillis());
 		// load data
@@ -178,14 +177,12 @@ public class Explorer30MinRepeat {
 		}
 		client.startStrategy(strategyToRun, new LoadingProgressListener() {
 			@Override
-			public void dataLoaded(long startTime, long endTime,
-					long currentTime, String information) {
+			public void dataLoaded(long startTime, long endTime, long currentTime, String information) {
 				LOGGER.info(information);
 			}
 
 			@Override
-			public void loadingFinished(boolean allDataLoaded, long startTime,
-					long endTime, long currentTime) {
+			public void loadingFinished(boolean allDataLoaded, long startTime, long endTime, long currentTime) {
 			}
 
 			@Override
