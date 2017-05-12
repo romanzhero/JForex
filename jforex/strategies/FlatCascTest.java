@@ -21,6 +21,7 @@ import jforex.utils.Logger;
 import jforex.utils.RangesStats;
 import jforex.utils.TradingHours;
 import jforex.utils.RangesStats.InstrumentRangeStats;
+import jforex.utils.RollingAverage;
 import jforex.events.CandleMomentumEvent;
 import jforex.events.ITAEvent;
 import jforex.events.TAEventDesc;
@@ -30,6 +31,12 @@ import jforex.techanalysis.Trend;
 import jforex.techanalysis.source.FlexTASource;
 import jforex.techanalysis.source.FlexTAValue;
 import jforex.trades.*;
+import jforex.trades.flat.FlatStrongTradeSetup;
+import jforex.trades.flat.FlatTradeSetup;
+import jforex.trades.momentum.SmiTradeSetup;
+import jforex.trades.trend.SmaCrossTradeSetup;
+import jforex.trades.trend.SmaSoloTradeSetup;
+import jforex.trades.trend.SmaTradeSetup;
 
 public class FlatCascTest implements IStrategy {
 	@Configurable(value = "Period", description = "Choose the time frame")
@@ -67,6 +74,7 @@ public class FlatCascTest implements IStrategy {
 	
 	private Map<Instrument, InstrumentRangeStats> dayRanges = null;
 	private DailyPnL dailyPnL = null;	
+	private Map<Instrument, RollingAverage> barRangeAverages = null;
 	
 	private Logger 
 		log = null,
@@ -119,10 +127,20 @@ public class FlatCascTest implements IStrategy {
 		this.history = context.getHistory();
 		this.indicators = context.getIndicators();
 		this.context = context;
-		
 		FXUtils.setProfitLossHelper(context.getAccount().getAccountCurrency(), history);
 
 		dataService = context.getDataService();
+		barRangeAverages = new HashMap<Instrument, RollingAverage>();
+		for (Instrument i : context.getSubscribedInstruments()) {
+			long firstCandle = dataService.getTimeOfFirstCandle(i, selectedPeriod);
+			List<IBar> bars = history.getBars(i, selectedPeriod, OfferSide.BID, selectedFilter, FXUtils.MONTH_WORTH_OF_1h_BARS * 12 * 2, firstCandle, 0);
+			double[] barRanges = new double[bars.size()];
+			int barIndex = 0;
+			for (IBar currBar : bars) {
+				barRanges[barIndex] = currBar.getHigh() - currBar.getLow();
+			}
+			barRangeAverages.put(i, new RollingAverage(barRanges));
+		}
 
 		taSource = new FlexTASource(indicators, history, selectedFilter);
 
@@ -318,6 +336,9 @@ public class FlatCascTest implements IStrategy {
 		// no open position
 		TAEventDesc signal = null;
 		for (ITradeSetup setup : tradeSetups) {
+			if (setup.isTakeOverOnly())
+				continue;
+			
 			signal = setup.checkEntry(instrument, period, askBar, bidBar, selectedFilter, lastTaValues);
 			if (signal != null) {
 				// must be before so also Mkt orders can have a chance to

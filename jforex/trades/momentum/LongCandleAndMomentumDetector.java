@@ -1,4 +1,4 @@
-package jforex.trades;
+package jforex.trades.momentum;
 
 import java.util.Map;
 

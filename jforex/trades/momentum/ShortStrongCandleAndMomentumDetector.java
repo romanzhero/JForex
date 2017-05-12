@@ -1,4 +1,4 @@
-package jforex.trades;
+package jforex.trades.momentum;
 
 import java.util.Map;
 
@@ -13,27 +13,26 @@ import jforex.techanalysis.TradeTrigger;
 import jforex.techanalysis.source.FlexTASource;
 import jforex.techanalysis.source.FlexTAValue;
 
-public class LongStrongCandleAndMomentumDetector extends AbstractCandleAndMomentumDetector {
-	public LongStrongCandleAndMomentumDetector(double thresholdLevel, boolean pStyleAggressive) {
+public class ShortStrongCandleAndMomentumDetector extends AbstractCandleAndMomentumDetector {
+	public ShortStrongCandleAndMomentumDetector(double thresholdLevel, boolean pStyleAggressive) {
 		super(thresholdLevel, pStyleAggressive);
 	}
 
 	public TradeTrigger.TriggerDesc checkEntry(Instrument instrument, Period pPeriod, OfferSide side, Filter filter, IBar bidBar, IBar askBar, Map<String, FlexTAValue> taValues) throws JFException {
-		// entry is two-step process. First a candle signal at channel extreme is checked. Once this appears we wait for Stoch momentum to be confirming
+		// entry is two-step process. First a candle signal at channel extreme
+		// is checked. Once this appears we wait for Stoch momentum to be confirming
 		// Only rarely does this happen on the same bar, but need to check this situation too !
 		if (!candleSignalAppeared) {
-			TradeTrigger.TriggerDesc bullishSignalDesc = taValues.get(FlexTASource.BULLISH_CANDLES).getCandleValue();
-			if (bullishSignalDesc != null && bullishSignalDesc.channelPosition <= thresholdLevel) {
+			TradeTrigger.TriggerDesc bearishSignalDesc = taValues.get(FlexTASource.BEARISH_CANDLES).getCandleValue();
+			if (bearishSignalDesc != null
+				&& bearishSignalDesc.channelPosition >= thresholdLevel) {
 				candleSignalAppeared = true;
-				candleSignalDesc = bullishSignalDesc;
+				candleSignalDesc = bearishSignalDesc;
 			}
 		}
 		// now check the momentum condition too
 		if (candleSignalAppeared && !momentumConfired) {
-			// however it might happen that S/R of candle signal was exceeded in
-			// the opposite direction
-			// MUST cancel the whole signal !
-			if (bidBar.getClose() < candleSignalDesc.pivotLevel)
+			if (askBar.getClose() > candleSignalDesc.pivotLevel)
 				reset();
 
 			if (candleSignalAppeared) {
@@ -41,18 +40,15 @@ public class LongStrongCandleAndMomentumDetector extends AbstractCandleAndMoment
 			}
 		}
 		if (candleSignalAppeared && momentumConfired) {
-			// however it might happen that S/R of candle signal was exceeded in the opposite direction
-			// MUST cancel the whole signal !
 			// signal is valid until momentum confirms it. Opposite signals
 			// are ignored for the time being, strategies / setups should
 			// take care about them
-			if (bidBar.getClose() < candleSignalDesc.pivotLevel || !momentumConfirms(taValues)) {
+			if (askBar.getClose() > candleSignalDesc.pivotLevel || !momentumConfirms(taValues))
 				reset();
-			}
 		}
 		return candleSignalAppeared && momentumConfired ? candleSignalDesc : null;
 	}
-
+	
 	public boolean momentumConfirms(Map<String, FlexTAValue> taValues) {
 		double [][] 
 			smis = taValues.get(FlexTASource.SMI).getDa2DimValue(),
@@ -66,9 +62,9 @@ public class LongStrongCandleAndMomentumDetector extends AbstractCandleAndMoment
 			slowSMI = smis[1][2], 
 			fastStoch = stochs[0][1], 
 			slowStoch = stochs[1][1]; 
-		return fastStoch > slowStoch && fastStoch > 20.0
+		return fastStoch < slowStoch && fastStoch < 80.0
 				// SMI part
-				&& ((fastSMI > prevFastSMI && slowSMI > prevSlowSMI)
-					|| (fastSMI > -60 && fastSMI > prevFastSMI && fastSMI > slowSMI));
+				&& ((fastSMI < prevFastSMI && slowSMI < prevSlowSMI)
+					|| (fastSMI < 60 && fastSMI < prevFastSMI && fastSMI < slowSMI));
 	}
 }

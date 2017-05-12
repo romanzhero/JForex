@@ -9,6 +9,8 @@ import jforex.techanalysis.TradeTrigger;
 import jforex.techanalysis.Trend;
 import jforex.techanalysis.source.FlexTASource;
 import jforex.techanalysis.source.FlexTAValue;
+import jforex.trades.flat.FlatTradeSetup;
+
 import com.dukascopy.api.Filter;
 import com.dukascopy.api.IBar;
 import com.dukascopy.api.IContext;

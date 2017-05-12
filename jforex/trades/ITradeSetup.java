@@ -21,6 +21,8 @@ public interface ITradeSetup {
 	}
 
 	public String getName();
+	
+	public boolean isTakeOverOnly();
 
 	public TAEventDesc checkEntry(Instrument instrument, Period period,	IBar askBar, IBar bidBar, Filter filter, Map<String, FlexTAValue> taValues) throws JFException;
 
@@ -44,4 +46,6 @@ public interface ITradeSetup {
 	public void log(IMessage message);
 
 	public String getLastTradingEvent();
+	
+	public void updateOnBar(Instrument instrument, Period period, IBar askBar, IBar bidBar);
 }

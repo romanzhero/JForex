@@ -148,16 +148,26 @@ public class Channel {
 		return results;
 	}
 
-	public double[] bBandsWidthTS(Instrument instrument, Period pPeriod,
-			OfferSide side, long time, int timeSeriesLength) throws JFException {
+	public double[] bBandsWidthTS(Instrument instrument, Period pPeriod, OfferSide side, long time, int timeSeriesLength) throws JFException {
 		double[] results = new double[timeSeriesLength];
 
-		double[][] bBands = indicators.bbands(instrument, pPeriod, side,
-				AppliedPrice.CLOSE, 20, 2.0, 2.0, MaType.SMA, Filter.WEEKENDS,
+		double[][] bBands = indicators.bbands(instrument, pPeriod, side, AppliedPrice.CLOSE, 20, 2.0, 2.0, MaType.SMA, Filter.WEEKENDS,
 				timeSeriesLength, time, 0);
 
 		for (int i = 0; i < bBands[0].length; i++) {
 			results[i] = bBands[TOP][i] - bBands[BOTTOM][i];
+		}
+		return results;
+	}
+	
+	public double[] bBandsWidthPerc(Instrument instrument, Period pPeriod, OfferSide side, long time, int timeSeriesLength) throws JFException {
+		double[] results = new double[timeSeriesLength];
+
+		double[][] bBands = indicators.bbands(instrument, pPeriod, side, AppliedPrice.CLOSE, 20, 2.0, 2.0, MaType.SMA, Filter.WEEKENDS,
+				timeSeriesLength, time, 0);
+
+		for (int i = 0; i < bBands[0].length; i++) {
+			results[i] = (bBands[TOP][i] - bBands[BOTTOM][i]) / bBands[BOTTOM][i] * 100.0;
 		}
 		return results;
 	}

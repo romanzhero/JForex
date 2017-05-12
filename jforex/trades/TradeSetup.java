@@ -25,7 +25,9 @@ public abstract class TradeSetup implements ITradeSetup {
 	protected IContext context = null;
 	protected IOrder order = null;
 
-	protected boolean locked = false;
+	protected boolean 
+		locked = false,
+		takeOverOnly = false;
 	protected String lastTradingEvent = "none";
 
 	public TradeSetup(IEngine engine, IContext context) {
@@ -33,6 +35,19 @@ public abstract class TradeSetup implements ITradeSetup {
 		this.engine = engine;
 		this.context = context;
 	}
+	
+	public TradeSetup(IEngine engine, IContext context, boolean pTakeOverOnly) {
+		super();
+		this.engine = engine;
+		this.context = context;
+		this.takeOverOnly = pTakeOverOnly;
+	}
+
+	@Override
+	public boolean isTakeOverOnly() {
+		return takeOverOnly;
+	}
+
 
 	@Override
 	public EntryDirection checkCancel(Instrument instrument, Period period,	IBar askBar, IBar bidBar, Filter filter, Map<String, FlexTAValue> taValues) throws JFException {
@@ -71,6 +86,9 @@ public abstract class TradeSetup implements ITradeSetup {
 	public boolean isTradeLocked(Instrument instrument, Period period, IBar askBar, IBar bidBar, Filter filter, IOrder order, Map<String, FlexTAValue> taValues) throws JFException {
 		return locked;
 	}
+	
+	@Override
+	public void updateOnBar(Instrument instrument, Period period, IBar askBar, IBar bidBar) {	}
 
 	@Override
 	public IOrder submitOrder(String label, Instrument instrument, boolean isLong, double amount, IBar bidBar, IBar askBar)	throws JFException {

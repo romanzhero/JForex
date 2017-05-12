@@ -22,6 +22,12 @@ import jforex.techanalysis.Trend;
 import jforex.techanalysis.source.FlexTASource;
 import jforex.techanalysis.source.FlexTAValue;
 import jforex.trades.*;
+import jforex.trades.flat.FlatStrongTradeSetup;
+import jforex.trades.flat.FlatTradeSetup;
+import jforex.trades.momentum.SmiTradeSetup;
+import jforex.trades.trend.SmaCrossTradeSetup;
+import jforex.trades.trend.SmaSoloTradeSetup;
+import jforex.trades.trend.SmaTradeSetup;
 
 public class MultiPairCasc implements IStrategy {
 	@Configurable(value = "Period", description = "Choose the time frame")

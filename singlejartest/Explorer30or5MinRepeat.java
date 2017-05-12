@@ -50,7 +50,7 @@ import java.util.Set;
 import java.util.StringTokenizer;
 import java.util.concurrent.Future;
 
-import jforex.explorers.RangeExplorer;
+import jforex.explorers.RangeExplorerComplex;
 import jforex.explorers.TwoTFStatsCollector;
 import jforex.utils.ClimberProperties;
 
@@ -167,7 +167,7 @@ public class Explorer30or5MinRepeat {
 		if (args[1].equals("mailer"))
 			strategyToRun = new TwoTFStatsCollector(properties);
 		else if (args[1].equals("ranges"))
-			strategyToRun = new RangeExplorer(properties);
+			strategyToRun = new RangeExplorerComplex(properties);
 		else {
 			LOGGER.error("explorer class ID not valid. Valid values: [mailer, ranges]");
 			System.exit(1);

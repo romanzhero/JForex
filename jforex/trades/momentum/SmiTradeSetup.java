@@ -1,4 +1,4 @@
-package jforex.trades;
+package jforex.trades.momentum;
 
 import java.util.List;
 import java.util.Map;
@@ -8,6 +8,9 @@ import jforex.events.TAEventDesc.TAEventType;
 import jforex.techanalysis.Trend.FLAT_REGIME_CAUSE;
 import jforex.techanalysis.source.FlexTASource;
 import jforex.techanalysis.source.FlexTAValue;
+import jforex.trades.ITradeSetup;
+import jforex.trades.TradeSetup;
+import jforex.trades.ITradeSetup.EntryDirection;
 import jforex.utils.FXUtils;
 
 import com.dukascopy.api.Filter;

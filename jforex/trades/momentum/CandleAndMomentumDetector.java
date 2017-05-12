@@ -1,4 +1,4 @@
-package jforex.trades;
+package jforex.trades.momentum;
 
 import com.dukascopy.api.Filter;
 import com.dukascopy.api.IBar;
@@ -14,8 +14,7 @@ public class CandleAndMomentumDetector {
 	protected TradeTrigger candles = null;
 	protected Momentum momentum = null;
 	protected double bottomLevel = 0.0, topLevel = 100.0,
-			lastSupportResistance, // needed to set SL and check for cancel
-									// criteria
+			lastSupportResistance, // needed to set SL and check for cancel criteria
 			channelTop, // needed to check trade unlock
 			channelBottom;
 	protected boolean candleSignalAppeared = false, momentumConfired = false;

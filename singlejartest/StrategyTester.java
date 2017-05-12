@@ -48,7 +48,6 @@ import java.util.Set;
 import java.util.concurrent.Future;
 
 import jforex.explorers.RangeExplorer;
-import jforex.strategies.MultiPairCasc;
 import jforex.utils.ClimberProperties;
 import jforex.utils.FXUtils;
 

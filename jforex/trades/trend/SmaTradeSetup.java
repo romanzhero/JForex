@@ -1,4 +1,4 @@
-package jforex.trades;
+package jforex.trades.trend;
 
 import java.util.Map;
 import java.util.Set;

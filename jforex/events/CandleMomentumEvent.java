@@ -4,7 +4,7 @@ import jforex.events.TAEventDesc.TAEventType;
 import jforex.techanalysis.Momentum;
 import jforex.techanalysis.TradeTrigger;
 import jforex.techanalysis.TradeTrigger.TriggerDesc;
-import jforex.trades.CandleAndMomentumDetector;
+import jforex.trades.momentum.CandleAndMomentumDetector;
 
 import com.dukascopy.api.Filter;
 import com.dukascopy.api.IBar;
