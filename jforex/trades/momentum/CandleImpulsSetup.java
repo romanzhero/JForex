@@ -6,6 +6,9 @@ package jforex.trades.momentum;
 import java.util.List;
 import java.util.Map;
 
+import org.joda.time.DateTime;
+import org.joda.time.DateTimeConstants;
+
 import com.dukascopy.api.Filter;
 import com.dukascopy.api.IBar;
 import com.dukascopy.api.IContext;
@@ -58,6 +61,12 @@ public class CandleImpulsSetup extends TradeSetup implements ITradeSetup {
 
 	public TAEventDesc checkEntry(Instrument instrument, Period period, IBar askBar, IBar bidBar, Filter filter, Map<String, FlexTAValue> taValues) throws JFException {
 		List<IBar> last3BidBars = context.getHistory().getBars(instrument, period, OfferSide.BID, Filter.WEEKENDS, 3, bidBar.getTime(), 0);
+		DateTime
+			firstBarDate = new DateTime(last3BidBars.get(0).getTime()),
+			lastBarDate = new DateTime(last3BidBars.get(2).getTime());
+		if (firstBarDate.getDayOfWeek() == DateTimeConstants.FRIDAY && lastBarDate.getDayOfWeek() == DateTimeConstants.SUNDAY)
+			return null;
+		
 		List<IBar> last3AskBars = context.getHistory().getBars(instrument, period, OfferSide.ASK, Filter.WEEKENDS, 3, bidBar.getTime(), 0);
 		if (barsSignalGiven(last3BidBars, instrument).equals(BodyDirection.DOWN)) {
 			lastEntryDesc = new TAEventDesc(TAEventType.ENTRY_SIGNAL, "CandleImpulsShort", instrument, false, askBar, bidBar, period);
@@ -81,8 +90,9 @@ public class CandleImpulsSetup extends TradeSetup implements ITradeSetup {
 				if (!currBodyDirection.equals(prevBodyDirection))
 					return BodyDirection.NONE;
 			}
-			barSizeOK = (currBar.getHigh() - currBar.getLow()) > average.getAverage() 
-						&& Math.abs(currBar.getClose() - currBar.getOpen()) / (currBar.getHigh() - currBar.getLow()) > 0.8; 
+			if (!barSizeOK) // one big candle in trade direction enough
+				barSizeOK = (currBar.getHigh() - currBar.getLow()) > average.getAverage() 
+							&& Math.abs(currBar.getClose() - currBar.getOpen()) / (currBar.getHigh() - currBar.getLow()) > 0.6;
 			prevBodyDirection = currBodyDirection;
 		}
 		return barSizeOK ? prevBodyDirection : BodyDirection.NONE;	
@@ -99,6 +109,7 @@ public class CandleImpulsSetup extends TradeSetup implements ITradeSetup {
 	public void inTradeProcessing(Instrument instrument, Period period, IBar askBar, IBar bidBar, Filter filter,
 			IOrder order, Map<String, FlexTAValue> taValues, List<TAEventDesc> marketEvents) throws JFException {
 		super.inTradeProcessing(instrument, period, askBar, bidBar, filter, order, taValues, marketEvents);
+		//TODO: also reach to the opposite signal ! Close the previous trade !
 		RollingAverage average = barRangeAverages.get(instrument);
 		double[][] stochs = taValues.get(FlexTASource.STOCH).getDa2DimValue();
 		double 
@@ -108,20 +119,28 @@ public class CandleImpulsSetup extends TradeSetup implements ITradeSetup {
 			if ((fastStoch >= 80 && slowStoch >= 80)
 				|| bidBar.getClose() < order.getOpenPrice())
 				return;
+			
 			double barRange = bidBar.getHigh() - bidBar.getLow();
 			if (bidBar.getClose() < bidBar.getOpen()
 				&&  barRange > average.getAverage()
-				&& Math.abs(bidBar.getOpen() - bidBar.getClose()) / barRange > 0.8) {
+				&& Math.abs(bidBar.getOpen() - bidBar.getClose()) / barRange > 0.8
+				&& bidBar.getHigh() > order.getOpenPrice()
+				&& bidBar.getHigh() > order.getStopLossPrice()) {
+				lastTradingEvent = "CandleImpuls move SL signal (long)";
 				order.setStopLossPrice(bidBar.getHigh(), OfferSide.BID);
 			}
 		} else {
 			if ((fastStoch <= 20 && slowStoch <= 20)
-					|| askBar.getClose() > order.getOpenPrice())
+				|| askBar.getClose() > order.getOpenPrice())
 					return;
+			
 				double barRange = askBar.getHigh() - askBar.getLow();
 				if (askBar.getClose() > askBar.getOpen()
 					&&  barRange > average.getAverage()
-					&& Math.abs(askBar.getOpen() - askBar.getClose()) / barRange > 0.8) {
+					&& Math.abs(askBar.getOpen() - askBar.getClose()) / barRange > 0.8
+					&& askBar.getLow() < order.getOpenPrice()
+					&& askBar.getLow() < order.getStopLossPrice()) {
+					lastTradingEvent = "CandleImpuls move SL signal (short)";
 					order.setStopLossPrice(askBar.getLow(), OfferSide.ASK);
 				}
 			

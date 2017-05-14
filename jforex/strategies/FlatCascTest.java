@@ -10,10 +10,13 @@ import com.dukascopy.api.*;
 import com.dukascopy.api.IIndicators.MaType;
 import com.dukascopy.api.drawings.IHorizontalLineChartObject;
 import com.dukascopy.api.drawings.ITextChartObject;
+import com.dukascopy.api.feed.IFeedDescriptor;
+import com.dukascopy.api.feed.util.TimePeriodAggregationFeedDescriptor;
 import com.dukascopy.api.indicators.IIndicator;
 import com.dukascopy.api.indicators.IndicatorInfo;
 import com.dukascopy.api.indicators.OutputParameterInfo;
 
+import jforex.utils.ClimberProperties;
 import jforex.utils.DailyPnL;
 import jforex.utils.FXUtils;
 import jforex.utils.FlexLogEntry;
@@ -33,6 +36,7 @@ import jforex.techanalysis.source.FlexTAValue;
 import jforex.trades.*;
 import jforex.trades.flat.FlatStrongTradeSetup;
 import jforex.trades.flat.FlatTradeSetup;
+import jforex.trades.momentum.CandleImpulsSetup;
 import jforex.trades.momentum.SmiTradeSetup;
 import jforex.trades.trend.SmaCrossTradeSetup;
 import jforex.trades.trend.SmaSoloTradeSetup;
@@ -86,7 +90,7 @@ public class FlatCascTest implements IStrategy {
 		queueOrderIsLong;
 	private String queueOrderLabel = null;
 	private boolean headerPrinted = false;
-	private Properties conf = null;
+	private ClimberProperties conf = null;
 
 	private IContext context;
 
@@ -112,7 +116,7 @@ public class FlatCascTest implements IStrategy {
 		this.reportDir = reportDir;
 	}
 	
-	public FlatCascTest(Instrument selectedInstrument, Properties p) {
+	public FlatCascTest(Instrument selectedInstrument, ClimberProperties p) {
 		super();
 		this.selectedInstrument = selectedInstrument;
 		this.visualMode = p.getProperty("visualMode", "no").equalsIgnoreCase("yes"); 
@@ -128,11 +132,13 @@ public class FlatCascTest implements IStrategy {
 		this.indicators = context.getIndicators();
 		this.context = context;
 		FXUtils.setProfitLossHelper(context.getAccount().getAccountCurrency(), history);
-
 		dataService = context.getDataService();
+		
+		
 		barRangeAverages = new HashMap<Instrument, RollingAverage>();
+		long testIntervalStart = history.getPreviousBarStart(selectedPeriod, conf.getTestIntervalStart().getMillis());
 		for (Instrument i : context.getSubscribedInstruments()) {
-			long firstCandle = dataService.getTimeOfFirstCandle(i, selectedPeriod);
+			long firstCandle = testIntervalStart;
 			List<IBar> bars = history.getBars(i, selectedPeriod, OfferSide.BID, selectedFilter, FXUtils.MONTH_WORTH_OF_1h_BARS * 12 * 2, firstCandle, 0);
 			double[] barRanges = new double[bars.size()];
 			int barIndex = 0;
@@ -151,6 +157,8 @@ public class FlatCascTest implements IStrategy {
 		for (Instrument currI : pairs) {
 			orderPerPair.put(currI.name(), null);
 		}
+		if (conf.getProperty("CandleImpulsSetup", "no").equals("yes"))
+			tradeSetups.add(new CandleImpulsSetup(engine, context, barRangeAverages));
 		if (conf.getProperty("FlatStrongSetup", "no").equals("yes"))
 			tradeSetups.add(new FlatStrongTradeSetup(engine, context, history, true));
 		if (conf.getProperty("FlatSetup", "no").equals("yes"))
@@ -279,8 +287,8 @@ public class FlatCascTest implements IStrategy {
 		
 		if (!instrument.equals(selectedInstrument)
 			|| !period.equals(selectedPeriod)
-			|| !barProcessingAllowed(bidBar.getTime())
-			|| (bidBar.getClose() == bidBar.getOpen() && bidBar.getClose() == bidBar.getHigh() && bidBar.getClose() == bidBar.getLow()))
+			|| (bidBar.getClose() == bidBar.getOpen() && bidBar.getClose() == bidBar.getHigh() && bidBar.getClose() == bidBar.getLow())
+			|| !barProcessingAllowed(bidBar.getTime()))
 			return;
 		
 		checkDayRanges(instrument, askBar, bidBar);

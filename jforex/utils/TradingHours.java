@@ -4,6 +4,7 @@ import java.util.Map;
 import java.util.TreeMap;
 
 import org.joda.time.DateTime;
+import org.joda.time.DateTimeConstants;
 
 import com.dukascopy.api.Instrument;
 
@@ -58,6 +59,8 @@ public class TradingHours {
 		DateTime
 			currentDay = new DateTime(time),
 			currentDayEnd = new DateTime(currentDay.getYear(), currentDay.getMonthOfYear(), currentDay.getDayOfMonth(), 0, 0, 0, 0);
+		if (currentDay.getDayOfWeek() == DateTimeConstants.SUNDAY)
+			return -1; // No limit for trading on Sunday
 		InstrumentTradingHours tradingHours = tradingHoursPerInstrument.get(instrument);
 		if (tradingHours == null) {
 			// default 24/7 trading for FX, XAU/USD and XAG/USD
