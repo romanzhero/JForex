@@ -90,11 +90,6 @@ public abstract class TradeSetup implements ITradeSetup {
 	@Override
 	public void updateOnBar(Instrument instrument, Period period, IBar askBar, IBar bidBar) {	}
 
-	@Override
-	public IOrder submitOrder(String label, Instrument instrument, boolean isLong, double amount, IBar bidBar, IBar askBar)	throws JFException {
-		return submitMktOrder(label, instrument, isLong, amount, bidBar, askBar);
-	}
-	
 	public IOrder submitMktOrder(String label, Instrument instrument, boolean isLong, double amount, IBar bidBar, IBar askBar) throws JFException {
 		IOrder order = engine.submitOrder(label, instrument, isLong ? IEngine.OrderCommand.BUY : IEngine.OrderCommand.SELL,	amount);
 		//order.waitForUpdate(IOrder.State.FILLED);

@@ -291,4 +291,9 @@ public class SmiSmaTradeSetup extends TradeSetup {
 		super.afterTradeReset(instrument);
 		ma50TrailFlags.put(instrument.name(), new Boolean(false));
 	}
+
+	@Override
+	public IOrder submitOrder(String label, Instrument instrument, boolean isLong, double amount, IBar bidBar, IBar askBar) throws JFException {
+		return submitMktOrder(label, instrument, isLong, amount, bidBar, askBar);
+	}
 }

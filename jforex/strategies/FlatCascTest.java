@@ -288,6 +288,9 @@ public class FlatCascTest implements IStrategy {
 		incCommentLevelsCount();
 		removeOldCommentLevel(15);
 		lastTaValues = taSource.calcTAValues(instrument, period, askBar, bidBar);
+		for (ITradeSetup ts : tradeSetups) {
+			ts.updateOnBar(instrument, period, askBar, bidBar);
+		}
 		
 		IOrder order = orderPerPair.get(instrument.name());
 		double dailyPnLvsRange = dailyPnL.ratioPnLAvgRange(instrument);
