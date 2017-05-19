@@ -1327,35 +1327,37 @@ public class FXUtils {
 		}
 	}
 
-	public static String getRegimeString(TREND_STATE entryTrendID, FLAT_REGIME_CAUSE isFlat, boolean ma200Highest, boolean ma200Lowest) {
-		if (!isFlat.equals(FLAT_REGIME_CAUSE.NONE))
-			return new String("Flat (" + isFlat.toString() + ")");
-		
+	public static String getRegimeString(TREND_STATE entryTrendID, double maDistance, FLAT_REGIME_CAUSE isFlat, boolean ma200Highest, boolean ma200Lowest) {
+		// za jasan trend moguca i kombinacija i da su MAs vrlo blizu ali u ekstremnom rasporedu
+		// TrendID = UP_STRONG && ma200 lowest / TrendID = DOWN_STRONG && ma200 highest
 		if (entryTrendID.equals(TREND_STATE.UP_STRONG)) {
-			if (ma200Lowest)
+			if (ma200Lowest && maDistance > 25.0)
 				return new String("Strong uptrend");
-			else
+			else if (maDistance > 25.0 || ma200Lowest)
 				return new String(entryTrendID.toString());
 		}
 		if (entryTrendID.equals(TREND_STATE.UP_MILD)) {
-			if (ma200Lowest)
+			if (ma200Lowest && maDistance > 25.0)
 				return new String("Up mild, strong");
-			else
+			else if (maDistance > 25.0 || ma200Lowest)
 				return new String(entryTrendID.toString());
 		}
 		
 		if (entryTrendID.equals(TREND_STATE.DOWN_STRONG)) {
-			if (ma200Highest)
+			if (ma200Highest && maDistance > 25.0)
 				return new String("Strong downtrend");
-			else
+			else if (maDistance > 25.0 || ma200Highest)
 				return new String(entryTrendID.toString());
 		}
 		if (entryTrendID.equals(TREND_STATE.DOWN_MILD)) {
-			if (ma200Highest)
+			if (ma200Highest && maDistance > 25.0)
 				return new String("Down mild, strong");
-			else
+			else if (maDistance > 25.0 || ma200Highest)
 				return new String(entryTrendID.toString());
 		}
+		
+		if (!isFlat.equals(FLAT_REGIME_CAUSE.NONE))
+			return new String("Flat (" + isFlat.toString() + ")");
 		
 		return new String(entryTrendID.toString());
 	}

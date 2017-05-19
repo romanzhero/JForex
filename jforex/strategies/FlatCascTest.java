@@ -171,7 +171,7 @@ public class FlatCascTest implements IStrategy {
 		if (conf.getProperty("TrendIDFollowSetup", "no").equals("yes"))
 			tradeSetups.add(new SmaTradeSetup(indicators, context, history, engine, context.getSubscribedInstruments(), true, false, 30.0, 30.0, false));
 		else if (conf.getProperty("TrendIDFollowSoloSetup", "no").equals("yes"))
-			tradeSetups.add(new SmaSoloTradeSetup(engine, context, context.getSubscribedInstruments(), true, false, 30.0, 30.0, false));
+			tradeSetups.add(new SmaSoloTradeSetup(engine, context, context.getSubscribedInstruments(), true, false, 30.0, 30.0, false, true));
 		
 		//taEvents.add(new LongCandlesEvent(indicators, history));
 		//taEvents.add(new ShortCandlesEvent(indicators, history));
@@ -305,7 +305,7 @@ public class FlatCascTest implements IStrategy {
 		if (order != null) {
 			// there is an open order, might be pending (waiting) or filled !
 			if (order.getState().equals(IOrder.State.OPENED)
-				&& dailyPnLvsRange > 0.75) {
+				&& dailyPnLvsRange > 0.5) {
 				// cancel pending order if daily profit OK and skip further trading
 				order.close();
 				order.waitForUpdate(null);
@@ -326,16 +326,16 @@ public class FlatCascTest implements IStrategy {
 				
 			order = openOrderProcessing(instrument, period, askBar, bidBar, order);
 		}
-		// no more entries if daily profit is OK or less then 1 hour before close
-		if (dailyPnLvsRange > 0.75) {			
-			return;
-		}
 		long tradingHoursEnd = TradingHours.tradingHoursEnd(instrument, bidBar.getTime());
 		if (tradingHoursEnd != -1 && bidBar.getTime() + 3600 * 1000 > tradingHoursEnd){
 			dailyPnL.resetInstrumentDailyPnL(instrument, bidBar.getTime());
 			return;
 		}
-		
+		// no more entries if daily profit is OK or less then 1 hour before close
+		if (dailyPnLvsRange > 0.5) {			
+			lastTradingEvent = "Daily profit more then 50% of daily range - no trading until the end of the day";
+			return;
+		}		
 		// enable re-entry on the same bar !
 		if (order == null) {
 			newOrderProcessing(instrument, period, askBar, bidBar);
@@ -664,7 +664,9 @@ public class FlatCascTest implements IStrategy {
 	}
 
 	protected void addLatestTAValues(Map<String, FlexTAValue> taValues, boolean isLong) {
-		tradeLog.addLogEntry(new FlexLogEntry("Regime", FXUtils.getRegimeString((Trend.TREND_STATE)taValues.get(FlexTASource.TREND_ID).getTrendStateValue(), (Trend.FLAT_REGIME_CAUSE)taValues.get(FlexTASource.FLAT_REGIME).getValue(), 
+		tradeLog.addLogEntry(new FlexLogEntry("Regime", FXUtils.getRegimeString((Trend.TREND_STATE)taValues.get(FlexTASource.TREND_ID).getTrendStateValue(), 
+				taValues.get(FlexTASource.MAs_DISTANCE_PERC).getDoubleValue(),
+				(Trend.FLAT_REGIME_CAUSE)taValues.get(FlexTASource.FLAT_REGIME).getValue(), 
 				taValues.get(FlexTASource.MA200_HIGHEST).getBooleanValue(), taValues.get(FlexTASource.MA200_LOWEST).getBooleanValue())));
 		if (currentSetup != null && currentSetup.getName().equals("Flat")) {
 			if (isLong) {

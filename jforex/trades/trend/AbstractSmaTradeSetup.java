@@ -37,15 +37,7 @@ public abstract class AbstractSmaTradeSetup extends TradeSetup {
 	protected double flatPercThreshold;
 	protected double bBandsSqueezeThreshold;
 	private double lastSL;
-
-	protected abstract boolean sellSignal(Instrument instrument, Period period, Filter filter, double[] ma20, double[] ma50, double[] ma100, double[] ma200,
-			IBar bidBar, boolean strict, Map<String, FlexTAValue> taValues) throws JFException;
-
-	protected abstract boolean buySignal(Instrument instrument, Period period, Filter filter,	double[] ma20, double[] ma50, double[] ma100, double[] ma200, 
-			IBar bidBar, boolean strict, Map<String, FlexTAValue> taValues) throws JFException;
-
-	public abstract String getName();
-
+	
 	public AbstractSmaTradeSetup(IEngine engine, IContext context, Set<Instrument> subscribedInstruments, boolean mktEntry, boolean onlyCross, double pFlatPercThreshold, double pBBandsSqueezeThreshold, boolean trailsOnMA50) {
 		super(engine, context);
 		this.mktEntry = mktEntry;
@@ -58,6 +50,33 @@ public abstract class AbstractSmaTradeSetup extends TradeSetup {
 			ma50TrailFlags.put(i.name(), new Boolean(false));
 		}
 	}
+	
+	public AbstractSmaTradeSetup(IEngine engine, IContext context, Set<Instrument> subscribedInstruments, 
+			boolean mktEntry, 
+			boolean onlyCross, 
+			double pFlatPercThreshold, 
+			double pBBandsSqueezeThreshold, 
+			boolean trailsOnMA50,
+			boolean takeOverOnly) {
+		super(engine, context, takeOverOnly);
+		this.mktEntry = mktEntry;
+		this.onlyCross = onlyCross;
+		this.flatPercThreshold = pFlatPercThreshold;
+		this.bBandsSqueezeThreshold = pBBandsSqueezeThreshold;
+		this.trailsOnMA50 = trailsOnMA50;
+
+		for (Instrument i : subscribedInstruments) {
+			ma50TrailFlags.put(i.name(), new Boolean(false));
+		}
+	}
+
+	protected abstract boolean sellSignal(Instrument instrument, Period period, Filter filter, double[] ma20, double[] ma50, double[] ma100, double[] ma200,
+			IBar bidBar, boolean strict, Map<String, FlexTAValue> taValues) throws JFException;
+
+	protected abstract boolean buySignal(Instrument instrument, Period period, Filter filter,	double[] ma20, double[] ma50, double[] ma100, double[] ma200, 
+			IBar bidBar, boolean strict, Map<String, FlexTAValue> taValues) throws JFException;
+
+	public abstract String getName();
 
 	@Override
 	public TAEventDesc checkEntry(Instrument instrument, Period period, IBar askBar,

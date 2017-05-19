@@ -352,7 +352,9 @@ public class MultiPairCasc implements IStrategy {
 	protected void addLatestTAValues(Instrument instrument, Map<String, FlexTAValue> taValues, boolean isLong) {
 		PairTradeData currPairData = pairsTradeData.get(instrument.toString());
 	
-		currPairData.tradeLog.addLogEntry(new FlexLogEntry("Regime", FXUtils.getRegimeString((Trend.TREND_STATE)taValues.get(FlexTASource.TREND_ID).getTrendStateValue(), (Trend.FLAT_REGIME_CAUSE)taValues.get(FlexTASource.FLAT_REGIME).getValue(), 
+		currPairData.tradeLog.addLogEntry(new FlexLogEntry("Regime", FXUtils.getRegimeString((Trend.TREND_STATE)taValues.get(FlexTASource.TREND_ID).getTrendStateValue(), 
+				taValues.get(FlexTASource.MAs_DISTANCE_PERC).getDoubleValue(),
+				(Trend.FLAT_REGIME_CAUSE)taValues.get(FlexTASource.FLAT_REGIME).getValue(), 
 				taValues.get(FlexTASource.MA200_HIGHEST).getBooleanValue(), taValues.get(FlexTASource.MA200_LOWEST).getBooleanValue())));
 		if (currPairData.currentSetup != null && currPairData.currentSetup.getName().equals("Flat")) {
 			if (isLong) {

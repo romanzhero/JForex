@@ -19,6 +19,16 @@ public class SmaSoloTradeSetup extends AbstractSmaTradeSetup {
 		super(engine, context, subscribedInstruments, mktEntry, onlyCross, pFlatPercThreshold, pBBandsSqueezeThreshold, trailsOnMA50);
 	}
 
+	public SmaSoloTradeSetup(IEngine engine, IContext context, Set<Instrument> subscribedInstruments, 
+			boolean mktEntry, 
+			boolean onlyCross, 
+			double pFlatPercThreshold, 
+			double pBBandsSqueezeThreshold, 
+			boolean trailsOnMA50,
+			boolean takeOverOnly) {
+		super(engine, context, subscribedInstruments, mktEntry, onlyCross, pFlatPercThreshold, pBBandsSqueezeThreshold, trailsOnMA50, takeOverOnly);
+	}
+	
 	@Override
 	public String getName() {
 		return new String("SMASoloTrendIDFollow");
@@ -31,7 +41,7 @@ public class SmaSoloTradeSetup extends AbstractSmaTradeSetup {
 		if (strict)
 			return (currMA20 > currMA50 && currMA50 > currMA100) && !(prevMA20 > prevMA50 && prevMA50 > prevMA100);
 		else {
-			FLAT_REGIME_CAUSE isFlat = (FLAT_REGIME_CAUSE )taValues.get(FlexTASource.FLAT_REGIME).getValue();		
+			FLAT_REGIME_CAUSE isFlat = (FLAT_REGIME_CAUSE)taValues.get(FlexTASource.FLAT_REGIME).getValue();		
 			if (isDownMomentum(instrument, period, filter, bidBar, taValues)
 				|| isFlat.equals(FLAT_REGIME_CAUSE.MAs_CLOSE))
 				return false;

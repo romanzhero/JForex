@@ -13,18 +13,25 @@ import com.dukascopy.api.Filter;
 import com.dukascopy.api.IBar;
 import com.dukascopy.api.IContext;
 import com.dukascopy.api.IEngine;
+import com.dukascopy.api.IIndicators.AppliedPrice;
+import com.dukascopy.api.IIndicators.MaType;
+import com.dukascopy.api.impl.Indicators;
 import com.dukascopy.api.IOrder;
 import com.dukascopy.api.Instrument;
 import com.dukascopy.api.JFException;
 import com.dukascopy.api.OfferSide;
 import com.dukascopy.api.Period;
+import com.tictactec.ta.lib.MAType;
 
 import jforex.events.TAEventDesc;
 import jforex.events.TAEventDesc.TAEventType;
+import jforex.techanalysis.Channel;
+import jforex.techanalysis.Trend;
 import jforex.techanalysis.source.FlexTASource;
 import jforex.techanalysis.source.FlexTAValue;
 import jforex.trades.ITradeSetup;
 import jforex.trades.TradeSetup;
+import jforex.utils.FXUtils;
 import jforex.utils.RollingAverage;
 
 /**
@@ -60,26 +67,75 @@ public class CandleImpulsSetup extends TradeSetup implements ITradeSetup {
 	}
 
 	public TAEventDesc checkEntry(Instrument instrument, Period period, IBar askBar, IBar bidBar, Filter filter, Map<String, FlexTAValue> taValues) throws JFException {
+		//TODO: potrebna poboljsanja:
+		// - nema breakout ulaza, pogotovo ne kada je uzak kanal !
+		// - vezano sa tim, dno prve od trie svecice mora biti u povoljnoj polovini kanala, mozda cak i 30%-40%:
+		//		- prosta analiza postojeceg loga (treca, ne prva svecica iznad 50% za short stedi 190 pipsa !!!)
+		//		- i jos 145 pipsa na long !
+		// - bolje analizirati SMI i Stoch momentum da se ne bi menjao SL bez potrebe. Ne mora SMI da bude 
+		// potpuno UP/DOWN, dovoljno je da OBA budu na povoljnom nivou i da makar jedan ide u pravcu trejda
+		// - preskociti signale protiv jasnog trenda, pogotovo na pogresnoj strani kanala (breakout) !!!
+		// GENERALNO: razlika izmedju brzog i sporog SMI i pravac njene promene su vazni !
+		// velika razlika je cesto kraj momentuma, flat entry protiv OK. Ali mala razlika koja se uveceva
+		// nakon crossa je znak novog i svezeg momentuma, ne treba dirati SL !! Odnosno treba zatvoriti 
+		// suprotni trejd
 		List<IBar> last3BidBars = context.getHistory().getBars(instrument, period, OfferSide.BID, Filter.WEEKENDS, 3, bidBar.getTime(), 0);
 		DateTime
 			firstBarDate = new DateTime(last3BidBars.get(0).getTime()),
 			lastBarDate = new DateTime(last3BidBars.get(2).getTime());
 		if (firstBarDate.getDayOfWeek() == DateTimeConstants.FRIDAY && lastBarDate.getDayOfWeek() == DateTimeConstants.SUNDAY)
 			return null;
-		
 		List<IBar> last3AskBars = context.getHistory().getBars(instrument, period, OfferSide.ASK, Filter.WEEKENDS, 3, bidBar.getTime(), 0);
-		if (barsSignalGiven(last3BidBars, instrument).equals(BodyDirection.DOWN)) {
-			lastEntryDesc = new TAEventDesc(TAEventType.ENTRY_SIGNAL, "CandleImpulsShort", instrument, false, askBar, bidBar, period);
+		
+		double[][]
+				bidBarsChPos = context.getIndicators().bbands(instrument, period, OfferSide.BID, AppliedPrice.CLOSE, 20, 2.0, 2.0, MaType.SMA, filter, 3, bidBar.getTime(), 0),
+				askBarsChPos = context.getIndicators().bbands(instrument, period, OfferSide.ASK, AppliedPrice.CLOSE, 20, 2.0, 2.0, MaType.SMA, filter, 3, bidBar.getTime(), 0);
+		double 
+			chPos = taValues.get(FlexTASource.CHANNEL_POS).getDoubleValue(),
+			firstBidBarChWidth = bidBarsChPos[0][0] - bidBarsChPos[2][0], 
+			firstAskBarChWidth = askBarsChPos[0][0] - askBarsChPos[2][0], 
+			firstBidBarChBottom = bidBarsChPos[2][0], 
+			firstAskBarChBottom = askBarsChPos[2][0], 
+			firstBidBarTopChPos = (last3BidBars.get(0).getHigh() - firstBidBarChBottom) / firstBidBarChWidth * 100,
+			firstAskBarBottomChPos = (last3AskBars.get(0).getLow() - firstAskBarChBottom) / firstAskBarChWidth * 100,
+			vola = taValues.get(FlexTASource.BBANDS_SQUEEZE_PERC).getDoubleValue(),
+			bidBarRangeAvg = (bidBar.getHigh() - bidBar.getLow()) / barRangeAverages.get(instrument).getAverage(),
+			askBarRangeAvg = (askBar.getHigh() - askBar.getLow()) / barRangeAverages.get(instrument).getAverage();
+		String taRegime = FXUtils.getRegimeString(taValues.get(FlexTASource.TREND_ID).getTrendStateValue(), 
+				taValues.get(FlexTASource.MAs_DISTANCE_PERC).getDoubleValue(),
+				(Trend.FLAT_REGIME_CAUSE)taValues.get(FlexTASource.FLAT_REGIME).getValue(), 
+				taValues.get(FlexTASource.MA200_HIGHEST).getBooleanValue(), 
+				taValues.get(FlexTASource.MA200_LOWEST).getBooleanValue());
+		if (!taRegime.equals("Strong uptrend")
+			&& barsSignalGiven(last3BidBars, instrument).equals(BodyDirection.DOWN)
+			&& chPos > 45) {
+			lastEntryDesc = new TAEventDesc(TAEventType.ENTRY_SIGNAL, getName(), instrument, false, askBar, bidBar, period);
 			lastEntryDesc.stopLossLevel = last3AskBars.get(0).getHigh();
 			return lastEntryDesc;
-		} else if (barsSignalGiven(last3AskBars, instrument).equals(BodyDirection.UP)) {
-			lastEntryDesc = new TAEventDesc(TAEventType.ENTRY_SIGNAL, "CandleImpulsLong", instrument, true, askBar, bidBar, period);
+		} else if (!taRegime.equals("Strong downtrend")
+				&& barsSignalGiven(last3AskBars, instrument).equals(BodyDirection.UP)
+				&& chPos < 55) {
+			lastEntryDesc = new TAEventDesc(TAEventType.ENTRY_SIGNAL, getName(), instrument, true, askBar, bidBar, period);
 			lastEntryDesc.stopLossLevel = last3BidBars.get(0).getLow();
 			return lastEntryDesc;
 		}
 		return null;
 	}
 	
+	protected boolean strongBearishBreakOut(double chPos, double vola, double bidBarRangeAvg, IBar bidBar) {
+		return chPos < 0 
+				&& vola > 65
+				&& bidBarRangeAvg > 1
+				&& (bidBar.getOpen() - bidBar.getClose()) / (bidBar.getHigh() - bidBar.getLow()) > 0.65;
+	}
+
+	protected boolean strongBullishBreakOut(double chPos, double vola, double askBarRangeAvg, IBar askBar) {
+		return chPos > 100 
+				&& vola > 65
+				&& askBarRangeAvg > 1
+				&& (askBar.getClose() - askBar.getOpen()) / (askBar.getHigh() - askBar.getLow()) > 0.65;
+	}
+
 	protected BodyDirection barsSignalGiven(List<IBar> bars, Instrument instrument) {
 		boolean barSizeOK = false;
 		BodyDirection prevBodyDirection = BodyDirection.NONE;
@@ -109,7 +165,16 @@ public class CandleImpulsSetup extends TradeSetup implements ITradeSetup {
 	public void inTradeProcessing(Instrument instrument, Period period, IBar askBar, IBar bidBar, Filter filter,
 			IOrder order, Map<String, FlexTAValue> taValues, List<TAEventDesc> marketEvents) throws JFException {
 		super.inTradeProcessing(instrument, period, askBar, bidBar, filter, order, taValues, marketEvents);
-		//TODO: also reach to the opposite signal ! Close the previous trade !
+		// also check the opposite signal ! Close the trade if profitable, otherwise let SL work !
+		if (((order.isLong() && bidBar.getLow() > order.getOpenPrice())
+			|| (!order.isLong() && askBar.getHigh() < order.getOpenPrice()))
+			&& oppositeSignal(order, marketEvents, taValues)) {
+			lastTradingEvent = "opposite signal !";
+			order.close();
+			order.waitForUpdate(null);
+			return;
+		}
+		
 		RollingAverage average = barRangeAverages.get(instrument);
 		double[][] stochs = taValues.get(FlexTASource.STOCH).getDa2DimValue();
 		double 
@@ -124,10 +189,10 @@ public class CandleImpulsSetup extends TradeSetup implements ITradeSetup {
 			if (bidBar.getClose() < bidBar.getOpen()
 				&&  barRange > average.getAverage()
 				&& Math.abs(bidBar.getOpen() - bidBar.getClose()) / barRange > 0.8
-				&& bidBar.getHigh() > order.getOpenPrice()
-				&& bidBar.getHigh() > order.getStopLossPrice()) {
+				&& bidBar.getLow() > order.getOpenPrice()
+				&& bidBar.getLow() > order.getStopLossPrice()) {
 				lastTradingEvent = "CandleImpuls move SL signal (long)";
-				order.setStopLossPrice(bidBar.getHigh(), OfferSide.BID);
+				order.setStopLossPrice(bidBar.getLow(), OfferSide.BID);
 			}
 		} else {
 			if ((fastStoch <= 20 && slowStoch <= 20)
@@ -138,14 +203,25 @@ public class CandleImpulsSetup extends TradeSetup implements ITradeSetup {
 				if (askBar.getClose() > askBar.getOpen()
 					&&  barRange > average.getAverage()
 					&& Math.abs(askBar.getOpen() - askBar.getClose()) / barRange > 0.8
-					&& askBar.getLow() < order.getOpenPrice()
-					&& askBar.getLow() < order.getStopLossPrice()) {
+					&& askBar.getHigh() < order.getOpenPrice()
+					&& askBar.getHigh() < order.getStopLossPrice()) {
 					lastTradingEvent = "CandleImpuls move SL signal (short)";
-					order.setStopLossPrice(askBar.getLow(), OfferSide.ASK);
+					order.setStopLossPrice(askBar.getHigh(), OfferSide.ASK);
 				}
 			
 		}
 		
+	}
+
+
+	protected boolean oppositeSignal(IOrder order, List<TAEventDesc> marketEvents, Map<String, FlexTAValue> taValues) {
+		for (TAEventDesc event : marketEvents) {
+			if (event.eventType.equals(TAEventType.ENTRY_SIGNAL)
+				&& event.eventName.equals(getName())
+				&& order.isLong() != event.isLong)
+				return true;
+		}
+		return false;
 	}
 
 
