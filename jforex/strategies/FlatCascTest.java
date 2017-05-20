@@ -143,7 +143,7 @@ public class FlatCascTest implements IStrategy {
 			double[] barRanges = new double[bars.size()];
 			int barIndex = 0;
 			for (IBar currBar : bars) {
-				barRanges[barIndex] = currBar.getHigh() - currBar.getLow();
+				barRanges[barIndex++] = currBar.getHigh() - currBar.getLow();
 			}
 			barRangeAverages.put(i, new RollingAverage(barRanges));
 		}

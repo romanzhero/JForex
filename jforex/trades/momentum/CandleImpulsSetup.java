@@ -44,6 +44,24 @@ import jforex.utils.RollingAverage;
  */
 public class CandleImpulsSetup extends TradeSetup implements ITradeSetup {
 	
+	protected class SignalDesc {
+		public SignalDesc(BodyDirection bodyDirection, double[] barSizes, double[] barBodys) {
+			direction = bodyDirection;
+			bar1Size = barSizes[0];
+			bar2Size = barSizes[1];
+			bar3Size = barSizes[2];
+			avgBarSize = (bar1Size + bar2Size + bar3Size) / 3;
+			bar1Body = barBodys[0];
+			bar2Body = barBodys[1];
+			bar3Body = barBodys[2];
+			avgBodySize = (bar1Body + bar2Body + bar3Body) / 3;
+		}
+		double	
+			bar1Size, bar2Size, bar3Size, avgBarSize,
+			bar1Body, bar2Body, bar3Body, avgBodySize;
+		BodyDirection direction;
+	}
+	
 	protected Map<Instrument, RollingAverage> barRangeAverages = null;
 	protected TAEventDesc lastEntryDesc = null;
 	
@@ -106,20 +124,42 @@ public class CandleImpulsSetup extends TradeSetup implements ITradeSetup {
 				(Trend.FLAT_REGIME_CAUSE)taValues.get(FlexTASource.FLAT_REGIME).getValue(), 
 				taValues.get(FlexTASource.MA200_HIGHEST).getBooleanValue(), 
 				taValues.get(FlexTASource.MA200_LOWEST).getBooleanValue());
+		SignalDesc signal = barsSignalGiven(last3BidBars, instrument);
+		if (signal == null)
+			return null;
 		if (!taRegime.equals("Strong uptrend")
-			&& barsSignalGiven(last3BidBars, instrument).equals(BodyDirection.DOWN)
+			&& signal.direction.equals(BodyDirection.DOWN)
 			&& chPos > 45) {
+			updateTradeStats(taValues, signal);
 			lastEntryDesc = new TAEventDesc(TAEventType.ENTRY_SIGNAL, getName(), instrument, false, askBar, bidBar, period);
 			lastEntryDesc.stopLossLevel = last3AskBars.get(0).getHigh();
 			return lastEntryDesc;
 		} else if (!taRegime.equals("Strong downtrend")
-				&& barsSignalGiven(last3AskBars, instrument).equals(BodyDirection.UP)
+				&& signal.direction.equals(BodyDirection.UP)
 				&& chPos < 55) {
+			updateTradeStats(taValues, signal);
 			lastEntryDesc = new TAEventDesc(TAEventType.ENTRY_SIGNAL, getName(), instrument, true, askBar, bidBar, period);
 			lastEntryDesc.stopLossLevel = last3BidBars.get(0).getLow();
 			return lastEntryDesc;
 		}
 		return null;
+	}
+
+
+	protected void updateTradeStats(Map<String, FlexTAValue> taValues, SignalDesc signal) {
+		taValues.put("CandleImpulsSizes", new FlexTAValue("CandleImpulsSizesAvg", new Double(signal.avgBarSize), FXUtils.df1));
+		taValues.put("CandleImpulsBodies", new FlexTAValue("CandleImpulsBodiesAvg", new Double(signal.avgBodySize), FXUtils.df2));
+		taValues.put("CandleImpuls", 
+				new FlexTAValue("CandleImpuls", "bar sizes: (" 
+						+ FXUtils.df1.format(signal.bar1Size) + ", " 
+						+ FXUtils.df1.format(signal.bar2Size) + ", " 
+						+ FXUtils.df1.format(signal.bar3Size) + "), avg: " 
+						+ FXUtils.df1.format(signal.avgBarSize) + ", bar bodies: ("
+						+ FXUtils.df2.format(signal.bar1Body) + ", " 
+						+ FXUtils.df2.format(signal.bar2Body) + ", " 
+						+ FXUtils.df2.format(signal.bar3Body) + "), avg: "
+						+ FXUtils.df2.format(signal.avgBodySize)));
+		
 	}
 	
 	protected boolean strongBearishBreakOut(double chPos, double vola, double bidBarRangeAvg, IBar bidBar) {
@@ -136,7 +176,12 @@ public class CandleImpulsSetup extends TradeSetup implements ITradeSetup {
 				&& (askBar.getClose() - askBar.getOpen()) / (askBar.getHigh() - askBar.getLow()) > 0.65;
 	}
 
-	protected BodyDirection barsSignalGiven(List<IBar> bars, Instrument instrument) {
+	protected SignalDesc barsSignalGiven(List<IBar> bars, Instrument instrument) {
+		double avgBarSize, avgBodySize;
+		double[]	
+			barSizes = new double[3],
+			barBodys = new double[3];
+		int i = 0;
 		boolean barSizeOK = false;
 		BodyDirection prevBodyDirection = BodyDirection.NONE;
 		RollingAverage average = barRangeAverages.get(instrument);
@@ -144,14 +189,20 @@ public class CandleImpulsSetup extends TradeSetup implements ITradeSetup {
 			BodyDirection currBodyDirection = currBar.getClose() > currBar.getOpen() ? BodyDirection.UP : BodyDirection.DOWN;
 			if (!prevBodyDirection.equals(BodyDirection.NONE)) {
 				if (!currBodyDirection.equals(prevBodyDirection))
-					return BodyDirection.NONE;
+					return null;
 			}
+			barSizes[i] = (currBar.getHigh() - currBar.getLow()) / average.getAverage();
+			barBodys[i] = Math.abs(currBar.getClose() - currBar.getOpen()) / (currBar.getHigh() - currBar.getLow());
 			if (!barSizeOK) // one big candle in trade direction enough
 				barSizeOK = (currBar.getHigh() - currBar.getLow()) > average.getAverage() 
-							&& Math.abs(currBar.getClose() - currBar.getOpen()) / (currBar.getHigh() - currBar.getLow()) > 0.6;
+							|| barBodys[i] > 0.6;
 			prevBodyDirection = currBodyDirection;
+			i++;
 		}
-		return barSizeOK ? prevBodyDirection : BodyDirection.NONE;	
+		if (barSizeOK) {
+			return new SignalDesc(prevBodyDirection, barSizes, barBodys);	
+		}
+		return null;
 	}
 
 	/*
