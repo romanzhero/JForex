@@ -171,7 +171,7 @@ public class FlatCascTest implements IStrategy {
 		if (conf.getProperty("TrendIDFollowSetup", "no").equals("yes"))
 			tradeSetups.add(new SmaTradeSetup(indicators, context, history, engine, context.getSubscribedInstruments(), true, false, 30.0, 30.0, false));
 		else if (conf.getProperty("TrendIDFollowSoloSetup", "no").equals("yes"))
-			tradeSetups.add(new SmaSoloTradeSetup(engine, context, context.getSubscribedInstruments(), true, false, 30.0, 30.0, false, true));
+			tradeSetups.add(new SmaSoloTradeSetup(engine, context, context.getSubscribedInstruments(), true, false, 30.0, 30.0, false, false));
 		
 		//taEvents.add(new LongCandlesEvent(indicators, history));
 		//taEvents.add(new ShortCandlesEvent(indicators, history));
