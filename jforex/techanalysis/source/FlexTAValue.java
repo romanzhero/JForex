@@ -58,6 +58,13 @@ public class FlexTAValue extends FlexLogEntry {
 		else
 			return null;
 	}
+	
+	public TechnicalSituation getTehnicalSituationValue() {
+		if (getLabel().equals(FlexTASource.TA_SITUATION))
+			return (TechnicalSituation)value;
+		else
+			return null;
+	}
 
 	@Override
 	public String getFormattedValue() {

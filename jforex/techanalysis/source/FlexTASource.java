@@ -8,6 +8,10 @@ import jforex.techanalysis.Momentum;
 import jforex.techanalysis.TradeTrigger;
 import jforex.techanalysis.Trend;
 import jforex.techanalysis.Volatility;
+import jforex.techanalysis.source.TechnicalSituation.OverallTASituation;
+import jforex.techanalysis.source.TechnicalSituation.TASituationReason;
+import jforex.techanalysis.Trend.FLAT_REGIME_CAUSE;
+import jforex.techanalysis.Trend.TREND_STATE;
 import jforex.utils.FXUtils;
 
 import com.dukascopy.api.Filter;
@@ -41,7 +45,8 @@ public class FlexTASource {
 		ATR = "ATR",
 		ICHI = "Ichi",
 		MA200MA100_TREND_DISTANCE_PERC = "MA200 MA100 Distance percentile",
-		BBANDS = "BBands";
+		BBANDS = "BBands",
+		TA_SITUATION = "TASituationDescription";
 	
 	protected IIndicators indicators = null;
 	protected IHistory history = null;
@@ -73,7 +78,7 @@ public class FlexTASource {
 		result.put(BULLISH_CANDLES, new FlexTAValue(BULLISH_CANDLES, candles.bullishReversalCandlePatternDesc(instrument, period, filter, OfferSide.ASK, askBar.getTime())));
 		result.put(BEARISH_CANDLES, new FlexTAValue(BEARISH_CANDLES, candles.bearishReversalCandlePatternDesc(instrument, period, filter, OfferSide.BID, bidBar.getTime())));
 		
-		addMAs(instrument, period, bidBar, result);
+		//addMAs(instrument, period, bidBar, result);
 		result.put(TREND_ID, new FlexTAValue(TREND_ID, trend.getTrendState(instrument, period, filter, OfferSide.BID, IIndicators.AppliedPrice.CLOSE, bidBar.getTime())));
 		result.put(MA200_HIGHEST, new FlexTAValue(MA200_HIGHEST, new Boolean(trend.isMA200Highest(instrument, period, filter, OfferSide.BID, IIndicators.AppliedPrice.CLOSE, bidBar.getTime()))));
 		result.put(MA200_LOWEST, new FlexTAValue(MA200_LOWEST, new Boolean(trend.isMA200Lowest(instrument, period, filter, OfferSide.BID, IIndicators.AppliedPrice.CLOSE, bidBar.getTime()))));
@@ -91,9 +96,107 @@ public class FlexTASource {
 		result.put(ICHI, new FlexTAValue(ICHI, trend.getIchi(history, instrument, period, OfferSide.BID, filter, bidBar.getTime())));
 		result.put(MA200MA100_TREND_DISTANCE_PERC, new FlexTAValue(MA200MA100_TREND_DISTANCE_PERC, new Double(trend.getMA200MA100TrendDiffPercentile(instrument, period, filter, OfferSide.BID, IIndicators.AppliedPrice.CLOSE, bidBar.getTime(), FXUtils.YEAR_WORTH_OF_4H_BARS)), FXUtils.df1));
 
-		addBBands(instrument, period, bidBar, result);
+		//addBBands(instrument, period, bidBar, result);
+		result.put(TA_SITUATION, new FlexTAValue(TA_SITUATION, assessTASituation(result)));
 		
 		lastResult = result;
+		return result;
+	}
+
+	private TechnicalSituation assessTASituation(Map<String, FlexTAValue> taValues) {
+		TREND_STATE entryTrendID = taValues.get(TREND_ID).getTrendStateValue();
+		double maDistance = taValues.get(MAs_DISTANCE_PERC).getDoubleValue();
+		FLAT_REGIME_CAUSE isFlat = (FLAT_REGIME_CAUSE)taValues.get(FLAT_REGIME).getValue();
+		boolean 
+			ma200Highest = taValues.get(MA200_HIGHEST).getBooleanValue(), 
+			ma200Lowest = taValues.get(MA200_LOWEST).getBooleanValue();
+		
+		// first fill out the description fields before deciding on definitive situation flag
+		TechnicalSituation result = new TechnicalSituation();
+		assessSMIState(taValues.get(SMI).getDa2DimValue(), result);
+		assessStochState(taValues.get(STOCH).getDa2DimValue());
+			
+		// the method to determine the technical situation is to go through most extreme/clear situations
+		// and try to detect them. If none detected situation is rather unclear
+		// Tests should be explicit lists of criteria, even if some lines are repeated.
+		// Code clarity must be above conciseness !!!!
+
+		// za jasan trend moguca i kombinacija i da su MAs vrlo blizu ali u ekstremnom rasporedu
+		// TrendID = UP_STRONG && ma200 lowest / TrendID = DOWN_STRONG && ma200 highest		
+		if (entryTrendID.equals(TREND_STATE.UP_STRONG)
+			&& ma200Lowest 
+			&& maDistance > 25.0) {
+			result.taSituation = OverallTASituation.BULLISH;
+			result.taReason = TASituationReason.TREND;
+			result.txtSummary = "Strong uptrend";
+			return result;
+		}
+		if (entryTrendID.equals(TREND_STATE.UP_STRONG)
+			&& (ma200Lowest || maDistance > 25.0)) {
+			result.taSituation = OverallTASituation.BULLISH;
+			result.taReason = TASituationReason.TREND;
+			result.txtSummary = entryTrendID.toString();
+			return result;
+		}
+		if (entryTrendID.equals(TREND_STATE.UP_MILD)
+			&& ma200Lowest 
+			&& maDistance > 25.0) {
+			result.taSituation = OverallTASituation.BULLISH;
+			result.taReason = TASituationReason.TREND;
+			result.txtSummary = "Up mild, strong";
+			return result;
+		}
+		if (entryTrendID.equals(TREND_STATE.UP_MILD)
+			&& (ma200Lowest || maDistance > 25.0)) {
+			result.taSituation = OverallTASituation.BULLISH;
+			result.taReason = TASituationReason.TREND;
+			result.txtSummary = entryTrendID.toString();
+			return result;
+		}
+		if (entryTrendID.equals(TREND_STATE.DOWN_STRONG)
+			&& ma200Highest
+			&& maDistance > 25.0) {
+			result.taSituation = OverallTASituation.BEARISH;
+			result.taReason = TASituationReason.TREND;
+			result.txtSummary = "Strong downtrend";
+			return result;
+		}
+		if (entryTrendID.equals(TREND_STATE.DOWN_STRONG)
+			&& (ma200Highest || maDistance > 25.0)) {
+			result.taSituation = OverallTASituation.BEARISH;
+			result.taReason = TASituationReason.TREND;
+			result.txtSummary = entryTrendID.toString();
+			return result;
+		}		
+		if (entryTrendID.equals(TREND_STATE.DOWN_MILD)
+			&& ma200Highest
+			&& maDistance > 25.0) {
+			result.taSituation = OverallTASituation.BEARISH;
+			result.taReason = TASituationReason.TREND;
+			result.txtSummary = "Down mild, strong";
+			return result;
+		}
+		if (entryTrendID.equals(TREND_STATE.DOWN_MILD)
+			&& (ma200Highest || maDistance > 25.0)) {
+			result.taSituation = OverallTASituation.BEARISH;
+			result.taReason = TASituationReason.TREND;
+			result.txtSummary = entryTrendID.toString();
+			return result;
+		}		
+		//TODO: before flat test all the clear momentum situations ! 
+		// For long slow SMI not yet overbought and raising below fast SMI (no matter if it falls),
+		// confirmed with Stoch fast raising above Stoch slow or both Stochs OB		
+		// but these should decide on overall situation ONLY if there is not a clear flat - check further
+		if (!isFlat.equals(FLAT_REGIME_CAUSE.NONE)) {
+			result.taSituation = OverallTASituation.NEUTRAL;
+			result.taReason = TASituationReason.FLAT;
+			result.txtSummary = "Flat (" + isFlat.toString() + ")";
+			return result;
+		}
+		
+		result.taSituation = OverallTASituation.NEUTRAL;
+		result.taReason = TASituationReason.NONE;
+		result.txtSummary = "Unclear, (TrendID " + entryTrendID.toString() + ")";
 		return result;
 	}
 
