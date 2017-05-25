@@ -227,10 +227,10 @@ public class CandleImpulsSetup extends TradeSetup implements ITradeSetup {
 				|| taSituation.stochState.equals(Momentum.STOCH_STATE.BULLISH_OVERBOUGHT_BOTH)))
 			return;
 		if (!order.isLong()
-				&& (taSituation.taSituation.equals(TechnicalSituation.OverallTASituation.BEARISH)
-					|| taSituation.smiState.equals(Momentum.SMI_STATE.BEARISH_OVERSOLD_BOTH)
-					|| taSituation.stochState.equals(Momentum.STOCH_STATE.BEARISH_OVERSOLD_BOTH)))
-				return;
+			&& (taSituation.taSituation.equals(TechnicalSituation.OverallTASituation.BEARISH)
+				|| taSituation.smiState.equals(Momentum.SMI_STATE.BEARISH_OVERSOLD_BOTH)
+				|| taSituation.stochState.equals(Momentum.STOCH_STATE.BEARISH_OVERSOLD_BOTH)))
+			return;
 		
 		// also check the opposite signal ! Close the trade if profitable, otherwise let SL work !
 		if (((order.isLong() && bidBar.getLow() > order.getOpenPrice())
@@ -253,9 +253,11 @@ public class CandleImpulsSetup extends TradeSetup implements ITradeSetup {
 				return;
 			
 			double barRange = bidBar.getHigh() - bidBar.getLow();
-			if (bidBar.getClose() < bidBar.getOpen()
+			if (((bidBar.getClose() < bidBar.getOpen()
 				&& barRange > average.getAverage()
-				&& Math.abs(bidBar.getOpen() - bidBar.getClose()) / barRange > 0.8
+				&& Math.abs(bidBar.getOpen() - bidBar.getClose()) / barRange > 0.8)
+				|| (taSituation.taSituation.equals(TechnicalSituation.OverallTASituation.BEARISH)
+					&& taSituation.taReason.equals(TechnicalSituation.TASituationReason.MOMENTUM))) 
 				&& bidBar.getLow() > order.getOpenPrice()
 				&& bidBar.getLow() > order.getStopLossPrice()) {
 				lastTradingEvent = "CandleImpuls move SL signal (long)";
@@ -267,9 +269,11 @@ public class CandleImpulsSetup extends TradeSetup implements ITradeSetup {
 					return;
 			
 				double barRange = askBar.getHigh() - askBar.getLow();
-				if (askBar.getClose() > askBar.getOpen()
+				if (((askBar.getClose() > askBar.getOpen()
 					&&  barRange > average.getAverage()
-					&& Math.abs(askBar.getOpen() - askBar.getClose()) / barRange > 0.8
+					&& Math.abs(askBar.getOpen() - askBar.getClose()) / barRange > 0.8)
+					|| (taSituation.taSituation.equals(TechnicalSituation.OverallTASituation.BEARISH)
+						&& taSituation.taReason.equals(TechnicalSituation.TASituationReason.MOMENTUM))) 
 					&& askBar.getHigh() < order.getOpenPrice()
 					&& askBar.getHigh() < order.getStopLossPrice()) {
 					lastTradingEvent = "CandleImpuls move SL signal (short)";

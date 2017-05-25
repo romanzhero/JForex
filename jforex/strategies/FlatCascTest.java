@@ -10,8 +10,6 @@ import com.dukascopy.api.*;
 import com.dukascopy.api.IIndicators.MaType;
 import com.dukascopy.api.drawings.IHorizontalLineChartObject;
 import com.dukascopy.api.drawings.ITextChartObject;
-import com.dukascopy.api.feed.IFeedDescriptor;
-import com.dukascopy.api.feed.util.TimePeriodAggregationFeedDescriptor;
 import com.dukascopy.api.indicators.IIndicator;
 import com.dukascopy.api.indicators.IndicatorInfo;
 import com.dukascopy.api.indicators.OutputParameterInfo;
@@ -95,7 +93,7 @@ public class FlatCascTest implements IStrategy {
 	private IContext context;
 
 	private String lastTradingEvent = new String();
-	private int commentCnt = 1;
+	private int commentCnt = 0;
 //	private SortedSet<Double> commentLevels = new TreeSet<Double>();
 //	private class CommentLevelBarsCount {
 //		public double commentLevel;
@@ -171,7 +169,7 @@ public class FlatCascTest implements IStrategy {
 		if (conf.getProperty("TrendIDFollowSetup", "no").equals("yes"))
 			tradeSetups.add(new SmaTradeSetup(indicators, context, history, engine, context.getSubscribedInstruments(), true, false, 30.0, 30.0, false));
 		else if (conf.getProperty("TrendIDFollowSoloSetup", "no").equals("yes"))
-			tradeSetups.add(new SmaSoloTradeSetup(engine, context, context.getSubscribedInstruments(), true, false, 30.0, 30.0, false, false));
+			tradeSetups.add(new SmaSoloTradeSetup(engine, context, context.getSubscribedInstruments(), true, false, 30.0, 30.0, false, true));
 		
 		//taEvents.add(new LongCandlesEvent(indicators, history));
 		//taEvents.add(new ShortCandlesEvent(indicators, history));

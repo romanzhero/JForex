@@ -33,6 +33,7 @@ public class FlexTASource {
 		TREND_ID = "TrendID",
 		MA200_HIGHEST = "MA200Highest",
 		MA200_LOWEST = "MA200Lowest",
+		MA200_IN_CHANNEL = "MA200InChannel",
 		SMI = "SMI",
 		STOCH = "Stoch",
 		RSI3 = "RSI3",
@@ -74,16 +75,18 @@ public class FlexTASource {
 	
 	public Map<String, FlexTAValue> calcTAValues(Instrument instrument, Period period, IBar askBar, IBar bidBar) throws JFException {
 		Map<String, FlexTAValue> result = new HashMap<String, FlexTAValue>();
+		addMAs(instrument, period, bidBar, result);
+		addBBands(instrument, period, bidBar, result);
+		addSMI(instrument, period, bidBar, result);
 		
 		result.put(BULLISH_CANDLES, new FlexTAValue(BULLISH_CANDLES, candles.bullishReversalCandlePatternDesc(instrument, period, filter, OfferSide.ASK, askBar.getTime())));
 		result.put(BEARISH_CANDLES, new FlexTAValue(BEARISH_CANDLES, candles.bearishReversalCandlePatternDesc(instrument, period, filter, OfferSide.BID, bidBar.getTime())));
 		
-		//addMAs(instrument, period, bidBar, result);
 		result.put(TREND_ID, new FlexTAValue(TREND_ID, trend.getTrendState(instrument, period, filter, OfferSide.BID, IIndicators.AppliedPrice.CLOSE, bidBar.getTime())));
 		result.put(MA200_HIGHEST, new FlexTAValue(MA200_HIGHEST, new Boolean(trend.isMA200Highest(instrument, period, filter, OfferSide.BID, IIndicators.AppliedPrice.CLOSE, bidBar.getTime()))));
 		result.put(MA200_LOWEST, new FlexTAValue(MA200_LOWEST, new Boolean(trend.isMA200Lowest(instrument, period, filter, OfferSide.BID, IIndicators.AppliedPrice.CLOSE, bidBar.getTime()))));
+		result.put(MA200_IN_CHANNEL, new FlexTAValue(MA200_IN_CHANNEL, new Boolean(isMA200InChannel(result))));
 
-		addSMI(instrument, period, bidBar, result);
 		result.put(STOCH, new FlexTAValue(STOCH, momentum.getStochs(instrument, period, filter, OfferSide.BID, bidBar.getTime(), 2), FXUtils.df1));
 		result.put(RSI3, new FlexTAValue(RSI3, new Double(indicators.rsi(instrument, period, OfferSide.BID, IIndicators.AppliedPrice.CLOSE, 3, filter, 1, bidBar.getTime(), 0)[0]), FXUtils.df1));
 		result.put(CHANNEL_POS, new FlexTAValue(CHANNEL_POS, new Double(channel.priceChannelPos(instrument, period, filter, OfferSide.BID, bidBar.getTime(), bidBar.getClose())), FXUtils.df1));
@@ -96,11 +99,19 @@ public class FlexTASource {
 		result.put(ICHI, new FlexTAValue(ICHI, trend.getIchi(history, instrument, period, OfferSide.BID, filter, bidBar.getTime())));
 		result.put(MA200MA100_TREND_DISTANCE_PERC, new FlexTAValue(MA200MA100_TREND_DISTANCE_PERC, new Double(trend.getMA200MA100TrendDiffPercentile(instrument, period, filter, OfferSide.BID, IIndicators.AppliedPrice.CLOSE, bidBar.getTime(), FXUtils.YEAR_WORTH_OF_4H_BARS)), FXUtils.df1));
 
-		//addBBands(instrument, period, bidBar, result);
 		result.put(TA_SITUATION, new FlexTAValue(TA_SITUATION, assessTASituation(result)));
 		
 		lastResult = result;
 		return result;
+	}
+
+	private boolean isMA200InChannel(Map<String, FlexTAValue> taValues) {
+		double[][] bBands = taValues.get(FlexTASource.BBANDS).getDa2DimValue();
+		double 
+			ma200 = taValues.get(FlexTASource.MAs).getDa2DimValue()[1][3],
+			bBandsBottom = bBands[Channel.BOTTOM][0],
+			bBandsTop = bBands[Channel.TOP][0];
+		return ma200 <= bBandsTop && ma200 >= bBandsBottom;
 	}
 
 	private TechnicalSituation assessTASituation(Map<String, FlexTAValue> taValues) {
@@ -109,7 +120,8 @@ public class FlexTASource {
 		FLAT_REGIME_CAUSE isFlat = (FLAT_REGIME_CAUSE)taValues.get(FLAT_REGIME).getValue();
 		boolean 
 			ma200Highest = taValues.get(MA200_HIGHEST).getBooleanValue(), 
-			ma200Lowest = taValues.get(MA200_LOWEST).getBooleanValue();
+			ma200Lowest = taValues.get(MA200_LOWEST).getBooleanValue(),
+			ma200InChannel = taValues.get(MA200_IN_CHANNEL).getBooleanValue();
 		
 		// first fill out the description fields before deciding on definitive situation flag
 		TechnicalSituation result = new TechnicalSituation();
@@ -124,63 +136,75 @@ public class FlexTASource {
 		// za jasan trend moguca i kombinacija i da su MAs vrlo blizu ali u ekstremnom rasporedu
 		// TrendID = UP_STRONG && ma200 lowest / TrendID = DOWN_STRONG && ma200 highest		
 		if (entryTrendID.equals(TREND_STATE.UP_STRONG)
+			&& !ma200InChannel
 			&& ma200Lowest 
 			&& maDistance > 25.0) {
 			result.taSituation = OverallTASituation.BULLISH;
 			result.taReason = TASituationReason.TREND;
-			result.txtSummary = "Strong uptrend";
+			result.txtSummary = "Strong uptrend (" + FXUtils.df1.format(maDistance) + ")";
 			return result;
 		}
 		if (entryTrendID.equals(TREND_STATE.UP_STRONG)
+			&& !ma200InChannel
+			&& !ma200Highest
 			&& (ma200Lowest || maDistance > 25.0)) {
 			result.taSituation = OverallTASituation.BULLISH;
 			result.taReason = TASituationReason.TREND;
-			result.txtSummary = entryTrendID.toString();
+			result.txtSummary = entryTrendID.toString() + " (" + FXUtils.df1.format(maDistance) + ")";
 			return result;
 		}
 		if (entryTrendID.equals(TREND_STATE.UP_MILD)
+			&& !ma200InChannel
 			&& ma200Lowest 
 			&& maDistance > 25.0) {
 			result.taSituation = OverallTASituation.BULLISH;
 			result.taReason = TASituationReason.TREND;
-			result.txtSummary = "Up mild, strong";
+			result.txtSummary = "Up mild, strong (" + FXUtils.df1.format(maDistance) + ")";
 			return result;
 		}
 		if (entryTrendID.equals(TREND_STATE.UP_MILD)
+			&& !ma200InChannel
+			&& !ma200Highest
 			&& (ma200Lowest || maDistance > 25.0)) {
 			result.taSituation = OverallTASituation.BULLISH;
 			result.taReason = TASituationReason.TREND;
-			result.txtSummary = entryTrendID.toString();
+			result.txtSummary = entryTrendID.toString() + " (" + FXUtils.df1.format(maDistance) + ")";
 			return result;
 		}
 		if (entryTrendID.equals(TREND_STATE.DOWN_STRONG)
+			&& !ma200InChannel
 			&& ma200Highest
 			&& maDistance > 25.0) {
 			result.taSituation = OverallTASituation.BEARISH;
 			result.taReason = TASituationReason.TREND;
-			result.txtSummary = "Strong downtrend";
+			result.txtSummary = "Strong downtrend (" + FXUtils.df1.format(maDistance) + ")";
 			return result;
 		}
 		if (entryTrendID.equals(TREND_STATE.DOWN_STRONG)
+			&& !ma200InChannel
+			&& !ma200Lowest
 			&& (ma200Highest || maDistance > 25.0)) {
 			result.taSituation = OverallTASituation.BEARISH;
 			result.taReason = TASituationReason.TREND;
-			result.txtSummary = entryTrendID.toString();
+			result.txtSummary = entryTrendID.toString() + " (" + FXUtils.df1.format(maDistance) + ")";
 			return result;
 		}		
 		if (entryTrendID.equals(TREND_STATE.DOWN_MILD)
+			&& !ma200InChannel
 			&& ma200Highest
 			&& maDistance > 25.0) {
 			result.taSituation = OverallTASituation.BEARISH;
 			result.taReason = TASituationReason.TREND;
-			result.txtSummary = "Down mild, strong";
+			result.txtSummary = "Down mild, strong (" + FXUtils.df1.format(maDistance) + ")";
 			return result;
 		}
 		if (entryTrendID.equals(TREND_STATE.DOWN_MILD)
+			&& !ma200InChannel
+			&& !ma200Lowest
 			&& (ma200Highest || maDistance > 25.0)) {
 			result.taSituation = OverallTASituation.BEARISH;
 			result.taReason = TASituationReason.TREND;
-			result.txtSummary = entryTrendID.toString();
+			result.txtSummary = entryTrendID.toString() + " (" + FXUtils.df1.format(maDistance) + ")";
 			return result;
 		}		
 		//TODO: before flat test all the clear momentum situations ! 
@@ -285,44 +309,44 @@ public class FlexTASource {
 		else if (fastSMILast >= 60.0 && slowSMILast >= 60.0)
 			taSituation.smiState = Momentum.SMI_STATE.BULLISH_OVERBOUGHT_BOTH;
 		else if (fastSMILast >= 60.0 && slowSMILast > slowSMIPrev && slowSMIPrev > slowSMIFirst)
-			taSituation.smiState = Momentum.SMI_STATE.BULLISH_WEAK_OVERSOLD_SLOW_BELOW_RAISING_FAST;
+			taSituation.smiState = Momentum.SMI_STATE.BULLISH_OVERBOUGHT_FAST_ABOVE_RAISING_SLOW;
 		else if (slowSMILast >= 60.0 && fastSMILast < fastSMIPrev && fastSMIPrev < fastSMIFirst)
 			taSituation.smiState = Momentum.SMI_STATE.BEARISH_WEAK_OVERBOUGHT_SLOW_ABOVE_FALLING_FAST;
-		else if (slowSMIFirst > slowSMIPrev && slowSMIPrev > slowSMIFirst
+		else if (slowSMILast> slowSMIPrev && slowSMIPrev > slowSMIFirst
 				&& fastSMILast > fastSMIPrev && fastSMIPrev > fastSMIFirst)
 			taSituation.smiState = Momentum.SMI_STATE.BULLISH_BOTH_RAISING_IN_MIDDLE;
-		else if (slowSMIFirst < slowSMIPrev && slowSMIPrev < slowSMIFirst
+		else if (slowSMILast < slowSMIPrev && slowSMIPrev < slowSMIFirst
 				&& fastSMILast < fastSMIPrev && fastSMIPrev < fastSMIFirst)
 			taSituation.smiState = Momentum.SMI_STATE.BEARISH_BOTH_FALLING_IN_MIDDLE;
 		else
 			taSituation.smiState = Momentum.SMI_STATE.OTHER;
 		
-		if (slowSMIFirst <= -60 && slowSMIFirst < slowSMIPrev && slowSMIPrev < slowSMIFirst)
+		if (slowSMILast <= -60 && slowSMILast < slowSMIPrev && slowSMIPrev < slowSMIFirst)
 			taSituation.slowSMIState = Momentum.SINGLE_LINE_STATE.FALLING_OVERSOLD;
-		else if (slowSMIFirst <= -60 && slowSMIFirst > slowSMIPrev && slowSMIPrev > slowSMIFirst)
+		else if (slowSMILast <= -60 && slowSMILast > slowSMIPrev && slowSMIPrev > slowSMIFirst)
 			taSituation.slowSMIState = Momentum.SINGLE_LINE_STATE.RAISING_OVERSOLD;
-		else if (slowSMIFirst >= 60 && slowSMIFirst < slowSMIPrev && slowSMIPrev < slowSMIFirst)
+		else if (slowSMILast >= 60 && slowSMILast < slowSMIPrev && slowSMIPrev < slowSMIFirst)
 			taSituation.slowSMIState = Momentum.SINGLE_LINE_STATE.FALLING_OVERBOUGHT;
-		else if (slowSMIFirst >= 60 && slowSMIFirst > slowSMIPrev && slowSMIPrev > slowSMIFirst)
+		else if (slowSMILast >= 60 && slowSMILast > slowSMIPrev && slowSMIPrev > slowSMIFirst)
 			taSituation.slowSMIState = Momentum.SINGLE_LINE_STATE.RAISING_OVERBOUGHT;
-		else if (slowSMIFirst > slowSMIPrev && slowSMIPrev > slowSMIFirst)
+		else if (slowSMILast > slowSMIPrev && slowSMIPrev > slowSMIFirst)
 			taSituation.slowSMIState = Momentum.SINGLE_LINE_STATE.RAISING_IN_MIDDLE;
-		else if (slowSMIFirst < slowSMIPrev && slowSMIPrev < slowSMIFirst)
+		else if (slowSMILast < slowSMIPrev && slowSMIPrev < slowSMIFirst)
 			taSituation.slowSMIState = Momentum.SINGLE_LINE_STATE.FALLING_IN_MIDDLE;
 		else
 			taSituation.slowSMIState = Momentum.SINGLE_LINE_STATE.OTHER;
 		
-		if (fastSMIFirst <= -60 && fastSMIFirst < fastSMIPrev && fastSMIPrev < fastSMIFirst)
+		if (fastSMILast <= -60 && fastSMILast < fastSMIPrev && fastSMIPrev < fastSMIFirst)
 			taSituation.fastSMIState = Momentum.SINGLE_LINE_STATE.FALLING_OVERSOLD;
-		else if (fastSMIFirst <= -60 && fastSMIFirst > fastSMIPrev && fastSMIPrev > fastSMIFirst)
+		else if (fastSMILast <= -60 && fastSMILast > fastSMIPrev && fastSMIPrev > fastSMIFirst)
 			taSituation.fastSMIState = Momentum.SINGLE_LINE_STATE.RAISING_OVERSOLD;
-		else if (fastSMIFirst >= 60 && fastSMIFirst < fastSMIPrev && fastSMIPrev < fastSMIFirst)
+		else if (fastSMILast >= 60 && fastSMILast < fastSMIPrev && fastSMIPrev < fastSMIFirst)
 			taSituation.fastSMIState = Momentum.SINGLE_LINE_STATE.FALLING_OVERBOUGHT;
-		else if (fastSMIFirst >= 60 && fastSMIFirst > fastSMIPrev && fastSMIPrev > fastSMIFirst)
+		else if (fastSMILast >= 60 && fastSMILast > fastSMIPrev && fastSMIPrev > fastSMIFirst)
 			taSituation.fastSMIState = Momentum.SINGLE_LINE_STATE.RAISING_OVERBOUGHT;
-		else if (fastSMIFirst > fastSMIPrev && fastSMIPrev > fastSMIFirst)
+		else if (fastSMILast > fastSMIPrev && fastSMIPrev > fastSMIFirst)
 			taSituation.fastSMIState = Momentum.SINGLE_LINE_STATE.RAISING_IN_MIDDLE;
-		else if (fastSMIFirst < fastSMIPrev && fastSMIPrev < fastSMIFirst)
+		else if (fastSMILast < fastSMIPrev && fastSMIPrev < fastSMIFirst)
 			taSituation.fastSMIState = Momentum.SINGLE_LINE_STATE.FALLING_IN_MIDDLE;
 		else
 			taSituation.fastSMIState = Momentum.SINGLE_LINE_STATE.OTHER;
