@@ -15,19 +15,14 @@ import com.dukascopy.api.IContext;
 import com.dukascopy.api.IEngine;
 import com.dukascopy.api.IIndicators.AppliedPrice;
 import com.dukascopy.api.IIndicators.MaType;
-import com.dukascopy.api.impl.Indicators;
 import com.dukascopy.api.IOrder;
 import com.dukascopy.api.Instrument;
 import com.dukascopy.api.JFException;
 import com.dukascopy.api.OfferSide;
 import com.dukascopy.api.Period;
-import com.tictactec.ta.lib.MAType;
-
 import jforex.events.TAEventDesc;
 import jforex.events.TAEventDesc.TAEventType;
-import jforex.techanalysis.Channel;
 import jforex.techanalysis.Momentum;
-import jforex.techanalysis.Trend;
 import jforex.techanalysis.source.FlexTASource;
 import jforex.techanalysis.source.FlexTAValue;
 import jforex.techanalysis.source.TechnicalSituation;
@@ -131,6 +126,7 @@ public class CandleImpulsSetup extends TradeSetup implements ITradeSetup {
 		if (signal == null)
 			return null;
 		if (!taSituation.taSituation.equals(TechnicalSituation.OverallTASituation.BULLISH)
+			&& !taSituation.smiState.equals(Momentum.SMI_STATE.BULLISH_OVERBOUGHT_BOTH)
 			&& signal.direction.equals(BodyDirection.DOWN)
 			&& chPos > 45) {
 			updateTradeStats(taValues, signal);
@@ -138,6 +134,7 @@ public class CandleImpulsSetup extends TradeSetup implements ITradeSetup {
 			lastEntryDesc.stopLossLevel = last3AskBars.get(0).getHigh();
 			return lastEntryDesc;
 		} else if (!taSituation.taSituation.equals(TechnicalSituation.OverallTASituation.BEARISH)
+				&& !taSituation.smiState.equals(Momentum.SMI_STATE.BEARISH_OVERSOLD_BOTH)
 				&& signal.direction.equals(BodyDirection.UP)
 				&& chPos < 55) {
 			updateTradeStats(taValues, signal);
