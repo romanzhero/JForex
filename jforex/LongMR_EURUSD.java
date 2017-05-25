@@ -402,8 +402,8 @@ public class LongMR_EURUSD extends AbstractSinglePairSingleStrategy implements
 				higherTimeFrame, OfferSide.BID, bidBar.getTime());
 		double[] stochValues4h = momentum.getStochs(instrument,
 				higherTimeFrame, OfferSide.BID, bidBar.getTime());
-		if (stoch4h.equals(Momentum.STOCH_STATE.FALLING_IN_MIDDLE)
-				|| (stoch4h.equals(Momentum.STOCH_STATE.OVERSOLD_BOTH) && stochValues4h[0] < stochValues4h[1]))
+		if (stoch4h.equals(Momentum.STOCH_STATE.BEARISH_FALLING_IN_MIDDLE)
+				|| (stoch4h.equals(Momentum.STOCH_STATE.BEARISH_OVERSOLD_BOTH) && stochValues4h[0] < stochValues4h[1]))
 			return false;
 
 		return true;

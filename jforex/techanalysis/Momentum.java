@@ -44,28 +44,31 @@ public class Momentum {
 	}
 
 	public enum STOCH_STATE {
-		OVERSOLD_BOTH, // Fast and Slow both below 20
-		OVERSOLD_FAST, // Fast below 20
-		OVERSOLD_SLOW, // Slow below 20 but Fast not, rather bullish (raising from OS)
-		OVERBOUGHT_BOTH, // Fast and Slow both above 80
-		OVERBOUGHT_FAST, // Fast above 80
-		OVERBOUGHT_SLOW, // Slow above 80 but Fast not, rather bearish (falling from OB)
-		RAISING_IN_MIDDLE, // Fast above slow and none OS nor OB
-		FALLING_IN_MIDDLE, // Fast below slow and none OS nor OB
+		BEARISH_OVERSOLD_BOTH, // Fast and Slow both below 20
+		BEARISH_OVERSOLD_FAST, // Fast below 20
+		BULLISH_WEAK_OVERSOLD_SLOW, // Slow below 20 but Fast not, rather bullish (raising from OS)
+		BULLISH_OVERBOUGHT_BOTH, // Fast and Slow both above 80
+		BULLISH_OVERBOUGHT_FAST, // Fast above 80
+		BEARISH_WEAK_OVERBOUGHT_SLOW, // Slow above 80 but Fast not, rather bearish (falling from OB)
+		BULLISH_RAISING_IN_MIDDLE, // Fast above slow and none OS nor OB
+		BEARISH_FALLING_IN_MIDDLE, // Fast below slow and none OS nor OB
 		BULLISH_CROSS_FROM_OVERSOLD, // at least one line below 20
-		BULLISH_CROSS, BEARISH_CROSS_FROM_OVERBOUGTH, // at least one line above 80
-		BEARISH_CROSS, NONE
+		BULLISH_CROSS, 
+		BEARISH_CROSS_FROM_OVERBOUGTH, // at least one line above 80
+		BEARISH_CROSS, 
+		NONE, OTHER
 	}
 	
 	public enum SMI_STATE {
-		OVERSOLD_BOTH, // Fast and Slow both below -60
-		OVERSOLD_FAST_BELOW_SLOW, // Fast below -60
-		OVERSOLD_SLOW_BELOW_FAST, // Slow below -60 but Fast not, rather bullish (raising from OS)
-		OVERBOUGHT_BOTH, // Fast and Slow both above +60
-		OVERBOUGHT_FAST_ABOVE_SLOW, // Fast above +60
-		OVERBOUGHT_SLOW_ABOVE_FAST, // Slow above 80 but Fast not, rather bearish (falling OB)
-		RAISING_IN_MIDDLE, // Fast above slow and none OS nor OB
-		FALLING_IN_MIDDLE // Fast below slow and none OS nor OB
+		BEARISH_OVERSOLD_BOTH, // Fast and Slow both below -60
+		BEARISH_OVERSOLD_FAST_BELOW_FALLING_SLOW, // Fast below -60
+		BULLISH_WEAK_OVERSOLD_SLOW_BELOW_RAISING_FAST, // Slow below -60 but Fast not, rather bullish (raising from OS)
+		BULLISH_OVERBOUGHT_BOTH, // Fast and Slow both above +60
+		BULLISH_OVERBOUGHT_FAST_ABOVE_RAISING_SLOW, // Fast above +60
+		BEARISH_WEAK_OVERBOUGHT_SLOW_ABOVE_FALLING_FAST, // Slow above 80 but Fast not, rather bearish (falling OB)
+		BULLISH_BOTH_RAISING_IN_MIDDLE, // Fast above slow and none OS nor OB
+		BEARISH_BOTH_FALLING_IN_MIDDLE, // Fast below slow and none OS nor OB
+		OTHER // neither of these clear cases, when lines ticked up/down etc
 	}
 
 	// for RSI and CCI states
@@ -73,7 +76,7 @@ public class Momentum {
 		RAISING_IN_MIDDLE, FALLING_IN_MIDDLE, TICKED_DOWN_IN_MIDDLE, TICKED_UP_IN_MIDDLE, 
 		FALLING_OVERSOLD, RAISING_OVERSOLD, TICKED_DOWN_OVERSOLD, TICKED_UP_FROM_OVERSOLD, // the most interesting
 		FALLING_OVERBOUGHT, RAISING_OVERBOUGHT, TICKED_DOWN_FROM_OVERBOUGHT, // the most interesting
-		TICKED_UP_OVERBOUGHT, NONE
+		TICKED_UP_OVERBOUGHT, NONE, OTHER
 	}
 
 	private IHistory history;
@@ -456,28 +459,27 @@ public class Momentum {
 		return getStochs(instrument, pPeriod, Filter.WEEKENDS, side, time, lookBack);
 	}
 
-	public STOCH_STATE getStochState(Instrument instrument, Period pPeriod,
-			OfferSide side, long time) throws JFException {
+	public STOCH_STATE getStochState(Instrument instrument, Period pPeriod,	OfferSide side, long time) throws JFException {
 		getStochs(instrument, pPeriod, side, time);
 		double fastStoch = stochs[0];
 		double slowStoch = stochs[1];
 
 		if (fastStoch >= 80 && slowStoch >= 80)
-			return STOCH_STATE.OVERBOUGHT_BOTH;
+			return STOCH_STATE.BULLISH_OVERBOUGHT_BOTH;
 		else if (fastStoch >= 80)
-			return STOCH_STATE.OVERBOUGHT_FAST;
+			return STOCH_STATE.BULLISH_OVERBOUGHT_FAST;
 		else if (slowStoch >= 80)
-			return STOCH_STATE.OVERBOUGHT_SLOW;
+			return STOCH_STATE.BEARISH_WEAK_OVERBOUGHT_SLOW;
 		else if (fastStoch <= 20 && slowStoch <= 20)
-			return STOCH_STATE.OVERSOLD_BOTH;
+			return STOCH_STATE.BEARISH_OVERSOLD_BOTH;
 		else if (fastStoch <= 20)
-			return STOCH_STATE.OVERSOLD_FAST;
+			return STOCH_STATE.BEARISH_OVERSOLD_FAST;
 		else if (slowStoch <= 20)
-			return STOCH_STATE.OVERSOLD_SLOW;
+			return STOCH_STATE.BULLISH_WEAK_OVERSOLD_SLOW;
 		else if (fastStoch > slowStoch)
-			return STOCH_STATE.RAISING_IN_MIDDLE;
+			return STOCH_STATE.BULLISH_RAISING_IN_MIDDLE;
 		else
-			return STOCH_STATE.FALLING_IN_MIDDLE;
+			return STOCH_STATE.BEARISH_FALLING_IN_MIDDLE;
 	}
 
 	public STOCH_STATE getStochCross(Instrument instrument, Period pPeriod,	OfferSide side, long time) throws JFException {

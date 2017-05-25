@@ -81,9 +81,9 @@ public class TASignals {
 				&& trend1d.equals(Trend.TREND_STATE.UP_STRONG)
 				&& macd1d.equals(Momentum.MACD_STATE.FALLING_BOTH_ABOVE_0)
 				&& macdH1d.equals(Momentum.MACD_H_STATE.FALLING_BELOW_0)
-				&& (stoch1d.equals(Momentum.STOCH_STATE.FALLING_IN_MIDDLE)
-						|| stoch1d.equals(Momentum.STOCH_STATE.OVERSOLD_FAST) || (stoch1d
-						.equals(Momentum.STOCH_STATE.OVERSOLD_BOTH) && stochValues1d[0] < stochValues1d[1])))
+				&& (stoch1d.equals(Momentum.STOCH_STATE.BEARISH_FALLING_IN_MIDDLE)
+						|| stoch1d.equals(Momentum.STOCH_STATE.BEARISH_OVERSOLD_FAST) || (stoch1d
+						.equals(Momentum.STOCH_STATE.BEARISH_OVERSOLD_BOTH) && stochValues1d[0] < stochValues1d[1])))
 			return false;
 
 		return true;
@@ -135,8 +135,8 @@ public class TASignals {
 					Period.FOUR_HOURS, OfferSide.BID, bidBar.getTime());
 			double[] stochValues4h = momentum.getStochs(instrument,
 					Period.FOUR_HOURS, OfferSide.BID, bidBar.getTime());
-			if (stoch4h.equals(Momentum.STOCH_STATE.FALLING_IN_MIDDLE)
-					|| (stoch4h.equals(Momentum.STOCH_STATE.OVERSOLD_BOTH) && stochValues4h[0] < stochValues4h[1]))
+			if (stoch4h.equals(Momentum.STOCH_STATE.BEARISH_FALLING_IN_MIDDLE)
+					|| (stoch4h.equals(Momentum.STOCH_STATE.BEARISH_OVERSOLD_BOTH) && stochValues4h[0] < stochValues4h[1]))
 				return false;
 
 			return true;

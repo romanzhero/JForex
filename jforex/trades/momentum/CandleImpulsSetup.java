@@ -26,9 +26,11 @@ import com.tictactec.ta.lib.MAType;
 import jforex.events.TAEventDesc;
 import jforex.events.TAEventDesc.TAEventType;
 import jforex.techanalysis.Channel;
+import jforex.techanalysis.Momentum;
 import jforex.techanalysis.Trend;
 import jforex.techanalysis.source.FlexTASource;
 import jforex.techanalysis.source.FlexTAValue;
+import jforex.techanalysis.source.TechnicalSituation;
 import jforex.trades.ITradeSetup;
 import jforex.trades.TradeSetup;
 import jforex.utils.FXUtils;
@@ -119,22 +121,23 @@ public class CandleImpulsSetup extends TradeSetup implements ITradeSetup {
 			vola = taValues.get(FlexTASource.BBANDS_SQUEEZE_PERC).getDoubleValue(),
 			bidBarRangeAvg = (bidBar.getHigh() - bidBar.getLow()) / barRangeAverages.get(instrument).getAverage(),
 			askBarRangeAvg = (askBar.getHigh() - askBar.getLow()) / barRangeAverages.get(instrument).getAverage();
-		String taRegime = FXUtils.getRegimeString(taValues.get(FlexTASource.TREND_ID).getTrendStateValue(), 
+/*		String taRegime = FXUtils.getRegimeString(taValues.get(FlexTASource.TREND_ID).getTrendStateValue(), 
 				taValues.get(FlexTASource.MAs_DISTANCE_PERC).getDoubleValue(),
 				(Trend.FLAT_REGIME_CAUSE)taValues.get(FlexTASource.FLAT_REGIME).getValue(), 
 				taValues.get(FlexTASource.MA200_HIGHEST).getBooleanValue(), 
-				taValues.get(FlexTASource.MA200_LOWEST).getBooleanValue());
+				taValues.get(FlexTASource.MA200_LOWEST).getBooleanValue());*/
+		TechnicalSituation taSituation = taValues.get(FlexTASource.TA_SITUATION).getTehnicalSituationValue();
 		SignalDesc signal = barsSignalGiven(last3BidBars, instrument);
 		if (signal == null)
 			return null;
-		if (!taRegime.equals("Strong uptrend")
+		if (!taSituation.taSituation.equals(TechnicalSituation.OverallTASituation.BULLISH)
 			&& signal.direction.equals(BodyDirection.DOWN)
 			&& chPos > 45) {
 			updateTradeStats(taValues, signal);
 			lastEntryDesc = new TAEventDesc(TAEventType.ENTRY_SIGNAL, getName(), instrument, false, askBar, bidBar, period);
 			lastEntryDesc.stopLossLevel = last3AskBars.get(0).getHigh();
 			return lastEntryDesc;
-		} else if (!taRegime.equals("Strong downtrend")
+		} else if (!taSituation.taSituation.equals(TechnicalSituation.OverallTASituation.BEARISH)
 				&& signal.direction.equals(BodyDirection.UP)
 				&& chPos < 55) {
 			updateTradeStats(taValues, signal);
@@ -216,6 +219,19 @@ public class CandleImpulsSetup extends TradeSetup implements ITradeSetup {
 	public void inTradeProcessing(Instrument instrument, Period period, IBar askBar, IBar bidBar, Filter filter,
 			IOrder order, Map<String, FlexTAValue> taValues, List<TAEventDesc> marketEvents) throws JFException {
 		super.inTradeProcessing(instrument, period, askBar, bidBar, filter, order, taValues, marketEvents);
+		// analyze the overall situation. If favourable don't do anything !
+		TechnicalSituation taSituation = taValues.get(FlexTASource.TA_SITUATION).getTehnicalSituationValue();
+		if (order.isLong()
+			&& (taSituation.taSituation.equals(TechnicalSituation.OverallTASituation.BULLISH)
+				|| taSituation.smiState.equals(Momentum.SMI_STATE.BULLISH_OVERBOUGHT_BOTH)
+				|| taSituation.stochState.equals(Momentum.STOCH_STATE.BULLISH_OVERBOUGHT_BOTH)))
+			return;
+		if (!order.isLong()
+				&& (taSituation.taSituation.equals(TechnicalSituation.OverallTASituation.BEARISH)
+					|| taSituation.smiState.equals(Momentum.SMI_STATE.BEARISH_OVERSOLD_BOTH)
+					|| taSituation.stochState.equals(Momentum.STOCH_STATE.BEARISH_OVERSOLD_BOTH)))
+				return;
+		
 		// also check the opposite signal ! Close the trade if profitable, otherwise let SL work !
 		if (((order.isLong() && bidBar.getLow() > order.getOpenPrice())
 			|| (!order.isLong() && askBar.getHigh() < order.getOpenPrice()))
@@ -238,7 +254,7 @@ public class CandleImpulsSetup extends TradeSetup implements ITradeSetup {
 			
 			double barRange = bidBar.getHigh() - bidBar.getLow();
 			if (bidBar.getClose() < bidBar.getOpen()
-				&&  barRange > average.getAverage()
+				&& barRange > average.getAverage()
 				&& Math.abs(bidBar.getOpen() - bidBar.getClose()) / barRange > 0.8
 				&& bidBar.getLow() > order.getOpenPrice()
 				&& bidBar.getLow() > order.getStopLossPrice()) {
@@ -259,7 +275,6 @@ public class CandleImpulsSetup extends TradeSetup implements ITradeSetup {
 					lastTradingEvent = "CandleImpuls move SL signal (short)";
 					order.setStopLossPrice(askBar.getHigh(), OfferSide.ASK);
 				}
-			
 		}
 		
 	}

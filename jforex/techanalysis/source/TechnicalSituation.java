@@ -10,7 +10,7 @@ import jforex.techanalysis.Momentum;
  * Most importantly it has an explicit bullish/bearish/neutral (unclear) flag
  * All setups should use this flag to filter out entries and to avoid unnecessary exits
  * The calculation of the fields i.e. assessing of the whole technical situation
- * is done in another class - this one is just a "mesagener"
+ * is done in another class - this one is just a "messanger"
  *
  */
 public class TechnicalSituation {
@@ -25,5 +25,18 @@ public class TechnicalSituation {
 	public Momentum.SINGLE_LINE_STATE
 		slowSMIState, fastSMIState;
 	public Momentum.STOCH_STATE stochState;
+	
+	@Override
+	public String toString() {
+		String res = new String();
+		res += "Overall: " + taSituation.toString() 
+			+ "| reason: " + taReason.toString()
+			+ "| summary: " + txtSummary
+			+ "| SMI state: " + smiState.toString()
+			+ " (slow: " + slowSMIState.toString()
+			+ ", fast: " + fastSMIState.toString() 
+			+ ") Stoch state: " + stochState.toString();		
+		return res;
+	}
 
 }
