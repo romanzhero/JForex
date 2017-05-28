@@ -121,6 +121,9 @@ public class CandleImpulsSetup extends TradeSetup implements ITradeSetup {
 				(Trend.FLAT_REGIME_CAUSE)taValues.get(FlexTASource.FLAT_REGIME).getValue(), 
 				taValues.get(FlexTASource.MA200_HIGHEST).getBooleanValue(), 
 				taValues.get(FlexTASource.MA200_LOWEST).getBooleanValue());*/
+		
+		if (vola < 30)
+			return null;
 		TechnicalSituation taSituation = taValues.get(FlexTASource.TA_SITUATION).getTehnicalSituationValue();
 		SignalDesc signal = barsSignalGiven(last3BidBars, instrument);
 		if (signal == null)
@@ -219,12 +222,15 @@ public class CandleImpulsSetup extends TradeSetup implements ITradeSetup {
 		// analyze the overall situation. If favourable don't do anything !
 		TechnicalSituation taSituation = taValues.get(FlexTASource.TA_SITUATION).getTehnicalSituationValue();
 		if (order.isLong()
-			&& (taSituation.taSituation.equals(TechnicalSituation.OverallTASituation.BULLISH)
+			&& ((taSituation.taSituation.equals(TechnicalSituation.OverallTASituation.BULLISH)
+				&& taSituation.taReason.equals(TechnicalSituation.TASituationReason.MOMENTUM))
+					// trend should be handled through separate setup !
 				|| taSituation.smiState.equals(Momentum.SMI_STATE.BULLISH_OVERBOUGHT_BOTH)
 				|| taSituation.stochState.equals(Momentum.STOCH_STATE.BULLISH_OVERBOUGHT_BOTH)))
 			return;
 		if (!order.isLong()
-			&& (taSituation.taSituation.equals(TechnicalSituation.OverallTASituation.BEARISH)
+			&& ((taSituation.taSituation.equals(TechnicalSituation.OverallTASituation.BEARISH)
+				&& taSituation.taReason.equals(TechnicalSituation.TASituationReason.MOMENTUM))
 				|| taSituation.smiState.equals(Momentum.SMI_STATE.BEARISH_OVERSOLD_BOTH)
 				|| taSituation.stochState.equals(Momentum.STOCH_STATE.BEARISH_OVERSOLD_BOTH)))
 			return;
@@ -269,7 +275,7 @@ public class CandleImpulsSetup extends TradeSetup implements ITradeSetup {
 				if (((askBar.getClose() > askBar.getOpen()
 					&&  barRange > average.getAverage()
 					&& Math.abs(askBar.getOpen() - askBar.getClose()) / barRange > 0.8)
-					|| (taSituation.taSituation.equals(TechnicalSituation.OverallTASituation.BEARISH)
+					|| (taSituation.taSituation.equals(TechnicalSituation.OverallTASituation.BULLISH)
 						&& taSituation.taReason.equals(TechnicalSituation.TASituationReason.MOMENTUM))) 
 					&& askBar.getHigh() < order.getOpenPrice()
 					&& askBar.getHigh() < order.getStopLossPrice()) {

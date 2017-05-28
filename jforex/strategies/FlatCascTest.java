@@ -277,7 +277,7 @@ public class FlatCascTest implements IStrategy {
 	public void onBar(Instrument instrument, Period period, IBar askBar, IBar bidBar) throws JFException {
 		if (instrument.equals(selectedInstrument) 
 			&& period.equals(orderSubmitPeriod)
-			&& tradingAllowed(bidBar.getTime(), period)
+			&& TradingHours.tradingAllowed(dataService, bidBar.getTime(), period) 
 			&& !(bidBar.getClose() == bidBar.getOpen() && bidBar.getClose() == bidBar.getHigh() && bidBar.getClose() == bidBar.getLow())) {
 			submitOrderFromQueue(selectedInstrument, bidBar, askBar);
 			return;
@@ -285,9 +285,21 @@ public class FlatCascTest implements IStrategy {
 		
 		if (!instrument.equals(selectedInstrument)
 			|| !period.equals(selectedPeriod)
-			|| (bidBar.getClose() == bidBar.getOpen() && bidBar.getClose() == bidBar.getHigh() && bidBar.getClose() == bidBar.getLow())
-			|| !barProcessingAllowed(bidBar.getTime()))
+			|| (bidBar.getClose() == bidBar.getOpen() && bidBar.getClose() == bidBar.getHigh() && bidBar.getClose() == bidBar.getLow()))
 			return;
+
+		IOrder order = orderPerPair.get(instrument.name());
+		if (instrument.equals(selectedInstrument)
+			&& period.equals(selectedPeriod)
+			// no more trading 4 hours before close on Fridays
+			&& !TradingHours.barProcessingAllowed(dataService, bidBar.getTime(), 4 * 3600 * 1000)) {
+			// and also close any open positions - no open positions left over weekend !
+			if (order != null) {
+				order.close();
+				order.waitForUpdate(null);
+			}
+			return;
+		}
 		
 		checkDayRanges(instrument, askBar, bidBar);
 		
@@ -298,7 +310,6 @@ public class FlatCascTest implements IStrategy {
 			ts.updateOnBar(instrument, period, askBar, bidBar);
 		}
 		
-		IOrder order = orderPerPair.get(instrument.name());
 		double dailyPnLvsRange = dailyPnL.ratioPnLAvgRange(instrument);
 		if (order != null) {
 			// there is an open order, might be pending (waiting) or filled !
@@ -325,7 +336,11 @@ public class FlatCascTest implements IStrategy {
 			order = openOrderProcessing(instrument, period, askBar, bidBar, order);
 		}
 		long tradingHoursEnd = TradingHours.tradingHoursEnd(instrument, bidBar.getTime());
-		if (tradingHoursEnd != -1 && bidBar.getTime() + 3600 * 1000 > tradingHoursEnd){
+		if (tradingHoursEnd != -1 && bidBar.getTime() + 3600 * 1000 > tradingHoursEnd) {
+/*			if (order != null) {
+				order.close();
+				order.waitForUpdate(null);
+			}*/
 			dailyPnL.resetInstrumentDailyPnL(instrument, bidBar.getTime());
 			return;
 		}
@@ -355,7 +370,7 @@ public class FlatCascTest implements IStrategy {
 				currentSetup = setup;
 				String orderLabel = getOrderLabel(instrument, bidBar.getTime(),	signal.isLong ? "BUY" : "SELL");
 				createTradeLog(instrument, period, askBar, OfferSide.ASK, orderLabel, signal.isLong, lastTaValues);
-				if (tradingAllowed(bidBar.getTime(), period)) {
+				if (TradingHours.tradingAllowed(dataService, bidBar.getTime(), period)) {
 					double inTargetCurrency = FXUtils.convertByBar(BigDecimal.valueOf(selectedAmount), context.getAccount().getAccountCurrency(), selectedInstrument.getSecondaryJFCurrency(), selectedPeriod, OfferSide.BID, bidBar.getTime()).doubleValue();
 					double amountToTrade = Math.round(inTargetCurrency / bidBar.getClose()) / (instrument.toString().contains(".CMD") ? 1e8 : 1e6); 
 					order = currentSetup.submitOrder(orderLabel, instrument, signal.isLong, amountToTrade, bidBar, askBar);
@@ -831,20 +846,6 @@ public class FlatCascTest implements IStrategy {
 		return new String("FlatCascTest_" + instrument.name() + "_"
 				+ FXUtils.getFormatedTimeGMTforID(time) + "_" + orderCnt++
 				+ "_" + direction);
-	}
-
-	boolean barProcessingAllowed(long time) throws JFException {
-		ITimeDomain timeDomain = dataService.getOfflineTimeDomain();
-
-		//return time + selectedPeriod.getInterval() < timeDomain.getStart();
-		// so entry signals on last Friday bar can be taken
-		return time < timeDomain.getStart();
-	}
-
-	boolean tradingAllowed(long time, Period period) throws JFException {
-		ITimeDomain timeDomain = dataService.getOfflineTimeDomain();
-
-		return time + period.getInterval() < timeDomain.getStart();
 	}
 
 }

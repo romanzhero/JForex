@@ -6,10 +6,13 @@ import java.util.TreeMap;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeConstants;
 
+import com.dukascopy.api.IDataService;
+import com.dukascopy.api.ITimeDomain;
 import com.dukascopy.api.Instrument;
+import com.dukascopy.api.JFException;
+import com.dukascopy.api.Period;
 
 public class TradingHours {
-	
 	public static class InstrumentTradingHours {
 		// vremena u satima i minutima, dodatim na nulti Java datum
 		int
@@ -44,7 +47,7 @@ public class TradingHours {
 		tradingHoursPerInstrument.put(Instrument.XAGUSD, new InstrumentTradingHours(22, 0, 21, 0));
 		tradingHoursPerInstrument.put(Instrument.XAUUSD, new InstrumentTradingHours(22, 0, 21, 0));
 	}
-	
+
 	public static boolean withinTradingHours(Instrument instrument, long time) {
 		InstrumentTradingHours tradingHours = tradingHoursPerInstrument.get(instrument);
 		if (tradingHours == null)
@@ -92,5 +95,31 @@ public class TradingHours {
 			currentDayStart = currentDayStart.plusMinutes(tradingHours.startMinute);
 		}
 		return currentDayStart.getMillis();
+	}
+
+	public static boolean barProcessingAllowed(IDataService dataService, long currentTime) throws JFException {
+		ITimeDomain timeDomain = dataService.getOfflineTimeDomain();
+
+		//return time + selectedPeriod.getInterval() < timeDomain.getStart();
+		// so entry signals on last Friday bar can be taken
+		return currentTime < timeDomain.getStart();
+	}
+
+	public static boolean barProcessingAllowed(IDataService dataService, long currentTime, long blockingTime) throws JFException {
+		ITimeDomain timeDomain = dataService.getOfflineTimeDomain();
+
+		return currentTime + blockingTime < timeDomain.getStart();
+	}
+	
+	public static boolean tradingAllowed(IDataService dataService, long currentTime, Period period) throws JFException {
+		ITimeDomain timeDomain = dataService.getOfflineTimeDomain();
+
+		return currentTime + period.getInterval() < timeDomain.getStart();
 	}	
+	
+	public static boolean tradingAllowed(IDataService dataService, long currentTime, long blockingTime) throws JFException {
+		ITimeDomain timeDomain = dataService.getOfflineTimeDomain();
+
+		return currentTime + blockingTime < timeDomain.getStart();
+	}		
 }
