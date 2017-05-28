@@ -23,6 +23,9 @@ import com.dukascopy.api.Period;
 import jforex.events.TAEventDesc;
 import jforex.events.TAEventDesc.TAEventType;
 import jforex.techanalysis.Momentum;
+import jforex.techanalysis.Trend;
+import jforex.techanalysis.Trend.FLAT_REGIME_CAUSE;
+import jforex.techanalysis.Trend.TREND_STATE;
 import jforex.techanalysis.source.FlexTASource;
 import jforex.techanalysis.source.FlexTAValue;
 import jforex.techanalysis.source.TechnicalSituation;
@@ -116,11 +119,6 @@ public class CandleImpulsSetup extends TradeSetup implements ITradeSetup {
 			vola = taValues.get(FlexTASource.BBANDS_SQUEEZE_PERC).getDoubleValue(),
 			bidBarRangeAvg = (bidBar.getHigh() - bidBar.getLow()) / barRangeAverages.get(instrument).getAverage(),
 			askBarRangeAvg = (askBar.getHigh() - askBar.getLow()) / barRangeAverages.get(instrument).getAverage();
-/*		String taRegime = FXUtils.getRegimeString(taValues.get(FlexTASource.TREND_ID).getTrendStateValue(), 
-				taValues.get(FlexTASource.MAs_DISTANCE_PERC).getDoubleValue(),
-				(Trend.FLAT_REGIME_CAUSE)taValues.get(FlexTASource.FLAT_REGIME).getValue(), 
-				taValues.get(FlexTASource.MA200_HIGHEST).getBooleanValue(), 
-				taValues.get(FlexTASource.MA200_LOWEST).getBooleanValue());*/
 		
 		if (vola < 30)
 			return null;
@@ -128,10 +126,29 @@ public class CandleImpulsSetup extends TradeSetup implements ITradeSetup {
 		SignalDesc signal = barsSignalGiven(last3BidBars, instrument);
 		if (signal == null)
 			return null;
+		TREND_STATE trendID = taValues.get(FlexTASource.TREND_ID).getTrendStateValue();
+		FLAT_REGIME_CAUSE flat = (FLAT_REGIME_CAUSE)taValues.get(FlexTASource.FLAT_REGIME).getValue();
+		boolean
+			ma200Highest = taValues.get(FlexTASource.MA200_HIGHEST).getBooleanValue(),
+			ma200Lowest = taValues.get(FlexTASource.MA200_LOWEST).getBooleanValue(),
+			ma200InChannel = taValues.get(FlexTASource.MA200_IN_CHANNEL).getBooleanValue();		
+		double[][] smis = taValues.get(FlexTASource.SMI).getDa2DimValue();
+		double 
+			fastSMI = smis[0][2],
+			slowSMI = smis[1][2];
+		
 		if (!taSituation.taSituation.equals(TechnicalSituation.OverallTASituation.BULLISH)
 			&& !taSituation.smiState.equals(Momentum.SMI_STATE.BULLISH_OVERBOUGHT_BOTH)
 			&& signal.direction.equals(BodyDirection.DOWN)
 			&& chPos > 45) {
+			// additional check for flat because MA200 is in the channel, but strong uptrend
+			if (ma200InChannel && ma200Lowest && trendID.equals(Trend.TREND_STATE.UP_STRONG)
+				&& 
+				(taSituation.stochState.equals(Momentum.STOCH_STATE.BEARISH_CROSS_FROM_OVERBOUGTH)
+				|| (taSituation.smiState.equals(Momentum.SINGLE_LINE_STATE.RAISING_IN_MIDDLE) && slowSMI < fastSMI))) 
+				//TODO: all the possible SMI and Stoch combination that are not bearish enough !!!
+				return null;
+			
 			updateTradeStats(taValues, signal);
 			lastEntryDesc = new TAEventDesc(TAEventType.ENTRY_SIGNAL, getName(), instrument, false, askBar, bidBar, period);
 			lastEntryDesc.stopLossLevel = last3AskBars.get(0).getHigh();
@@ -140,6 +157,13 @@ public class CandleImpulsSetup extends TradeSetup implements ITradeSetup {
 				&& !taSituation.smiState.equals(Momentum.SMI_STATE.BEARISH_OVERSOLD_BOTH)
 				&& signal.direction.equals(BodyDirection.UP)
 				&& chPos < 55) {
+			// additional check for flat because MA200 is in the channel, but strong uptrend
+			if (ma200InChannel && ma200Highest && trendID.equals(Trend.TREND_STATE.DOWN_STRONG)
+				&& (taSituation.stochState.equals(Momentum.STOCH_STATE.BULLISH_CROSS_FROM_OVERSOLD)
+					|| (taSituation.smiState.equals(Momentum.SINGLE_LINE_STATE.FALLING_IN_MIDDLE) && slowSMI > fastSMI))) 
+				//TODO: all the possible SMI and Stoch combination that are not bearish enough !!!
+				return null;
+			
 			updateTradeStats(taValues, signal);
 			lastEntryDesc = new TAEventDesc(TAEventType.ENTRY_SIGNAL, getName(), instrument, true, askBar, bidBar, period);
 			lastEntryDesc.stopLossLevel = last3BidBars.get(0).getLow();

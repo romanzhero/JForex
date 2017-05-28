@@ -21,10 +21,7 @@ import com.dukascopy.api.IIndicators.MaType;
 public class Trend {
 
 	public enum TREND_STATE {
-		UP_STRONG, UP_MILD, FRESH_DOWN, FRESH_UP, DOWN_MILD, DOWN_STRONG, NONE // shouldn't
-																				// happen,
-																				// for
-																				// debugging
+		UP_STRONG, UP_MILD, FRESH_DOWN, FRESH_UP, DOWN_MILD, DOWN_STRONG, NONE // shouldn't happen, for debugging
 	}
 
 	public enum ICHI_CLOUD_CROSS {
