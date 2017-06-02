@@ -1,4 +1,4 @@
-package jforex.utils;
+package jforex.utils.stats;
 
 import java.util.List;
 import java.util.Map;
@@ -12,6 +12,8 @@ import com.dukascopy.api.Instrument;
 import com.dukascopy.api.JFException;
 import com.dukascopy.api.OfferSide;
 import com.dukascopy.api.Period;
+
+import jforex.utils.FXUtils;
 
 public class RangesStats {
 

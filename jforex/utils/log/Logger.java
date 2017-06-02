@@ -1,4 +1,4 @@
-package jforex.utils;
+package jforex.utils.log;
 
 import java.io.BufferedWriter;
 import java.io.FileWriter;

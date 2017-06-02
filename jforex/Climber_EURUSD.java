@@ -9,8 +9,8 @@ import jforex.TradeStateController.TradeState;
 import jforex.filters.FilterFactory;
 import jforex.filters.IFilter;
 import jforex.utils.FXUtils;
-import jforex.utils.Logger;
 import jforex.utils.FXUtils.EntryFilters;
+import jforex.utils.log.Logger;
 
 import com.dukascopy.api.*;
 import com.dukascopy.api.IIndicators.AppliedPrice;

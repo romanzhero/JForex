@@ -8,8 +8,8 @@ import java.util.List;
 import jforex.BasicTAStrategy;
 import jforex.techanalysis.TradeTrigger;
 import jforex.techanalysis.TradeTrigger.TriggerDesc;
-import jforex.utils.ClimberProperties;
 import jforex.utils.FXUtils;
+import jforex.utils.props.ClimberProperties;
 
 import com.dukascopy.api.IAccount;
 import com.dukascopy.api.IBar;

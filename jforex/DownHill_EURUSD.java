@@ -4,8 +4,8 @@ import java.util.Properties;
 
 import jforex.TradeStateController.TradeState;
 import jforex.utils.FXUtils;
-import jforex.utils.Logger;
 import jforex.utils.FXUtils.EntryFilters;
+import jforex.utils.log.Logger;
 
 import com.dukascopy.api.Filter;
 import com.dukascopy.api.IAccount;

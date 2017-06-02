@@ -4,8 +4,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 import jforex.utils.FXUtils;
-import jforex.utils.FlexLogEntry;
-import jforex.utils.Logger;
+import jforex.utils.log.FlexLogEntry;
+import jforex.utils.log.Logger;
 
 import com.dukascopy.api.IBar;
 import com.dukascopy.api.IOrder;

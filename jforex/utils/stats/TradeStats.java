@@ -1,4 +1,4 @@
-package jforex.utils;
+package jforex.utils.stats;
 
 public class TradeStats {
 	protected double maxWin = 0, maxLoss = 0; // in pips of course

@@ -13,7 +13,7 @@ import com.dukascopy.api.Period;
 import jforex.emailflex.BaseFlexElement;
 import jforex.emailflex.IFlexEmailElement;
 import jforex.utils.FXUtils;
-import jforex.utils.FlexLogEntry;
+import jforex.utils.log.FlexLogEntry;
 
 public class IchiCloudCrossElement extends BaseFlexElement implements
 		IFlexEmailElement {

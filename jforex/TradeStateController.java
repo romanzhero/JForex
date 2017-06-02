@@ -1,7 +1,7 @@
 package jforex;
 
 import jforex.utils.FXUtils;
-import jforex.utils.Logger;
+import jforex.utils.log.Logger;
 
 public class TradeStateController {
 	/**

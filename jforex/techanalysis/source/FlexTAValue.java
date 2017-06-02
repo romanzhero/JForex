@@ -5,7 +5,7 @@ import java.text.DecimalFormat;
 import jforex.techanalysis.TradeTrigger;
 import jforex.techanalysis.Trend;
 import jforex.utils.FXUtils;
-import jforex.utils.FlexLogEntry;
+import jforex.utils.log.FlexLogEntry;
 
 public class FlexTAValue extends FlexLogEntry {
 	protected double[] da1dim_values = null;

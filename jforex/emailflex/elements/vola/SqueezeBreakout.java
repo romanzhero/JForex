@@ -30,7 +30,7 @@ import jforex.techanalysis.TradeTrigger;
 import jforex.techanalysis.Trend;
 import jforex.techanalysis.Volatility;
 import jforex.utils.FXUtils;
-import jforex.utils.FlexLogEntry;
+import jforex.utils.log.FlexLogEntry;
 
 /**
  * Writes signals into DB instead of preparing HTML email elements Conditions:

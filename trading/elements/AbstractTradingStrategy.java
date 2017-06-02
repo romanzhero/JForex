@@ -5,7 +5,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import jforex.utils.Logger;
+import jforex.utils.log.Logger;
 
 /**
  * Generic class supporting multi-position multi-instrument trading

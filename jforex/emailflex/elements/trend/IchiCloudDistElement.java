@@ -14,7 +14,7 @@ import jforex.emailflex.BaseFlexElement;
 import jforex.emailflex.IFlexEmailElement;
 import jforex.techanalysis.Trend;
 import jforex.utils.FXUtils;
-import jforex.utils.FlexLogEntry;
+import jforex.utils.log.FlexLogEntry;
 
 public class IchiCloudDistElement extends BaseFlexElement implements
 		IFlexEmailElement {

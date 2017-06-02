@@ -8,7 +8,7 @@ import java.util.Properties;
 import jforex.AbstractTradingStrategy.LastStopType;
 import jforex.TradeStateController.TradeState;
 import jforex.utils.FXUtils;
-import jforex.utils.Logger;
+import jforex.utils.log.Logger;
 
 import com.dukascopy.api.IBar;
 import com.dukascopy.api.IMessage;

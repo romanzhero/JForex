@@ -56,8 +56,8 @@ import jforex.explorers.SRLevelsFinder;
 import jforex.explorers.SimpleStatsCollector;
 import jforex.explorers.TwoTFStatsCollector;
 import jforex.strategies.JForexIchiStrategy;
-import jforex.utils.ClimberProperties;
 import jforex.utils.FXUtils;
+import jforex.utils.props.ClimberProperties;
 
 /**
  * This small program demonstrates how to initialize Dukascopy tester and start

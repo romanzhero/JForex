@@ -5,8 +5,8 @@ import java.util.*;
 
 import com.dukascopy.api.*;
 import jforex.utils.FXUtils;
-import jforex.utils.FlexLogEntry;
-import jforex.utils.Logger;
+import jforex.utils.log.FlexLogEntry;
+import jforex.utils.log.Logger;
 import jforex.logging.TradeLog;
 import jforex.techanalysis.Trend;
 import jforex.techanalysis.source.FlexTASource;

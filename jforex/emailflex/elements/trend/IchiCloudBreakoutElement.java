@@ -19,7 +19,7 @@ import jforex.emailflex.IFlexEmailElement;
 import jforex.emailflex.SignalUtils;
 import jforex.techanalysis.Trend;
 import jforex.utils.FXUtils;
-import jforex.utils.FlexLogEntry;
+import jforex.utils.log.FlexLogEntry;
 
 /**
  * First class to write signals into DB instead of preparing HTML email elements

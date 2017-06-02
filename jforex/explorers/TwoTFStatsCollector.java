@@ -15,7 +15,7 @@ import jforex.AdvancedMailCreator;
 import jforex.techanalysis.PriceZone;
 import jforex.techanalysis.SRLevel;
 import jforex.utils.FXUtils;
-import jforex.utils.FlexLogEntry;
+import jforex.utils.log.FlexLogEntry;
 import jforex.ib.IBBridge;
 import com.dukascopy.api.Configurable;
 import com.dukascopy.api.Filter;

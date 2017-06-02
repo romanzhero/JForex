@@ -32,7 +32,7 @@ import jforex.techanalysis.Trend.TREND_STATE;
 import jforex.utils.FXUtils;
 import jforex.utils.FXUtils.PreviousTrade;
 import jforex.utils.FXUtils.TradeLog;
-import jforex.utils.FlexLogEntry;
+import jforex.utils.log.FlexLogEntry;
 
 public class SimpleMAsIDCrossTrendFollow extends BasicTAStrategy implements
 		IStrategy {

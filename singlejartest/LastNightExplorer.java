@@ -50,8 +50,8 @@ import java.util.StringTokenizer;
 import java.util.concurrent.Future;
 
 import jforex.explorers.LastNightStatsCollector;
-import jforex.utils.ClimberProperties;
 import jforex.utils.FXUtils;
+import jforex.utils.props.ClimberProperties;
 
 /**
  * This small program demonstrates how to initialize Dukascopy tester and start
@@ -99,7 +99,7 @@ public class LastNightExplorer {
 		}
 		DateTime roundedEnd = calcEndBar(daysBack);
 		String tsString = roundedEnd.toString("yyyy_MM_dd_HH_mm");
-		final jforex.utils.Logger reportLogger = new jforex.utils.Logger(null,
+		final jforex.utils.log.Logger reportLogger = new jforex.utils.log.Logger(null,
 				properties.getProperty("reportDirectory", ".") + "//"
 						+ "Overnight 4h Report for " + tsString + ".txt");
 		// set the listener that will receive system events

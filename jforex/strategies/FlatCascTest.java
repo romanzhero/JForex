@@ -14,14 +14,15 @@ import com.dukascopy.api.indicators.IIndicator;
 import com.dukascopy.api.indicators.IndicatorInfo;
 import com.dukascopy.api.indicators.OutputParameterInfo;
 
-import jforex.utils.ClimberProperties;
-import jforex.utils.DailyPnL;
 import jforex.utils.FXUtils;
-import jforex.utils.FlexLogEntry;
-import jforex.utils.Logger;
-import jforex.utils.RangesStats;
+import jforex.utils.JForexChart;
 import jforex.utils.TradingHours;
-import jforex.utils.RangesStats.InstrumentRangeStats;
+import jforex.utils.log.FlexLogEntry;
+import jforex.utils.log.Logger;
+import jforex.utils.props.ClimberProperties;
+import jforex.utils.stats.DailyPnL;
+import jforex.utils.stats.RangesStats;
+import jforex.utils.stats.RangesStats.InstrumentRangeStats;
 import jforex.utils.RollingAverage;
 import jforex.events.CandleMomentumEvent;
 import jforex.events.ITAEvent;
@@ -61,8 +62,9 @@ public class FlatCascTest implements IStrategy {
 	private IHistory history;
 	private IIndicators indicators;
 	private IDataService dataService;
+	
+	private JForexChart chart = null;
 
-	private IChart chart = null;
 	private Map<String, IOrder> orderPerPair = new HashMap<String, IOrder>();
 	private long orderCnt = 1;
 
@@ -175,77 +177,10 @@ public class FlatCascTest implements IStrategy {
 		//taEvents.add(new ShortCandlesEvent(indicators, history));
 		taEvents.add(new CandleMomentumEvent(indicators, history));
 		
-		showChart(context);
+		chart = new JForexChart(context, visualMode, selectedInstrument, console, showIndicators, indicators);
+		chart.showChart(context);
 	}
 
-	protected void showChart(IContext context) {
-		if (visualMode) {
-			chart = context.getChart(selectedInstrument);
-			if (chart == null) {
-				// chart is not opened, we can't plot an object
-				console.getOut().println("Can't open the chart for " + selectedInstrument.toString() + ", stop !");
-				context.stop();
-			}
-			if (showIndicators) {
-				chart.add(indicators.getIndicator("BBands"), new Object[] { 20,
-						2.0, 2.0, MaType.SMA.ordinal() }, new Color[] {
-						Color.MAGENTA, Color.RED, Color.MAGENTA }, null, null);
-				chart.add(indicators.getIndicator("STOCH"), new Object[] { 14,
-						3, MaType.SMA.ordinal(), 3, MaType.SMA.ordinal() },
-						new Color[] { Color.RED, Color.BLUE },
-						new OutputParameterInfo.DrawingStyle[] {
-								OutputParameterInfo.DrawingStyle.LINE,
-								OutputParameterInfo.DrawingStyle.LINE }, null);
-				chart.add(indicators.getIndicator("SMA"), new Object[] { 50 },
-						new Color[] { Color.BLUE }, null, null);
-				chart.add(indicators.getIndicator("SMA"), new Object[] { 100 },
-						new Color[] { Color.GREEN }, null, null);
-				chart.add(indicators.getIndicator("SMA"), new Object[] { 200 },
-						new Color[] { Color.YELLOW }, null, null);
-				chart.add(indicators.getIndicator("SMI"), new Object[] { 50,
-						15, 5, 3 }, new Color[] { Color.CYAN, Color.BLACK },
-						new OutputParameterInfo.DrawingStyle[] {
-								OutputParameterInfo.DrawingStyle.LINE,
-								OutputParameterInfo.DrawingStyle.NONE }, null);
-
-				List<IIndicatorPanel> panels = chart.getIndicatorPanels();
-				for (IIndicatorPanel currPanel : panels) {
-					List<IIndicator> panelIndicators = currPanel
-							.getIndicators();
-					for (IIndicator currIndicator : panelIndicators) {
-						if (currIndicator.toString().contains("SMIIndicator")) {
-							currPanel
-									.add(indicators.getIndicator("SMI"),
-											new Object[] { 10, 3, 5, 3 },
-											new Color[] { Color.RED,
-													Color.BLACK },
-											new OutputParameterInfo.DrawingStyle[] {
-													OutputParameterInfo.DrawingStyle.LINE,
-													OutputParameterInfo.DrawingStyle.NONE },
-											null);
-							IHorizontalLineChartObject lplus60 = chart.getChartObjectFactory().createHorizontalLine();
-							lplus60.setPrice(0, 60);
-							lplus60.setText("60");
-							lplus60.setColor(Color.BLACK);
-							lplus60.setLineStyle(LineStyle.DASH);
-							currPanel.add(lplus60);
-
-							IHorizontalLineChartObject lminus60 = chart
-									.getChartObjectFactory()
-									.createHorizontalLine();
-							lminus60.setPrice(0, -60);
-							lminus60.setText("-60");
-							lminus60.setColor(Color.BLACK);
-							lminus60.setLineStyle(LineStyle.DASH);
-							currPanel.add(lminus60);
-						}
-					}
-				}
-				// printIndicatorInfos(indicators.getIndicator("SMI"));
-				// printIndicatorInfos(indicators.getIndicator("SMA"));
-			}
-		}
-	}
 
 	private void printIndicatorInfos(IIndicator ind) {
 		IndicatorInfo info = ind.getIndicatorInfo();
@@ -382,15 +317,27 @@ public class FlatCascTest implements IStrategy {
 									+ currentSetup.getName() + ", order " + order.getLabel());
 					console.getOut().println(logLine);
 					log.print(logLine);
-					
-					showTradingEventOnGUI(orderCnt, (signal.isLong ? "Long" : "Short") + " entry signal with " + currentSetup.getName(), signal.isLong, bidBar, askBar, instrument);
+
+					double level = 0;
+					if (signal.isLong)
+						level = calcNextLongLevel(bidBar, instrument, chart.getMinPrice(), chart.getMaxPrice());
+					else
+						level = calcNextShortLevel(askBar, instrument, chart.getMinPrice(), chart.getMaxPrice());
+					String textToShow = new String(orderCnt + "." + commentCnt++ + ": " + (signal.isLong ? "Long" : "Short") + " entry signal with " + currentSetup.getName());
+					chart.showTradingEventOnGUI(textToShow, instrument, bidBar.getTime(), level);
 				} else {
 					// put in the order in the "queue" to be submitted on Sunday
 					orderWaitinginQueue = true;
 					queueOrderLabel = orderLabel;
 					queueOrderIsLong = signal.isLong;
 					
-					showTradingEventOnGUI(orderCnt, (signal.isLong ? "Long" : "Short") + " entry signal with " + currentSetup.getName() + " (queued)", signal.isLong, bidBar, askBar, instrument);
+					double level = 0;
+					if (signal.isLong)
+						level = calcNextLongLevel(bidBar, instrument, chart.getMinPrice(), chart.getMaxPrice());
+					else
+						level = calcNextShortLevel(askBar, instrument, chart.getMinPrice(), chart.getMaxPrice());
+					String textToShow = new String(orderCnt + "." + commentCnt++ + ": " + (signal.isLong ? "Long" : "Short") + " entry signal with " + currentSetup.getName());
+					chart.showTradingEventOnGUI(textToShow, instrument, bidBar.getTime(), level);
 				}
 				break;
 			}
@@ -438,7 +385,14 @@ public class FlatCascTest implements IStrategy {
 						console.getOut().println(logLine);
 						log.print(logLine);
 						setup.takeTradingOver(order);
-						showTradingEventOnGUI(orderCnt, "Trade takeover by " + currentSetup.getName(), order.isLong(), bidBar, askBar, instrument);
+						
+						double level = 0;
+						if (order.isLong())
+							level = calcNextLongLevel(bidBar, instrument, chart.getMinPrice(), chart.getMaxPrice());
+						else
+							level = calcNextShortLevel(askBar, instrument, chart.getMinPrice(), chart.getMaxPrice());
+						String textToShow = new String(orderCnt + "." + commentCnt++ + ": " + "Trade takeover by " + currentSetup.getName());
+						chart.showTradingEventOnGUI(textToShow, instrument, bidBar.getTime(), level);
 						break;
 					}
 				}
@@ -452,7 +406,13 @@ public class FlatCascTest implements IStrategy {
 				&& !currentSetup.getLastTradingEvent().equals(lastTradingEvent)
 				&& !currentSetup.getLastTradingEvent().equals("none")) {
 				lastTradingEvent = currentSetup.getLastTradingEvent();
-				showTradingEventOnGUI(orderCnt, currentSetup.getLastTradingEvent() + " with " + currentSetup.getName(), order.isLong(), bidBar, askBar, instrument);
+				double level = 0;
+				if (order.isLong())
+					level = calcNextLongLevel(bidBar, instrument, chart.getMinPrice(), chart.getMaxPrice());
+				else
+					level = calcNextShortLevel(askBar, instrument, chart.getMinPrice(), chart.getMaxPrice());
+				String textToShow = new String(orderCnt + "." + commentCnt++ + ": " + currentSetup.getLastTradingEvent() + " with " + currentSetup.getName());
+				chart.showTradingEventOnGUI(textToShow, instrument, bidBar.getTime(), level);
 			}
 			
 			// inTradeProcessing might CLOSE the order, onMessage will set to null !
@@ -465,9 +425,14 @@ public class FlatCascTest implements IStrategy {
 				ITradeSetup.EntryDirection exitSignal = currentSetup.checkExit(instrument, period, askBar, bidBar, selectedFilter, order, lastTaValues);
 				if ((order.isLong() && exitSignal.equals(ITradeSetup.EntryDirection.LONG))
 					|| (!order.isLong() && exitSignal.equals(ITradeSetup.EntryDirection.SHORT))) {
-					showTradingEventOnGUI(orderCnt, (order.isLong() ? "Long " : "Short ") + "exit signal with " + currentSetup.getName(), exitSignal.equals(ITradeSetup.EntryDirection.LONG), bidBar, askBar, instrument);
-
-					
+					double level = 0;
+					if (exitSignal.equals(ITradeSetup.EntryDirection.LONG))
+						level = calcNextLongLevel(bidBar, instrument, chart.getMinPrice(), chart.getMaxPrice());
+					else
+						level = calcNextShortLevel(askBar, instrument, chart.getMinPrice(), chart.getMaxPrice());
+					String textToShow = new String(orderCnt + "." + commentCnt++ + ": " + (order.isLong() ? "Long " : "Short ") + "exit signal with " + currentSetup.getName());
+					chart.showTradingEventOnGUI(textToShow, instrument, bidBar.getTime(), level);
+	
 					if (tradeLog != null)
 						tradeLog.exitReason = new String("exit criteria");
 					String logLine = new String(FXUtils.getFormatedBarTime(bidBar) + ": " + exitSignal.toString()
@@ -502,35 +467,13 @@ public class FlatCascTest implements IStrategy {
 		commentLevelsCounts = filtered;
 	}
 	
-	private void showTradingEventOnGUI(long tradeID, String textToShow, boolean direction, IBar bidBar, IBar askBar, Instrument instrument) {
-		if (visualMode) {
-			chart = context.getChart(instrument);
-			if (chart == null) {
-				// chart is not opened, we can't plot an object
-				console.getOut().println("Can't open the chart for " + instrument.toString() + ", stop !");
-				context.stop();
-			}
-			ITextChartObject txt = chart.getChartObjectFactory().createText();
-			txt.setMenuEnabled(true);
-			txt.setText(tradeID + "." + commentCnt++ + ": " + textToShow, new Font("Helvetica", Font.BOLD, 14));
-			txt.setTime(0, bidBar.getTime());
-			double level = 0;
-			if (direction)
-				level = calcNextLongLevel(bidBar, instrument, chart);
-			else
-				level = calcNextShortLevel(askBar, instrument, chart);
-			txt.setPrice(0, level);
-			chart.add(txt);
-		}
-	}
-
-	private double calcNextShortLevel(IBar askBar, Instrument instrument, IChart chart) {
+	private double calcNextShortLevel(IBar askBar, Instrument instrument, double minPrice, double maxPrice) {
 		Double levels[] = new Double[commentLevelsCounts.size()];
 		levels = commentLevelsCounts.keySet().toArray(levels);
 		// COMMENT_OFFSET_PERC / Math.pow(10, instrument.getPipScale());
 		double
 			bBands[][] = lastTaValues.get(FlexTASource.BBANDS).getDa2DimValue(),
-			offset = 15 / (SCREEN_H / (chart.getMaxPrice() - chart.getMinPrice())),
+			offset = 15 / (SCREEN_H / (maxPrice- minPrice)),
 			levelToCheck = (askBar.getHigh() > bBands[0][0] ? askBar.getHigh() : bBands[0][0]) + offset;
 		boolean overLapFound = false;
 		for (int i = 0; i < levels.length && !overLapFound; i++) {
@@ -561,12 +504,12 @@ public class FlatCascTest implements IStrategy {
 		return levelToCheck;
 	}
 
-	private double calcNextLongLevel(IBar bidBar, Instrument instrument, IChart chart) {	
+	private double calcNextLongLevel(IBar bidBar, Instrument instrument, double minPrice, double maxPrice) {	
 		Double levels[] = new Double[commentLevelsCounts.size()];
 		levels = commentLevelsCounts.keySet().toArray(levels);
 		double
 			bBands[][] = lastTaValues.get(FlexTASource.BBANDS).getDa2DimValue(),
-			offset = 15 / (SCREEN_H / (chart.getMaxPrice() - chart.getMinPrice())),
+			offset = 15 / (SCREEN_H / (maxPrice - minPrice)),
 			levelToCheck = (bidBar.getLow() < bBands[2][0] ? bidBar.getLow() : bBands[2][0]) - offset;
 		boolean overLapFound = false;
 		for (int i = 0; i < levels.length && !overLapFound; i++) {
@@ -786,7 +729,15 @@ public class FlatCascTest implements IStrategy {
 					+ (addLastTradingEvent ? " (" + lastTradingEvent + ")" : "")
 					+ (dailyPnL.ratioPnLAvgRange(message.getOrder().getInstrument()) > 1 ? " Daily profit goal reached - NO more trading !" : "");
 			}
-			showTradingEventOnGUI(orderCnt, guiLabel + " with " + currentSetup.getName(), message.getOrder().isLong(), history.getBar(message.getOrder().getInstrument(), selectedPeriod, OfferSide.BID, 1), history.getBar(message.getOrder().getInstrument(), selectedPeriod, OfferSide.ASK, 1), message.getOrder().getInstrument());
+			
+			double level = 0;
+			if (message.getOrder().isLong())
+				level = calcNextLongLevel(history.getBar(message.getOrder().getInstrument(), selectedPeriod, OfferSide.BID, 1), message.getOrder().getInstrument(), chart.getMinPrice(), chart.getMaxPrice());
+			else
+				level = calcNextShortLevel(history.getBar(message.getOrder().getInstrument(), selectedPeriod, OfferSide.ASK, 1), message.getOrder().getInstrument(), chart.getMinPrice(), chart.getMaxPrice());
+			String textToShow = new String(orderCnt + "." + commentCnt++ + ": " + guiLabel + " with " + currentSetup.getName());
+			chart.showTradingEventOnGUI(textToShow, message.getOrder().getInstrument(), history.getBar(message.getOrder().getInstrument(), selectedPeriod, OfferSide.BID, 1).getTime(), level);
+			
 			// might be cancel of unfilled order or SL close
 			Set<IMessage.Reason> reasons = message.getReasons();
 			String reasonsStr = new String();

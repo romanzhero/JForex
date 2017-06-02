@@ -30,6 +30,8 @@ import java.util.TimeZone;
 
 import jforex.techanalysis.Trend.FLAT_REGIME_CAUSE;
 import jforex.techanalysis.Trend.TREND_STATE;
+import jforex.utils.log.FlexLogEntry;
+import jforex.utils.log.Logger;
 
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeConstants;

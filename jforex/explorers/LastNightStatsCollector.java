@@ -14,8 +14,8 @@ import jforex.techanalysis.TradeTrigger;
 import jforex.techanalysis.Trend;
 import jforex.techanalysis.Trendline;
 import jforex.utils.FXUtils;
-import jforex.utils.FlexLogEntry;
-import jforex.utils.Logger;
+import jforex.utils.log.FlexLogEntry;
+import jforex.utils.log.Logger;
 
 import com.dukascopy.api.Configurable;
 import com.dukascopy.api.Filter;

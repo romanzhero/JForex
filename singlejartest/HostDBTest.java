@@ -35,8 +35,9 @@ import org.slf4j.LoggerFactory;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.sql.ResultSet;
-import jforex.utils.ClimberProperties;
+
 import jforex.utils.FXUtils;
+import jforex.utils.props.ClimberProperties;
 
 /**
  * This small program demonstrates how to initialize Dukascopy tester and start

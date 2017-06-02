@@ -1,6 +1,6 @@
 package trading.elements;
 
-import jforex.utils.Logger;
+import jforex.utils.log.Logger;
 
 public interface ITradingStrategy {
 

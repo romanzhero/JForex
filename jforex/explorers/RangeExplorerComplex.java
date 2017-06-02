@@ -9,7 +9,7 @@ import java.util.Set;
 
 import jforex.BasicTAStrategy;
 import jforex.utils.FXUtils;
-import jforex.utils.FlexLogEntry;
+import jforex.utils.log.FlexLogEntry;
 
 import com.dukascopy.api.Configurable;
 import com.dukascopy.api.Filter;

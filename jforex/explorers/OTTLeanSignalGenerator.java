@@ -26,9 +26,9 @@ import jforex.emailflex.FlexEmailElementFactory;
 import jforex.emailflex.IFlexEmailElement;
 import jforex.emailflex.IFlexEmailElement.SignalResult;
 import jforex.utils.FXUtils;
-import jforex.utils.FlexLogEntry;
 import jforex.utils.SignalGeneratorResponse;
 import jforex.utils.StrategyResponseListener;
+import jforex.utils.log.FlexLogEntry;
 
 /**
  * Special class to generate signals only for one pair and timeframe It's being

@@ -8,7 +8,7 @@ import jforex.BasicTAStrategy;
 import jforex.techanalysis.Momentum;
 import jforex.techanalysis.TradeTrigger.TriggerType;
 import jforex.utils.FXUtils;
-import jforex.utils.FlexLogEntry;
+import jforex.utils.log.FlexLogEntry;
 
 import com.dukascopy.api.Configurable;
 import com.dukascopy.api.IAccount;

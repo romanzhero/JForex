@@ -7,7 +7,7 @@ import jforex.techanalysis.Momentum;
 import jforex.techanalysis.Trend;
 import jforex.techanalysis.Momentum.MACD_STATE;
 import jforex.utils.FXUtils;
-import jforex.utils.Logger;
+import jforex.utils.log.Logger;
 
 import com.dukascopy.api.Filter;
 import com.dukascopy.api.IAccount;

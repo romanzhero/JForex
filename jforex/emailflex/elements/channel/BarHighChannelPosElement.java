@@ -17,7 +17,7 @@ import jforex.techanalysis.Momentum;
 import jforex.techanalysis.TradeTrigger;
 import jforex.techanalysis.Trend;
 import jforex.techanalysis.Volatility;
-import jforex.utils.FlexLogEntry;
+import jforex.utils.log.FlexLogEntry;
 
 public class BarHighChannelPosElement extends BaseFlexElement implements
 		IFlexEmailElement {

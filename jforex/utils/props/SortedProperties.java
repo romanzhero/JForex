@@ -1,4 +1,4 @@
-package jforex.utils;
+package jforex.utils.props;
 
 import java.util.Collections;
 import java.util.Enumeration;

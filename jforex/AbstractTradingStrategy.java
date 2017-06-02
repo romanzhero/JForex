@@ -11,9 +11,9 @@ import org.joda.time.DateTime;
 import org.joda.time.DateTimeConstants;
 
 import jforex.utils.FXUtils;
-import jforex.utils.FlexLogEntry;
-import jforex.utils.Logger.logTags;
-import jforex.utils.TradeStats;
+import jforex.utils.log.FlexLogEntry;
+import jforex.utils.log.Logger.logTags;
+import jforex.utils.stats.TradeStats;
 
 import com.dukascopy.api.Filter;
 import com.dukascopy.api.IAccount;

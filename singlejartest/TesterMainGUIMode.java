@@ -49,8 +49,9 @@ import javax.swing.JPanel;
 import javax.swing.SwingUtilities;
 
 import jforex.strategies.FlatCascTest;
-import jforex.utils.ClimberProperties;
 import jforex.utils.FXUtils;
+import jforex.utils.props.ClimberProperties;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

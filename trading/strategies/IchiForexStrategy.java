@@ -5,7 +5,7 @@ import com.dukascopy.api.Instrument;
 import jforex.strategies.OrderFillEvent;
 import jforex.strategies.OrderSLCloseEvent;
 import jforex.utils.FXUtils;
-import jforex.utils.Logger;
+import jforex.utils.log.Logger;
 import trading.elements.AbstractTradingStrategy;
 import trading.elements.IBrokerEngine;
 import trading.elements.IBrokerEvent;

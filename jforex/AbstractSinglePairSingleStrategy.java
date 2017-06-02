@@ -14,8 +14,9 @@ import jforex.filters.FilterFactory;
 import jforex.filters.IFilter;
 import jforex.techanalysis.Momentum;
 import jforex.utils.FXUtils;
-import jforex.utils.SortedProperties;
 import jforex.utils.FXUtils.EntryFilters;
+import jforex.utils.props.SortedProperties;
+
 import com.dukascopy.api.Configurable;
 import com.dukascopy.api.Filter;
 import com.dukascopy.api.IBar;

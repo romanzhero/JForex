@@ -20,7 +20,7 @@ import jforex.emailflex.IFlexEmailElement;
 import jforex.emailflex.IFlexEmailWrapper;
 import jforex.emailflex.SignalUtils;
 import jforex.utils.FXUtils;
-import jforex.utils.FlexLogEntry;
+import jforex.utils.log.FlexLogEntry;
 
 import com.dukascopy.api.IAccount;
 import com.dukascopy.api.IBar;

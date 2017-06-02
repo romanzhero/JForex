@@ -18,7 +18,7 @@ import com.dukascopy.api.Period;
 
 import jforex.BasicStrategy;
 import jforex.utils.FXUtils;
-import jforex.utils.FlexLogEntry;
+import jforex.utils.log.FlexLogEntry;
 
 public class CFDByDayExplorer extends BasicStrategy implements IStrategy{
 	public static Period selectedPeriod = Period.DAILY;

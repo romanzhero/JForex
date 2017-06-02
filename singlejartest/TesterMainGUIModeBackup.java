@@ -50,7 +50,7 @@ import javax.swing.SwingUtilities;
 
 import jforex.strategies.FlatCascTest;
 import jforex.utils.FXUtils;
-import jforex.utils.SimpleProperties;
+import jforex.utils.props.SimpleProperties;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

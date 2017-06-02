@@ -52,8 +52,8 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
 import jforex.explorers.IchimokuTradeTestRun;
-import jforex.utils.ClimberProperties;
 import jforex.utils.FXUtils;
+import jforex.utils.props.ClimberProperties;
 
 /**
  * This small program demonstrates how to initialize Dukascopy tester and start

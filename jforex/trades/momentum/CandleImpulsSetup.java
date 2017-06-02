@@ -284,7 +284,9 @@ public class CandleImpulsSetup extends TradeSetup implements ITradeSetup {
 				&& barRange > average.getAverage()
 				&& Math.abs(bidBar.getOpen() - bidBar.getClose()) / barRange > 0.8)
 				|| (taSituation.taSituation.equals(TechnicalSituation.OverallTASituation.BEARISH)
-					&& taSituation.taReason.equals(TechnicalSituation.TASituationReason.MOMENTUM))) 
+					&& taSituation.taReason.equals(TechnicalSituation.TASituationReason.MOMENTUM))
+				|| (taSituation.smiState.toString().startsWith("BEARISH")
+					&& taSituation.stochState.toString().startsWith("BEARISH"))) 
 				&& bidBar.getLow() > order.getOpenPrice()
 				&& bidBar.getLow() > order.getStopLossPrice()) {
 				lastTradingEvent = "CandleImpuls move SL signal (long)";
@@ -300,7 +302,9 @@ public class CandleImpulsSetup extends TradeSetup implements ITradeSetup {
 					&&  barRange > average.getAverage()
 					&& Math.abs(askBar.getOpen() - askBar.getClose()) / barRange > 0.8)
 					|| (taSituation.taSituation.equals(TechnicalSituation.OverallTASituation.BULLISH)
-						&& taSituation.taReason.equals(TechnicalSituation.TASituationReason.MOMENTUM))) 
+						&& taSituation.taReason.equals(TechnicalSituation.TASituationReason.MOMENTUM))
+					|| (taSituation.smiState.toString().startsWith("BULLISH")
+						&& taSituation.stochState.toString().startsWith("BULLISH"))) 
 					&& askBar.getHigh() < order.getOpenPrice()
 					&& askBar.getHigh() < order.getStopLossPrice()) {
 					lastTradingEvent = "CandleImpuls move SL signal (short)";

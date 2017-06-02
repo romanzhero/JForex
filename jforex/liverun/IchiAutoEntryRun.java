@@ -47,8 +47,8 @@ import java.util.HashSet;
 import java.util.Set;
 
 import jforex.autoentry.IchiAutoEntry;
-import jforex.utils.ClimberProperties;
 import jforex.utils.FXUtils;
+import jforex.utils.props.ClimberProperties;
 
 /**
  * This small program demonstrates how to initialize Dukascopy tester and start

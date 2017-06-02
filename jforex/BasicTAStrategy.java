@@ -30,7 +30,7 @@ import jforex.techanalysis.TradeTrigger;
 import jforex.techanalysis.Trend;
 import jforex.techanalysis.Trendline;
 import jforex.techanalysis.Volatility;
-import jforex.utils.FlexLogEntry;
+import jforex.utils.log.FlexLogEntry;
 
 import org.joda.time.DateTime;
 import org.joda.time.format.DateTimeFormat;

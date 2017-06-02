@@ -7,7 +7,7 @@ import java.util.StringTokenizer;
 import jforex.BasicTAStrategy;
 import jforex.techanalysis.TradeTrigger;
 import jforex.utils.FXUtils;
-import jforex.utils.FlexLogEntry;
+import jforex.utils.log.FlexLogEntry;
 import jforex.emailflex.EMailConfiguration;
 import com.dukascopy.api.IAccount;
 import com.dukascopy.api.IBar;

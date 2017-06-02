@@ -36,8 +36,8 @@ import jforex.logging.TradeLog;
 import jforex.techanalysis.TradeTrigger.TriggerDesc;
 import jforex.techanalysis.Trend.IchiDesc;
 import jforex.utils.FXUtils;
-import jforex.utils.Logger;
-import jforex.utils.MultiDDLog;
+import jforex.utils.log.Logger;
+import jforex.utils.log.MultiDDLog;
 
 // 1 full ATR from cloud as SL
 public class IchimokuTradeTestRun extends BasicTAStrategy implements IStrategy {

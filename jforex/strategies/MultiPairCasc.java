@@ -5,14 +5,15 @@ import java.math.BigDecimal;
 import java.util.*;
 
 import com.dukascopy.api.*;
-import jforex.utils.DailyPnL;
+
 import jforex.utils.FXUtils;
-import jforex.utils.FlexLogEntry;
-import jforex.utils.Logger;
-import jforex.utils.RangesStats;
 import jforex.utils.TradingHours;
 import jforex.utils.FXUtils.PreviousTrade;
-import jforex.utils.RangesStats.InstrumentRangeStats;
+import jforex.utils.log.FlexLogEntry;
+import jforex.utils.log.Logger;
+import jforex.utils.stats.DailyPnL;
+import jforex.utils.stats.RangesStats;
+import jforex.utils.stats.RangesStats.InstrumentRangeStats;
 import jforex.events.CandleMomentumEvent;
 import jforex.events.ITAEvent;
 import jforex.events.TAEventDesc;

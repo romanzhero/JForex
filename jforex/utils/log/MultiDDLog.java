@@ -1,4 +1,4 @@
-package jforex.utils;
+package jforex.utils.log;
 
 import com.dukascopy.api.IBar;
 

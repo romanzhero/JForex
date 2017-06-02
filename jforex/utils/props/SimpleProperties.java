@@ -1,4 +1,4 @@
-package jforex.utils;
+package jforex.utils.props;
 
 import java.io.File;
 

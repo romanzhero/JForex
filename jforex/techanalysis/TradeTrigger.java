@@ -6,7 +6,7 @@ import java.util.List;
 import org.apache.commons.math3.stat.ranking.NaturalRanking;
 
 import jforex.utils.FXUtils;
-import jforex.utils.Logger;
+import jforex.utils.log.Logger;
 
 import com.dukascopy.api.Filter;
 import com.dukascopy.api.IBar;

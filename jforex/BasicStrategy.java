@@ -15,7 +15,7 @@ import org.joda.time.DateTime;
 import org.joda.time.DateTimeConstants;
 
 import jforex.utils.FXUtils;
-import jforex.utils.Logger;
+import jforex.utils.log.Logger;
 
 import com.dukascopy.api.IConsole;
 import com.dukascopy.api.IContext;

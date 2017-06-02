@@ -42,7 +42,7 @@ import java.util.Set;
 import java.util.StringTokenizer;
 
 import jforex.strategies.SimpleMAsIDCrossTrendFollow;
-import jforex.utils.ClimberProperties;
+import jforex.utils.props.ClimberProperties;
 
 import org.slf4j.LoggerFactory;
 import org.slf4j.Logger;

@@ -1,4 +1,4 @@
-package jforex.utils;
+package jforex.utils.stats;
 
 import java.util.Map;
 import java.util.TreeMap;
@@ -8,7 +8,7 @@ import org.joda.time.DateTime;
 import com.dukascopy.api.IOrder;
 import com.dukascopy.api.Instrument;
 
-import jforex.utils.RangesStats.InstrumentRangeStats;
+import jforex.utils.stats.RangesStats.InstrumentRangeStats;
 
 public class DailyPnL {
 	

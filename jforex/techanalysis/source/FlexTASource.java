@@ -122,6 +122,10 @@ public class FlexTASource {
 			ma200Highest = taValues.get(MA200_HIGHEST).getBooleanValue(), 
 			ma200Lowest = taValues.get(MA200_LOWEST).getBooleanValue(),
 			ma200InChannel = taValues.get(MA200_IN_CHANNEL).getBooleanValue();
+		double[][] smis = taValues.get(SMI).getDa2DimValue();
+		double
+			fastSMI = smis[0][2],
+			slowSMI = smis[1][2];
 		
 		// first fill out the description fields before deciding on definitive situation flag
 		TechnicalSituation result = new TechnicalSituation();
@@ -207,10 +211,11 @@ public class FlexTASource {
 			result.txtSummary = entryTrendID.toString() + " (" + FXUtils.df1.format(maDistance) + ")";
 			return result;
 		}		
-		//TODO: before flat test all the clear momentum situations ! 
 		if ((result.smiState.equals(Momentum.SMI_STATE.BULLISH_BOTH_RAISING_IN_MIDDLE)
 			|| result.smiState.equals(Momentum.SMI_STATE.BULLISH_OVERBOUGHT_BOTH)
-			|| result.smiState.equals(Momentum.SMI_STATE.BULLISH_OVERBOUGHT_FAST_ABOVE_RAISING_SLOW))
+			|| result.smiState.equals(Momentum.SMI_STATE.BULLISH_OVERBOUGHT_FAST_ABOVE_RAISING_SLOW)
+			|| (result.smiState.equals(Momentum.SMI_STATE.BULLISH_WEAK_RAISING_IN_MIDDLE)
+				&& slowSMI > 0))
 			&& result.stochState.toString().startsWith("BULLISH")) {
 			result.taSituation = OverallTASituation.BULLISH;
 			result.taReason = TASituationReason.MOMENTUM;
@@ -220,7 +225,9 @@ public class FlexTASource {
 		}
 		if ((result.smiState.equals(Momentum.SMI_STATE.BEARISH_BOTH_FALLING_IN_MIDDLE)
 			|| result.smiState.equals(Momentum.SMI_STATE.BEARISH_OVERSOLD_BOTH)
-			|| result.smiState.equals(Momentum.SMI_STATE.BEARISH_OVERSOLD_FAST_BELOW_FALLING_SLOW))
+			|| result.smiState.equals(Momentum.SMI_STATE.BEARISH_OVERSOLD_FAST_BELOW_FALLING_SLOW)
+			|| (result.smiState.equals(Momentum.SMI_STATE.BEARISH_WEAK_FALLING_IN_MIDDLE)
+				&& slowSMI < 0))
 			&& result.stochState.toString().startsWith("BEARISH")) {
 			result.taSituation = OverallTASituation.BEARISH;
 			result.taReason = TASituationReason.MOMENTUM;
@@ -299,40 +306,30 @@ public class FlexTASource {
 			slowSMIFirst = smis[1][0],
 			slowSMIPrev = smis[1][1],
 			slowSMILast = smis[1][2];
-		if (fastSMILast <= -60.0 && slowSMILast <= -60.0)
-			taSituation.smiState = Momentum.SMI_STATE.BEARISH_OVERSOLD_BOTH;
-		else if (fastSMILast <= -60.0 && slowSMILast < slowSMIPrev && slowSMIPrev < slowSMIFirst)
-			taSituation.smiState = Momentum.SMI_STATE.BEARISH_OVERSOLD_FAST_BELOW_FALLING_SLOW;
-		else if (fastSMILast > -60.0 && slowSMILast <= -60.0
-				&& fastSMILast > fastSMIPrev && fastSMIPrev > fastSMIFirst)
-			taSituation.smiState = Momentum.SMI_STATE.BULLISH_WEAK_OVERSOLD_SLOW_BELOW_RAISING_FAST;
-		else if (fastSMILast >= 60.0 && slowSMILast >= 60.0)
-			taSituation.smiState = Momentum.SMI_STATE.BULLISH_OVERBOUGHT_BOTH;
-		else if (fastSMILast >= 60.0 && slowSMILast > slowSMIPrev && slowSMIPrev > slowSMIFirst)
-			taSituation.smiState = Momentum.SMI_STATE.BULLISH_OVERBOUGHT_FAST_ABOVE_RAISING_SLOW;
-		else if (slowSMILast >= 60.0 && fastSMILast < fastSMIPrev && fastSMIPrev < fastSMIFirst)
-			taSituation.smiState = Momentum.SMI_STATE.BEARISH_WEAK_OVERBOUGHT_SLOW_ABOVE_FALLING_FAST;
-		else if (slowSMILast> slowSMIPrev && slowSMIPrev > slowSMIFirst
-				&& fastSMILast > fastSMIPrev && fastSMIPrev > fastSMIFirst)
-			taSituation.smiState = Momentum.SMI_STATE.BULLISH_BOTH_RAISING_IN_MIDDLE;
-		else if (slowSMILast < slowSMIPrev && slowSMIPrev < slowSMIFirst
-				&& fastSMILast < fastSMIPrev && fastSMIPrev < fastSMIFirst)
-			taSituation.smiState = Momentum.SMI_STATE.BEARISH_BOTH_FALLING_IN_MIDDLE;
-		else
-			taSituation.smiState = Momentum.SMI_STATE.OTHER;
-		
 		if (slowSMILast <= -60 && slowSMILast < slowSMIPrev && slowSMIPrev < slowSMIFirst)
 			taSituation.slowSMIState = Momentum.SINGLE_LINE_STATE.FALLING_OVERSOLD;
 		else if (slowSMILast <= -60 && slowSMILast > slowSMIPrev && slowSMIPrev > slowSMIFirst)
 			taSituation.slowSMIState = Momentum.SINGLE_LINE_STATE.RAISING_OVERSOLD;
+		else if (slowSMILast <= -60 && slowSMILast >= slowSMIPrev && slowSMIPrev <= slowSMIFirst)
+			taSituation.slowSMIState = Momentum.SINGLE_LINE_STATE.TICKED_UP_OVERSOLD;
+		else if (slowSMILast <= -60 && slowSMILast <= slowSMIPrev && slowSMIPrev >= slowSMIFirst)
+			taSituation.slowSMIState = Momentum.SINGLE_LINE_STATE.TICKED_DOWN_OVERSOLD;
 		else if (slowSMILast >= 60 && slowSMILast < slowSMIPrev && slowSMIPrev < slowSMIFirst)
 			taSituation.slowSMIState = Momentum.SINGLE_LINE_STATE.FALLING_OVERBOUGHT;
 		else if (slowSMILast >= 60 && slowSMILast > slowSMIPrev && slowSMIPrev > slowSMIFirst)
 			taSituation.slowSMIState = Momentum.SINGLE_LINE_STATE.RAISING_OVERBOUGHT;
+		else if (slowSMILast >= 60 && slowSMILast >= slowSMIPrev && slowSMIPrev <= slowSMIFirst)
+			taSituation.slowSMIState = Momentum.SINGLE_LINE_STATE.TICKED_UP_OVERBOUGHT;
+		else if (slowSMILast >= 60 && slowSMILast <= slowSMIPrev && slowSMIPrev >= slowSMIFirst)
+			taSituation.slowSMIState = Momentum.SINGLE_LINE_STATE.TICKED_DOWN_OVERBOUGHT;
 		else if (slowSMILast > slowSMIPrev && slowSMIPrev > slowSMIFirst)
 			taSituation.slowSMIState = Momentum.SINGLE_LINE_STATE.RAISING_IN_MIDDLE;
 		else if (slowSMILast < slowSMIPrev && slowSMIPrev < slowSMIFirst)
 			taSituation.slowSMIState = Momentum.SINGLE_LINE_STATE.FALLING_IN_MIDDLE;
+		else if (slowSMILast <= slowSMIPrev && slowSMIPrev >= slowSMIFirst)
+			taSituation.slowSMIState = Momentum.SINGLE_LINE_STATE.TICKED_DOWN_IN_MIDDLE;
+		else if (slowSMILast >= slowSMIPrev && slowSMIPrev <= slowSMIFirst)
+			taSituation.slowSMIState = Momentum.SINGLE_LINE_STATE.TICKED_UP_IN_MIDDLE;
 		else
 			taSituation.slowSMIState = Momentum.SINGLE_LINE_STATE.OTHER;
 		
@@ -340,16 +337,82 @@ public class FlexTASource {
 			taSituation.fastSMIState = Momentum.SINGLE_LINE_STATE.FALLING_OVERSOLD;
 		else if (fastSMILast <= -60 && fastSMILast > fastSMIPrev && fastSMIPrev > fastSMIFirst)
 			taSituation.fastSMIState = Momentum.SINGLE_LINE_STATE.RAISING_OVERSOLD;
+		else if (fastSMILast <= -60 && fastSMILast >= fastSMIPrev && fastSMIPrev <= fastSMIFirst)
+			taSituation.fastSMIState = Momentum.SINGLE_LINE_STATE.TICKED_UP_OVERSOLD;
+		else if (fastSMILast <= -60 && fastSMILast <= fastSMIPrev && fastSMIPrev >= fastSMIFirst)
+			taSituation.fastSMIState = Momentum.SINGLE_LINE_STATE.TICKED_DOWN_OVERSOLD;
 		else if (fastSMILast >= 60 && fastSMILast < fastSMIPrev && fastSMIPrev < fastSMIFirst)
 			taSituation.fastSMIState = Momentum.SINGLE_LINE_STATE.FALLING_OVERBOUGHT;
 		else if (fastSMILast >= 60 && fastSMILast > fastSMIPrev && fastSMIPrev > fastSMIFirst)
 			taSituation.fastSMIState = Momentum.SINGLE_LINE_STATE.RAISING_OVERBOUGHT;
+		else if (fastSMILast >= 60 && fastSMILast >= fastSMIPrev && fastSMIPrev <= fastSMIFirst)
+			taSituation.fastSMIState = Momentum.SINGLE_LINE_STATE.TICKED_UP_OVERBOUGHT;
+		else if (fastSMILast >= 60 && fastSMILast <= fastSMIPrev && fastSMIPrev >= fastSMIFirst)
+			taSituation.fastSMIState = Momentum.SINGLE_LINE_STATE.TICKED_DOWN_OVERBOUGHT;
 		else if (fastSMILast > fastSMIPrev && fastSMIPrev > fastSMIFirst)
 			taSituation.fastSMIState = Momentum.SINGLE_LINE_STATE.RAISING_IN_MIDDLE;
 		else if (fastSMILast < fastSMIPrev && fastSMIPrev < fastSMIFirst)
 			taSituation.fastSMIState = Momentum.SINGLE_LINE_STATE.FALLING_IN_MIDDLE;
+		else if (fastSMILast <= fastSMIPrev && fastSMIPrev >= fastSMIFirst)
+			taSituation.fastSMIState = Momentum.SINGLE_LINE_STATE.TICKED_DOWN_IN_MIDDLE;
+		else if (fastSMILast >= fastSMIPrev && fastSMIPrev <= fastSMIFirst)
+			taSituation.fastSMIState = Momentum.SINGLE_LINE_STATE.TICKED_UP_IN_MIDDLE;
 		else
 			taSituation.fastSMIState = Momentum.SINGLE_LINE_STATE.OTHER;
+		
+		if (fastSMILast <= -60.0 && slowSMILast <= -60.0)
+			taSituation.smiState = Momentum.SMI_STATE.BEARISH_OVERSOLD_BOTH;		
+		else if (fastSMILast <= -60.0 && fastSMILast < slowSMILast
+				&& (taSituation.slowSMIState.equals(Momentum.SINGLE_LINE_STATE.FALLING_IN_MIDDLE)
+					|| taSituation.slowSMIState.equals(Momentum.SINGLE_LINE_STATE.TICKED_DOWN_IN_MIDDLE)))
+			taSituation.smiState = Momentum.SMI_STATE.BEARISH_OVERSOLD_FAST_BELOW_FALLING_SLOW;
+		else if (fastSMILast > -60.0 && slowSMILast <= -60.0
+				&& fastSMILast > slowSMILast
+				&& (taSituation.fastSMIState.equals(Momentum.SINGLE_LINE_STATE.RAISING_IN_MIDDLE)
+					|| taSituation.fastSMIState.equals(Momentum.SINGLE_LINE_STATE.TICKED_UP_IN_MIDDLE)))
+			taSituation.smiState = Momentum.SMI_STATE.BULLISH_WEAK_OVERSOLD_SLOW_BELOW_RAISING_FAST;
+		else if (fastSMILast >= 60.0 && slowSMILast >= 60.0)
+			taSituation.smiState = Momentum.SMI_STATE.BULLISH_OVERBOUGHT_BOTH;
+		else if (fastSMILast >= 60.0 && fastSMILast > slowSMILast
+			&& (taSituation.slowSMIState.equals(Momentum.SINGLE_LINE_STATE.RAISING_IN_MIDDLE)
+				|| taSituation.slowSMIState.equals(Momentum.SINGLE_LINE_STATE.TICKED_UP_IN_MIDDLE)))
+			taSituation.smiState = Momentum.SMI_STATE.BULLISH_OVERBOUGHT_FAST_ABOVE_RAISING_SLOW;
+		else if (slowSMILast >= 60.0 && fastSMILast < slowSMILast
+				&& (taSituation.fastSMIState.equals(Momentum.SINGLE_LINE_STATE.FALLING_IN_MIDDLE)
+					|| taSituation.fastSMIState.equals(Momentum.SINGLE_LINE_STATE.TICKED_DOWN_IN_MIDDLE)))
+			taSituation.smiState = Momentum.SMI_STATE.BEARISH_WEAK_OVERBOUGHT_SLOW_ABOVE_FALLING_FAST;
+		else if (fastSMILast > slowSMILast
+				&& (taSituation.slowSMIState.equals(Momentum.SINGLE_LINE_STATE.RAISING_IN_MIDDLE)
+					|| taSituation.slowSMIState.equals(Momentum.SINGLE_LINE_STATE.TICKED_UP_IN_MIDDLE))
+				&& (taSituation.fastSMIState.equals(Momentum.SINGLE_LINE_STATE.RAISING_IN_MIDDLE)
+					|| taSituation.fastSMIState.equals(Momentum.SINGLE_LINE_STATE.TICKED_UP_IN_MIDDLE)))
+			taSituation.smiState = Momentum.SMI_STATE.BULLISH_BOTH_RAISING_IN_MIDDLE;
+		else if (fastSMILast < slowSMILast
+				&& (taSituation.fastSMIState.equals(Momentum.SINGLE_LINE_STATE.FALLING_IN_MIDDLE)
+					|| taSituation.fastSMIState.equals(Momentum.SINGLE_LINE_STATE.TICKED_DOWN_IN_MIDDLE))
+				&& (taSituation.slowSMIState.equals(Momentum.SINGLE_LINE_STATE.FALLING_IN_MIDDLE)
+					|| taSituation.slowSMIState.equals(Momentum.SINGLE_LINE_STATE.TICKED_DOWN_IN_MIDDLE)))
+			taSituation.smiState = Momentum.SMI_STATE.BEARISH_BOTH_FALLING_IN_MIDDLE;
+		else if (fastSMILast > slowSMILast
+				&& !taSituation.slowSMIState.equals(Momentum.SINGLE_LINE_STATE.FALLING_IN_MIDDLE)
+				&& (taSituation.fastSMIState.equals(Momentum.SINGLE_LINE_STATE.RAISING_IN_MIDDLE)
+					|| taSituation.fastSMIState.equals(Momentum.SINGLE_LINE_STATE.TICKED_UP_IN_MIDDLE)))
+			taSituation.smiState = Momentum.SMI_STATE.BULLISH_WEAK_RAISING_IN_MIDDLE;
+		else if (fastSMILast >= slowSMILast
+				&& !taSituation.slowSMIState.equals(Momentum.SINGLE_LINE_STATE.RAISING_IN_MIDDLE)
+				&& !taSituation.fastSMIState.equals(Momentum.SINGLE_LINE_STATE.RAISING_IN_MIDDLE))
+			taSituation.smiState = Momentum.SMI_STATE.BEARISH_WEAK_FALLING_IN_MIDDLE;
+		else if (fastSMILast < slowSMILast
+				&& !taSituation.slowSMIState.equals(Momentum.SINGLE_LINE_STATE.RAISING_IN_MIDDLE)
+				&& (taSituation.fastSMIState.equals(Momentum.SINGLE_LINE_STATE.RAISING_IN_MIDDLE)
+					|| taSituation.fastSMIState.equals(Momentum.SINGLE_LINE_STATE.TICKED_UP_IN_MIDDLE)))
+			taSituation.smiState = Momentum.SMI_STATE.BEARISH_WEAK_FALLING_IN_MIDDLE;
+		else if (fastSMILast <= slowSMILast
+				&& !taSituation.slowSMIState.equals(Momentum.SINGLE_LINE_STATE.FALLING_IN_MIDDLE)
+				&& !taSituation.fastSMIState.equals(Momentum.SINGLE_LINE_STATE.FALLING_IN_MIDDLE))
+			taSituation.smiState = Momentum.SMI_STATE.BULLISH_WEAK_RAISING_IN_MIDDLE;
+		else
+			taSituation.smiState = Momentum.SMI_STATE.OTHER;
 	}
 
 	private void addBBands(Instrument instrument, Period period, IBar bidBar, Map<String, FlexTAValue> result) throws JFException {
