@@ -14,7 +14,10 @@ import com.dukascopy.api.LineStyle;
 import com.dukascopy.api.IIndicators.MaType;
 import com.dukascopy.api.Instrument;
 import com.dukascopy.api.drawings.IHorizontalLineChartObject;
+import com.dukascopy.api.drawings.ISignalDownChartObject;
+import com.dukascopy.api.drawings.ISignalUpChartObject;
 import com.dukascopy.api.drawings.ITextChartObject;
+import com.dukascopy.api.drawings.ITimeMarkerChartObject;
 import com.dukascopy.api.indicators.IIndicator;
 import com.dukascopy.api.indicators.OutputParameterInfo;
 
@@ -143,6 +146,38 @@ public class JForexChart {
 			chart.add(txt);
 		}
 	}
+	
+	
+	public void showVerticalLineOnGUI(String textToShow, Instrument instrument, long time) {
+		if (visualMode) {
+			chart = context.getChart(instrument);
+			if (chart == null) {
+				// chart is not opened, we can't plot an object
+				console.getOut().println("Can't open the chart for " + instrument.toString() + ", stop !");
+				context.stop();
+			}
+		}
+	    ITimeMarkerChartObject vLine = chart.getChartObjectFactory().createTimeMarker();              
+	    vLine.setTime(0, time);
+	    vLine.setColor(Color.GREEN);
+	    vLine.setLineWidth(2);
+	    vLine.setText(textToShow);
+	    chart.add(vLine);       
+	}
+
+    void drawCandleMomentumSignal(Instrument instrument, boolean isLong, long time, double level) {
+         if (isLong) {
+            ISignalUpChartObject signalUp = chart.getChartObjectFactory().createSignalUp();
+            signalUp.setTime(0, time);
+            signalUp.setPrice(0, level);
+            chart.add(signalUp);
+        } else {    
+            ISignalDownChartObject signalDown = chart.getChartObjectFactory().createSignalDown();
+            signalDown.setTime(0, time);
+            signalDown.setPrice(0, level);
+            chart.add(signalDown);            
+        }        
+    }	
 
 	public double getMaxPrice() {
 		return chart.getMaxPrice();
