@@ -184,7 +184,8 @@ public class TrendLengthExplorer implements IStrategy {
 			TAEventDesc signal = setup.checkEntry(instrument, period, askBar, bidBar, selectedFilter, lastTaValues);
 			if (signal != null && signal.eventType.equals(TAEventDesc.TAEventType.ENTRY_SIGNAL)) {
 				trendOnGoing = true;
-				chart.showVerticalLineOnGUI("Start " + (signal.isLong ? "long" : "short"), instrument, bidBar.getTime(), signal.isLong ? Color.GREEN : Color.RED);
+				chart.showVerticalLineOnGUI(instrument, bidBar.getTime(), signal.isLong ? Color.GREEN : Color.RED);
+				chart.showTradingEventOnGUI("Start " + (signal.isLong ? "long" : "short"), instrument, bidBar.getTime(), bidBar.getClose());
 			} else {
 				prevTaValues = lastTaValues;
 				setup.inTradeProcessing(instrument, period, askBar, bidBar, selectedFilter, null, lastTaValues, null);
@@ -202,7 +203,8 @@ public class TrendLengthExplorer implements IStrategy {
 				trendOnGoing = false;
 				setup.afterTradeReset(instrument);
 				stats.add(currData);
-				chart.showVerticalLineOnGUI("End " + (currData.isLong ? "long" : "short"), instrument, bidBar.getTime(), Color.BLACK);
+				chart.showVerticalLineOnGUI(instrument, bidBar.getTime(), Color.BLACK);
+				chart.showTradingEventOnGUI("End " + (currData.isLong ? "long" : "short"), instrument, bidBar.getTime(), bidBar.getClose());
 			} 
 		}
 		prevTaValues = lastTaValues;

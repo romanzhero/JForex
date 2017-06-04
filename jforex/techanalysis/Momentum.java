@@ -63,9 +63,11 @@ public class Momentum {
 		BEARISH_OVERSOLD_BOTH, // Fast and Slow both below -60
 		BEARISH_OVERSOLD_FAST_BELOW_FALLING_SLOW, // Fast below -60
 		BULLISH_WEAK_OVERSOLD_SLOW_BELOW_RAISING_FAST, // Slow below -60 but Fast not, rather bullish (raising from OS)
+		BULLISH_WEAK_OVERSOLD_SLOW_BELOW_FAST, // Slow below -60 but Fast not, however not raising
 		BULLISH_OVERBOUGHT_BOTH, // Fast and Slow both above +60
 		BULLISH_OVERBOUGHT_FAST_ABOVE_RAISING_SLOW, // Fast above +60
 		BEARISH_WEAK_OVERBOUGHT_SLOW_ABOVE_FALLING_FAST, // Slow above 80 but Fast not, rather bearish (falling OB)
+		BEARISH_WEAK_OVERBOUGHT_SLOW_ABOVE_FAST, // Slow above 80 but Fast not, however not falling
 		BULLISH_BOTH_RAISING_IN_MIDDLE, // Fast above slow and none OS nor OB
 		BEARISH_BOTH_FALLING_IN_MIDDLE, // Fast below slow and none OS nor OB
 		BULLISH_WEAK_RAISING_IN_MIDDLE,

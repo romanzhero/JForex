@@ -52,26 +52,16 @@ public class JForexChart {
 				context.stop();
 			}
 			if (showIndicators) {
-				chart.add(indicators.getIndicator("BBands"), new Object[] { 20,
-						2.0, 2.0, MaType.SMA.ordinal() }, new Color[] {
-						Color.MAGENTA, Color.RED, Color.MAGENTA }, null, null);
-				chart.add(indicators.getIndicator("STOCH"), new Object[] { 14,
-						3, MaType.SMA.ordinal(), 3, MaType.SMA.ordinal() },
+				chart.add(indicators.getIndicator("BBands"), new Object[] { 20,	2.0, 2.0, MaType.SMA.ordinal() }, 
+						new Color[] {Color.MAGENTA, Color.RED, Color.MAGENTA }, null, null);
+				chart.add(indicators.getIndicator("STOCH"), new Object[] { 14, 3, MaType.SMA.ordinal(), 3, MaType.SMA.ordinal() },
 						new Color[] { Color.RED, Color.BLUE },
-						new OutputParameterInfo.DrawingStyle[] {
-								OutputParameterInfo.DrawingStyle.LINE,
-								OutputParameterInfo.DrawingStyle.LINE }, null);
-				chart.add(indicators.getIndicator("SMA"), new Object[] { 50 },
-						new Color[] { Color.BLUE }, null, null);
-				chart.add(indicators.getIndicator("SMA"), new Object[] { 100 },
-						new Color[] { Color.GREEN }, null, null);
-				chart.add(indicators.getIndicator("SMA"), new Object[] { 200 },
-						new Color[] { Color.YELLOW }, null, null);
-				chart.add(indicators.getIndicator("SMI"), new Object[] { 50,
-						15, 5, 3 }, new Color[] { Color.CYAN, Color.BLACK },
-						new OutputParameterInfo.DrawingStyle[] {
-								OutputParameterInfo.DrawingStyle.LINE,
-								OutputParameterInfo.DrawingStyle.NONE }, null);
+						new OutputParameterInfo.DrawingStyle[] {OutputParameterInfo.DrawingStyle.LINE, OutputParameterInfo.DrawingStyle.LINE }, null);
+				chart.add(indicators.getIndicator("SMA"), new Object[] { 50 }, new Color[] { Color.BLUE }, null, null);
+				chart.add(indicators.getIndicator("SMA"), new Object[] { 100 },	new Color[] { Color.GREEN }, null, null);
+				chart.add(indicators.getIndicator("SMA"), new Object[] { 200 }, new Color[] { Color.YELLOW }, null, null);
+				chart.add(indicators.getIndicator("SMI"), new Object[] { 50, 15, 5, 3 }, new Color[] { Color.CYAN, Color.BLACK },
+						new OutputParameterInfo.DrawingStyle[] {OutputParameterInfo.DrawingStyle.LINE, OutputParameterInfo.DrawingStyle.NONE }, null);
 
 				List<IIndicatorPanel> panels = chart.getIndicatorPanels();
 				for (IIndicatorPanel currPanel : panels) {
@@ -79,26 +69,10 @@ public class JForexChart {
 					for (IIndicator currIndicator : panelIndicators) {
 						if (currIndicator.toString().contains("SMIIndicator")) {
 							currPanel.add(indicators.getIndicator("SMI"),
-											new Object[] { 10, 3, 5, 3 },
-											new Color[] { Color.RED,Color.BLACK },
-											new OutputParameterInfo.DrawingStyle[] {
-													OutputParameterInfo.DrawingStyle.LINE,
-													OutputParameterInfo.DrawingStyle.NONE },
-											null);
-							IHorizontalLineChartObject lplus60 = chart.getChartObjectFactory().createHorizontalLine();
-							lplus60.setPrice(0, 60);
-							lplus60.setText("60");
-							lplus60.setColor(Color.BLACK);
-							lplus60.setLineStyle(LineStyle.DASH);
-							currPanel.add(lplus60);
+										new Object[] { 10, 3, 5, 3 },
+										new Color[] { Color.RED,Color.BLACK },
+										new OutputParameterInfo.DrawingStyle[] { OutputParameterInfo.DrawingStyle.LINE,	OutputParameterInfo.DrawingStyle.NONE }, null);
 
-							IHorizontalLineChartObject lminus60 = chart
-									.getChartObjectFactory().createHorizontalLine();
-							lminus60.setPrice(0, -60);
-							lminus60.setText("-60");
-							lminus60.setColor(Color.BLACK);
-							lminus60.setLineStyle(LineStyle.DASH);
-							currPanel.add(lminus60);
 						}
 					}
 				}
@@ -148,7 +122,7 @@ public class JForexChart {
 	}
 	
 	
-	public void showVerticalLineOnGUI(String textToShow, Instrument instrument, long time, Color color) {
+	public void showVerticalLineOnGUI(Instrument instrument, long time, Color color) {
 		if (visualMode) {
 			chart = context.getChart(instrument);
 			if (chart == null) {
@@ -161,7 +135,6 @@ public class JForexChart {
 	    vLine.setTime(0, time);
 	    vLine.setColor(color);
 	    vLine.setLineWidth(2);
-	    vLine.setText(textToShow);
 	    chart.add(vLine);       
 	}
 
