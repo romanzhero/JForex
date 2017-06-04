@@ -148,7 +148,7 @@ public class JForexChart {
 	}
 	
 	
-	public void showVerticalLineOnGUI(String textToShow, Instrument instrument, long time) {
+	public void showVerticalLineOnGUI(String textToShow, Instrument instrument, long time, Color color) {
 		if (visualMode) {
 			chart = context.getChart(instrument);
 			if (chart == null) {
@@ -159,7 +159,7 @@ public class JForexChart {
 		}
 	    ITimeMarkerChartObject vLine = chart.getChartObjectFactory().createTimeMarker();              
 	    vLine.setTime(0, time);
-	    vLine.setColor(Color.GREEN);
+	    vLine.setColor(color);
 	    vLine.setLineWidth(2);
 	    vLine.setText(textToShow);
 	    chart.add(vLine);       

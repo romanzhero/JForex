@@ -141,7 +141,7 @@ public abstract class AbstractSmaTradeSetup extends TradeSetup {
 	@Override
 	public void inTradeProcessing(Instrument instrument, Period period,	IBar askBar, IBar bidBar, Filter filter, IOrder order, Map<String, FlexTAValue> taValues, List<TAEventDesc> marketEvents) throws JFException {
 		super.inTradeProcessing(instrument, period, askBar, bidBar, filter,	order, taValues, marketEvents);
-		if (order == null)
+		if (order == null || marketEvents == null)
 			return;
 
 		for (TAEventDesc curr : marketEvents) {

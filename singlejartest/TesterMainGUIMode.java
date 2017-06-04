@@ -48,6 +48,7 @@ import javax.swing.JFrame;
 import javax.swing.JPanel;
 import javax.swing.SwingUtilities;
 
+import jforex.explorers.TrendLengthExplorer;
 import jforex.strategies.FlatCascTest;
 import jforex.utils.FXUtils;
 import jforex.utils.props.ClimberProperties;
@@ -110,7 +111,7 @@ public class TesterMainGUIMode extends JFrame implements ITesterUserInterface, I
 			ITesterGui currGui = entry.getValue();
 			currGui.getTesterChartController().addOHLCInformer();
 			currGui.getTesterChartController().setFilter(Filter.ALL_FLATS);
-			IFeedDescriptor fd = new TimePeriodAggregationFeedDescriptor(null, Period.FIVE_MINS, null);
+			IFeedDescriptor fd = new TimePeriodAggregationFeedDescriptor(null, Period.THIRTY_MINS, null);
 			fd.setFilter(Filter.ALL_FLATS);
 			currGui.getTesterChartController().setFeedDescriptor(fd);
 			JPanel chartPanel = currGui.getChartPanel();
@@ -211,7 +212,8 @@ public class TesterMainGUIMode extends JFrame implements ITesterUserInterface, I
 		LOGGER.info("Starting strategy");
 
 		client.startStrategy(
-				new FlatCascTest(instrument, properties),
+				new TrendLengthExplorer(instrument, properties),
+				// new FlatCascTest(instrument, properties),
 				// new MA_Play(),
 				new LoadingProgressListener() {
 					@Override

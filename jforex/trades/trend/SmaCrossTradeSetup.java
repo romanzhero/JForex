@@ -77,7 +77,7 @@ public class SmaCrossTradeSetup extends AbstractSmaTradeSetup {
 	public void inTradeProcessing(Instrument instrument, Period period, IBar askBar, IBar bidBar, Filter filter, IOrder order, Map<String, FlexTAValue> taValues, List<TAEventDesc> marketEvents) throws JFException {
 		Trend.TREND_STATE trendID = taValues.get(FlexTASource.TREND_ID).getTrendStateValue();
 		if (longCrossHappened && !trendID.equals(TREND_STATE.UP_STRONG))
-				longCrossHappened = false;
+			longCrossHappened = false;
 		if (shortCrossHappened && !trendID.equals(TREND_STATE.DOWN_STRONG))
 			shortCrossHappened = false;
 		super.inTradeProcessing(instrument, period, askBar, bidBar, filter, order, taValues, marketEvents);
