@@ -2,7 +2,9 @@ package jforex.logging;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
+import jforex.techanalysis.source.FlexTAValue;
 import jforex.utils.FXUtils;
 import jforex.utils.log.FlexLogEntry;
 import jforex.utils.log.Logger;
@@ -22,6 +24,7 @@ public class TradeLog {
 
 	protected List<FlexLogEntry> entryData = new ArrayList<FlexLogEntry>();
 	public String setup;
+	private double PnLPerc;
 
 	public TradeLog(String pOrderLabel, boolean pIsLong, String setup, long pSignalTime, double pEntryPrice, double pSL, double pInitialRisk) {
 		orderLabel = pOrderLabel;
@@ -150,7 +153,9 @@ public class TradeLog {
 						+ FXUtils.getFormatedTimeGMT(exitTime) + ";"
 						+ exitReason + ";"
 						+ FXUtils.df1.format(PnL) + ";"
+						+ FXUtils.df2.format(PnLPerc) + ";"
 						+ FXUtils.df1.format(maxProfit * Math.pow(10, instrument.getPipScale())) + ";"
+						+ FXUtils.df2.format((isLong ? maxProfitPrice - entryPrice : entryPrice - maxProfitPrice) / entryPrice * 100) + ";"
 						+ FXUtils.df1.format(missedProfit(instrument)) + ";"
 						+ FXUtils.df1.format(missedProfitPerc(instrument)) + ";"
 						+ (instrument.getPipScale() != 2 ? FXUtils.df5.format(maxProfitPrice) : FXUtils.df2.format(maxProfitPrice)) + ";"						
@@ -181,7 +186,9 @@ public class TradeLog {
 						+ "exitTime;"
 						+ "exitReason;"
 						+ "PnL;"
+						+ "PnPercL;"
 						+ "maxProfit;"
+						+ "maxProfitPerc;"
 						+ "missedProfit;"
 						+ "missedProfitPerc;"
 						+ "maxProfitPrice;"
@@ -200,4 +207,24 @@ public class TradeLog {
 		return result;
 
 	}
+	
+	public void addTAData(Map<String, FlexTAValue> taValues) {
+		for (Map.Entry<String, FlexTAValue> curr : taValues.entrySet()) {
+			FlexTAValue taValue = curr.getValue();
+			addLogEntry(taValue);
+		}		
+	}
+
+	public void setPnLInPips(double exitPrice, Instrument instrument) {
+		if (isLong)
+			PnL = (exitPrice - entryPrice) * Math.pow(10, instrument.getPipScale());
+		else
+			PnL = (entryPrice - exitPrice) * Math.pow(10, instrument.getPipScale());		
+	}
+
+	public void setPnLInPerc(double exitPrice) {
+		if (isLong) 
+			PnLPerc = (exitPrice - entryPrice) / entryPrice * 100.0;
+		else 
+			PnLPerc = (entryPrice - exitPrice) / exitPrice * 100.0;				}
 }

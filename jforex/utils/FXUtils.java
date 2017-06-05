@@ -1390,9 +1390,22 @@ public class FXUtils {
 
 	public static double currPercPnL(IOrder order, IBar bidBar, IBar askBar) {		
 		if (order.isLong()) {
-		return (bidBar.getClose() - order.getOpenPrice()) / order.getOpenPrice() * 100.0;
-	} else {
-		return (order.getOpenPrice() - askBar.getClose()) / askBar.getClose() * 100.0;			
+			return (bidBar.getClose() - order.getOpenPrice()) / order.getOpenPrice() * 100.0;
+		} else {
+			return (order.getOpenPrice() - askBar.getClose()) / askBar.getClose() * 100.0;			
+		}
 	}
+	
+	public static double currPercPnL(boolean isLong, double openPrice, IBar bidBar, IBar askBar) {		
+		if (isLong) {
+			return (bidBar.getClose() - openPrice) / openPrice * 100.0;
+		} else 
+			return (openPrice - askBar.getClose()) / askBar.getClose() * 100.0;			
+	}
+	
+	public static String getOrderLabel(Instrument instrument, String prefix, long time, boolean isLong, int orderCnt) {
+		return new String(prefix + instrument.name() + "_"
+				+ FXUtils.getFormatedTimeGMTforID(time) + "_" + orderCnt
+				+ "_" + (isLong ? "BUY" : "SELL"));
 	}
 }

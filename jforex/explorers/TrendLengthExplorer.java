@@ -31,6 +31,7 @@ import jforex.trades.trend.SmaCrossAdvancedTradeSetup;
 import jforex.utils.FXUtils;
 import jforex.utils.JForexChart;
 import jforex.utils.TradingHours;
+import jforex.utils.log.FlexLogEntry;
 import jforex.utils.log.Logger;
 import jforex.utils.props.ClimberProperties;
 
@@ -127,6 +128,7 @@ public class TrendLengthExplorer implements IStrategy {
 		prevTaValues = null;
 	private SmaCrossAdvancedTradeSetup setup = null;
 		
+	private int orderCnt = 0;
 	private Logger 
 		log = null,
 		statsLog = null;
@@ -184,6 +186,9 @@ public class TrendLengthExplorer implements IStrategy {
 			TAEventDesc signal = setup.checkEntry(instrument, period, askBar, bidBar, selectedFilter, lastTaValues);
 			if (signal != null && signal.eventType.equals(TAEventDesc.TAEventType.ENTRY_SIGNAL)) {
 				trendOnGoing = true;
+				tradeLog = new TradeLog(FXUtils.getOrderLabel(instrument, "TrendLength", bidBar.getTime(), signal.isLong, orderCnt ++), 
+						signal.isLong, "TrendLength", bidBar.getTime(), bidBar.getClose(), 0, 0);
+
 				chart.showVerticalLineOnGUI(instrument, bidBar.getTime(), signal.isLong ? Color.GREEN : Color.RED);
 				chart.showTradingEventOnGUI("Start " + (signal.isLong ? "long" : "short"), instrument, bidBar.getTime(), bidBar.getClose());
 			} else {
@@ -195,6 +200,7 @@ public class TrendLengthExplorer implements IStrategy {
 			currData = new TrendPeriodData(bidBar.getTime(), signal.isLong, bidBar.getClose());
 		} else if (trendOnGoing) {
 			currData.updateOnBar(bidBar);
+			tradeLog.updateMaxProfit(bidBar);
 			setup.inTradeProcessing(instrument, period, askBar, bidBar, selectedFilter, null, lastTaValues, null);
 			double ma100 = lastTaValues.get(FlexTASource.MAs).getDa2DimValue()[1][2];
 			boolean trendEnd = (currData.isLong && bidBar.getClose() < ma100)
@@ -203,6 +209,26 @@ public class TrendLengthExplorer implements IStrategy {
 				trendOnGoing = false;
 				setup.afterTradeReset(instrument);
 				stats.add(currData);
+				if (tradeLog != null) {
+					tradeLog.exitTime = bidBar.getTime();
+					tradeLog.exitReason = "MA100 crossed";
+					tradeLog.setPnLInPips(bidBar.getClose(), instrument);
+					tradeLog.setPnLInPerc(bidBar.getClose());
+					
+					tradeLog.addLogEntry(new FlexLogEntry("exitValues", "EXIT"));
+					tradeLog.addLogEntry(new FlexLogEntry("exitSetup", "TrendLength"));
+					tradeLog.addLogEntry(new FlexLogEntry("lastTradingAction", "MA100 crossed"));
+					tradeLog.addTAData(lastTaValues);
+					
+					if (!headerPrinted) {
+						headerPrinted = true;
+						statsLog.print(tradeLog.prepareHeader());
+					}
+					String logLine = tradeLog.prepareExitReport(instrument);
+					console.getOut().println(logLine);					
+					statsLog.print(logLine);					
+				}
+				
 				chart.showVerticalLineOnGUI(instrument, bidBar.getTime(), Color.BLACK);
 				chart.showTradingEventOnGUI("End " + (currData.isLong ? "long" : "short"), instrument, bidBar.getTime(), bidBar.getClose());
 			} 
@@ -222,8 +248,39 @@ public class TrendLengthExplorer implements IStrategy {
 
 	@Override
 	public void onStop() throws JFException {
-		// TODO Auto-generated method stub
-
+		// Final total stats report
+		double maxProfit = 0.0;
+		long 
+			maxProfitTime = 0, 
+			maxDuration = 0,
+			maxDurationTime = 0,
+			totalDuration = 0;
+		double[] profitValues = new double[stats.size()];
+		double[] durationValues = new double[stats.size()];
+		int i = 0;
+		for (TrendPeriodData curr : stats) {
+			profitValues[i] = curr.maxProfit;
+			durationValues[i++] = curr.duration;
+			totalDuration += curr.duration;
+			if (curr.maxProfit > maxProfit) {
+				maxProfit = curr.maxProfit;
+				maxProfitTime = curr.startTime;
+			}
+			if (curr.duration > maxDuration) {
+				maxDuration = curr.duration;
+				maxDurationTime = curr.startTime;
+			}
+		}
+		log.print("Max profit: " + FXUtils.df2.format(maxProfit * 100) 
+			+ " (started: " + FXUtils.getFormatedTimeGMT(maxProfitTime) + "), "
+			+ "avg. max. profit: " + FXUtils.df2.format(FXUtils.average(profitValues) * 100));
+		log.print("Time in trend (%): " + FXUtils.df1.format((double)totalDuration / (double)totalTestBars * 100.0) + ", "
+				+ "Max duration: " + maxDuration
+				+ " (started: " + FXUtils.getFormatedTimeGMT(maxDurationTime) + "), "
+				+ "avg. duration: " + FXUtils.df1.format(FXUtils.average(durationValues)), true);
+		
+		log.close();
+		statsLog.close();
 	}
 
 }

@@ -1,19 +1,12 @@
 package jforex.strategies;
 
-import java.awt.Color;
-import java.awt.Font;
 import java.io.File;
 import java.math.BigDecimal;
 import java.util.*;
 
 import com.dukascopy.api.*;
-import com.dukascopy.api.IIndicators.MaType;
-import com.dukascopy.api.drawings.IHorizontalLineChartObject;
-import com.dukascopy.api.drawings.ITextChartObject;
 import com.dukascopy.api.indicators.IIndicator;
 import com.dukascopy.api.indicators.IndicatorInfo;
-import com.dukascopy.api.indicators.OutputParameterInfo;
-
 import jforex.utils.FXUtils;
 import jforex.utils.JForexChart;
 import jforex.utils.TradingHours;
@@ -637,10 +630,7 @@ public class FlatCascTest implements IStrategy {
 					taValues.put(FlexTASource.BEARISH_CANDLES, new FlexTAValue(FlexTASource.BEARISH_CANDLES, ((FlatTradeSetup) currentSetup).getLastShortSignal()));
 			}
 		}
-		for (Map.Entry<String, FlexTAValue> curr : taValues.entrySet()) {
-			FlexTAValue taValue = curr.getValue();
-			tradeLog.addLogEntry(taValue);
-		}
+		tradeLog.addTAData(taValues);
 	}
 
 	private void submitOrderFromQueue(Instrument instrument, IBar bidBar, IBar askBar) throws JFException {
