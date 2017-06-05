@@ -188,6 +188,7 @@ public class TrendLengthExplorer implements IStrategy {
 				trendOnGoing = true;
 				tradeLog = new TradeLog(FXUtils.getOrderLabel(instrument, "TrendLength", bidBar.getTime(), signal.isLong, orderCnt ++), 
 						signal.isLong, "TrendLength", bidBar.getTime(), bidBar.getClose(), 0, 0);
+				tradeLog.addTAData(lastTaValues);
 
 				chart.showVerticalLineOnGUI(instrument, bidBar.getTime(), signal.isLong ? Color.GREEN : Color.RED);
 				chart.showTradingEventOnGUI("Start " + (signal.isLong ? "long" : "short"), instrument, bidBar.getTime(), bidBar.getClose());
@@ -271,6 +272,10 @@ public class TrendLengthExplorer implements IStrategy {
 				maxDurationTime = curr.startTime;
 			}
 		}
+		log.print("Trend Length stats report for " + selectedInstrument.toString() 
+			+ ", time frame: " + selectedPeriod.toString()
+			+ ", test period start: " + conf.getProperty("testIntervalStart", "no start set")
+			+ ", end: " + conf.getProperty("testIntervalEnd", "no end set"));
 		log.print("Max profit: " + FXUtils.df2.format(maxProfit * 100) 
 			+ " (started: " + FXUtils.getFormatedTimeGMT(maxProfitTime) + "), "
 			+ "avg. max. profit: " + FXUtils.df2.format(FXUtils.average(profitValues) * 100));

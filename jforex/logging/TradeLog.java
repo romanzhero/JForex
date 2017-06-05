@@ -16,7 +16,7 @@ import com.dukascopy.api.Instrument;
 public class TradeLog {
 	public String orderLabel;
 	public boolean isLong;
-	public long signalTime, fillTime, maxProfitTime, maxDDTime, exitTime;
+	public long signalTime, fillTime, maxProfitTime, maxDDTime, exitTime, duration;
 	public double entryPrice, fillPrice, SL, initialRisk, maxRisk, maxLoss,
 			maxLossATR, maxDD, maxDDATR, maxProfit, maxProfitPrice, PnL;
 
@@ -44,6 +44,7 @@ public class TradeLog {
 		maxProfit = 0.0;
 		maxProfitPrice = 0.0;
 		maxProfitTime = maxDDTime = 0;
+		duration = 0;
 	}
 
 	public void setOrder(IOrder order) {
@@ -116,6 +117,7 @@ public class TradeLog {
 	}
 
 	public void updateMaxProfit(IBar bidBar) {
+		duration++;
 		if (isLong) {
 			if (bidBar.getHigh() > fillPrice
 					&& bidBar.getHigh() - fillPrice > maxProfit) {
@@ -152,6 +154,7 @@ public class TradeLog {
 						+ FXUtils.getFormatedTimeGMT(fillTime) + ";"
 						+ FXUtils.getFormatedTimeGMT(exitTime) + ";"
 						+ exitReason + ";"
+						+ duration + ";"
 						+ FXUtils.df1.format(PnL) + ";"
 						+ FXUtils.df2.format(PnLPerc) + ";"
 						+ FXUtils.df1.format(maxProfit * Math.pow(10, instrument.getPipScale())) + ";"
@@ -185,8 +188,9 @@ public class TradeLog {
 						+ "fillTime;"
 						+ "exitTime;"
 						+ "exitReason;"
+						+ "duration (bars);"
 						+ "PnL;"
-						+ "PnPercL;"
+						+ "PnLPerc;"
 						+ "maxProfit;"
 						+ "maxProfitPerc;"
 						+ "missedProfit;"

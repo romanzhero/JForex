@@ -139,6 +139,15 @@ public class FlexTAValue extends FlexLogEntry {
 				res += ";" + (ichi.isBearishCloudCross ? "bearishCloudCross" : "no"); 
 				res += ";" + FXUtils.df1.format(ichi.widthToATR);
 				return res;
+			} else if (getLabel().equals(FlexTASource.TA_SITUATION)) {
+				TechnicalSituation taSituation = getTehnicalSituationValue();
+				String res = new String();
+				res += taSituation.toString();
+				res += ";" + taSituation.smiState.toString();
+				res += ";" + taSituation.slowSMIState.toString();
+				res += ";" + taSituation.fastSMIState.toString();
+				res += ";" + taSituation.stochState.toString();
+				return res;				
 			} else
 				return super.getFormattedValue();
 	}
@@ -215,8 +224,15 @@ public class FlexTAValue extends FlexLogEntry {
 			res += ";bBandsMiddle";
 			res += ";bBandsBottom";
 			return res;						
-		}
-		else
+		} else if (getLabel().equals(FlexTASource.TA_SITUATION)) {
+			String res = new String();
+			res += "TA situation";
+			res += ";" + "SMI state";
+			res += ";" + "Slow SMI";
+			res += ";" + "Fast SMI";
+			res += ";" + "Stoch";
+			return res;
+		} else
 			return super.getHeaderLabel();
 	}
 }
