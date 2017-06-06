@@ -36,7 +36,9 @@ public class SmaCrossAdvancedTradeSetup extends SmaCrossTradeSetup {
 		double currMA20 = ma20[1], currMA50 = ma50[1], currMA100 = ma100[1], prevMA20 = ma20[0], prevMA50 = ma50[0], prevMA100 = ma100[0];
 
 		if (!shortCrossHappened)
-			shortCrossHappened = (currMA20 < currMA50 && currMA50 < currMA100) && !(prevMA20 < prevMA50 && prevMA50 < prevMA100);
+			shortCrossHappened = (currMA20 < currMA50 && currMA50 < currMA100) 
+								&& !(prevMA20 < prevMA50 && prevMA50 < prevMA100)
+								&& !(prevMA50 < prevMA100 && prevMA20 < prevMA100 && prevMA20 > prevMA50); // attempt to avoid trend continuation trades
 		if (!shortCrossHappened)
 			return false;
 		
@@ -98,7 +100,10 @@ Grupa 4: price action / candlestick paterns
 		double currMA20 = ma20[1], currMA50 = ma50[1], currMA100 = ma100[1], prevMA20 = ma20[0], prevMA50 = ma50[0], prevMA100 = ma100[0];
 
 		if (!longCrossHappened)
-			longCrossHappened = (currMA20 > currMA50 && currMA50 > currMA100) && !(prevMA20 > prevMA50 && prevMA50 > prevMA100);
+			longCrossHappened = (currMA20 > currMA50 && currMA50 > currMA100) 
+								&& !(prevMA20 > prevMA50 && prevMA50 > prevMA100)
+								&& !(prevMA50 > prevMA100 && prevMA20 > prevMA100 && prevMA20 < prevMA50); // attempt to avoid trend continuation trades
+
 		if (!longCrossHappened)
 			return false; 
 		
