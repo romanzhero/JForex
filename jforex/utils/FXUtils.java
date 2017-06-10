@@ -30,6 +30,7 @@ import java.util.TimeZone;
 
 import jforex.techanalysis.Trend.FLAT_REGIME_CAUSE;
 import jforex.techanalysis.Trend.TREND_STATE;
+import jforex.techanalysis.source.TechnicalSituation.OverallTASituation;
 import jforex.utils.log.FlexLogEntry;
 import jforex.utils.log.Logger;
 
@@ -1404,8 +1405,14 @@ public class FXUtils {
 	}
 	
 	public static String getOrderLabel(Instrument instrument, String prefix, long time, boolean isLong, int orderCnt) {
-		return new String(prefix + instrument.name() + "_"
+		return new String(prefix + "_" + instrument.name() + "_"
 				+ FXUtils.getFormatedTimeGMTforID(time) + "_" + orderCnt
 				+ "_" + (isLong ? "BUY" : "SELL"));
+	}
+
+	public static String getOrderLabel(Instrument instrument, String prefix, long time, OverallTASituation taSituation,	int orderCnt) {
+		return new String(prefix + "_" + instrument.name() + "_"
+				+ FXUtils.getFormatedTimeGMTforID(time) + "_" + orderCnt
+				+ "_" + taSituation.toString());
 	}
 }

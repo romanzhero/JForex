@@ -11,7 +11,6 @@ import com.dukascopy.api.Instrument;
 import com.dukascopy.api.JFException;
 import com.dukascopy.api.Period;
 
-import jforex.techanalysis.Momentum;
 import jforex.techanalysis.Trend.FLAT_REGIME_CAUSE;
 import jforex.techanalysis.source.FlexTASource;
 import jforex.techanalysis.source.FlexTAValue;
@@ -102,7 +101,9 @@ Grupa 4: price action / candlestick paterns
 		if (!longCrossHappened)
 			longCrossHappened = (currMA20 > currMA50 && currMA50 > currMA100) 
 								&& !(prevMA20 > prevMA50 && prevMA50 > prevMA100)
-								&& !(prevMA50 > prevMA100 && prevMA20 > prevMA100 && prevMA20 < prevMA50); // attempt to avoid trend continuation trades
+								&& !(prevMA50 > prevMA100 && prevMA20 > prevMA100 && prevMA20 < prevMA50); 
+		// attempt to avoid trend continuation trades. But "late trend" should be detected in general
+		// assessment of TA situation !
 
 		if (!longCrossHappened)
 			return false; 

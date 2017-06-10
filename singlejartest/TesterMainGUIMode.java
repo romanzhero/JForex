@@ -48,6 +48,7 @@ import javax.swing.JFrame;
 import javax.swing.JPanel;
 import javax.swing.SwingUtilities;
 
+import jforex.explorers.TASituationExplorer;
 import jforex.explorers.TrendLengthExplorer;
 import jforex.strategies.FlatCascTest;
 import jforex.utils.FXUtils;
@@ -212,7 +213,8 @@ public class TesterMainGUIMode extends JFrame implements ITesterUserInterface, I
 		LOGGER.info("Starting strategy");
 
 		client.startStrategy(
-				new TrendLengthExplorer(instrument, properties),
+				new TASituationExplorer(instrument, properties),
+				// new TrendLengthExplorer(instrument, properties),
 				// new FlatCascTest(instrument, properties),
 				// new MA_Play(),
 				new LoadingProgressListener() {

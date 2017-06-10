@@ -116,7 +116,10 @@ public class FlexTASource {
 
 	private TechnicalSituation assessTASituation(Map<String, FlexTAValue> taValues) {
 		TREND_STATE entryTrendID = taValues.get(TREND_ID).getTrendStateValue();
-		double maDistance = taValues.get(MAs_DISTANCE_PERC).getDoubleValue();
+		double 
+			maDistance = taValues.get(MAs_DISTANCE_PERC).getDoubleValue(),
+			bBandsSqueeze = taValues.get(BBANDS_SQUEEZE_PERC).getDoubleValue(),
+			ma200ma100distance = taValues.get(MA200MA100_TREND_DISTANCE_PERC).getDoubleValue();
 		FLAT_REGIME_CAUSE isFlat = (FLAT_REGIME_CAUSE)taValues.get(FLAT_REGIME).getValue();
 		boolean 
 			ma200Highest = taValues.get(MA200_HIGHEST).getBooleanValue(), 
@@ -132,11 +135,53 @@ public class FlexTASource {
 		assessSMIState(taValues.get(SMI).getDa2DimValue(), result);
 		assessStochState(taValues.get(STOCH).getDa2DimValue(), result);
 			
+		/*
+		 * Summary section has the same structure for all the regimes. There are mandatory and optional parts (in <>)
+		 * 1. Trend: 
+		 * 		Strong uptrend|TREND_ID (MAs distance) 
+		 * 		<, narrow channel: 21.7>
+		 * 		<, all MAs in channel !>
+		 * 		<(MA200 bullish (lowest), MA100-MA200 distance 71.2)>
+		 * 		<, MA200 in channel !>
+		 * 		<
+		 */
+		String 
+			trendDesc = new String(),
+			ma200Desc = new String(),
+			bBandsDesc = new String();
+		trendDesc += entryTrendID.toString() + " (" + FXUtils.df1.format(maDistance) + ")";
+		if (ma200Highest)
+			ma200Desc += " (MA200 bearish (highest), MA100-MA200 distance " + FXUtils.df1.format(ma200ma100distance) + ")";
+		else if (ma200Lowest)
+			ma200Desc += " (MA200 bullish (lowest), MA100-MA200 distance " + FXUtils.df1.format(ma200ma100distance) + ")";
+		if (ma200InChannel)
+			ma200Desc += ", MA200 in channel !";
+		if (bBandsSqueeze < 25.0)
+			bBandsDesc += ", narrow channel: " + FXUtils.df1.format(bBandsSqueeze);
+		if (isFlat.equals(FLAT_REGIME_CAUSE.MAs_WITHIN_CHANNEL))
+			bBandsDesc += ", all MAs in channel !";
+		
+		if (maDistance < 25.0 &&
+			(isFlat.equals(FLAT_REGIME_CAUSE.MAs_WITHIN_CHANNEL) || bBandsSqueeze < 25.0)) {
+			result.taSituation = OverallTASituation.NEUTRAL;
+			if (bBandsSqueeze < 25.0)
+				result.taReason = TASituationReason.LOW_VOLA;
+			else 
+				result.taReason = TASituationReason.FLAT;
+			result.txtSummary = "MAs distance: " + FXUtils.df1.format(maDistance)
+				+ ", channel width: " + FXUtils.df1.format(bBandsSqueeze)
+				+ ", trend ID: " + taValues.get(TREND_ID).getTrendStateValue().toString();
+			if (isFlat.equals(FLAT_REGIME_CAUSE.MAs_WITHIN_CHANNEL))
+				result.txtSummary += ", all MAs in channel !";
+			result.txtSummary += ma200Desc;
+			return result;
+		}
+		
+
 		// the method to determine the technical situation is to go through most extreme/clear situations
 		// and try to detect them. If none detected situation is rather unclear
 		// Tests should be explicit lists of criteria, even if some lines are repeated.
 		// Code clarity must be above conciseness !!!!
-
 		// za jasan trend moguca i kombinacija i da su MAs vrlo blizu ali u ekstremnom rasporedu
 		// TrendID = UP_STRONG && ma200 lowest / TrendID = DOWN_STRONG && ma200 highest		
 		if (entryTrendID.equals(TREND_STATE.UP_STRONG)
@@ -146,6 +191,7 @@ public class FlexTASource {
 			result.taSituation = OverallTASituation.BULLISH;
 			result.taReason = TASituationReason.TREND;
 			result.txtSummary = "Strong uptrend (" + FXUtils.df1.format(maDistance) + ")";
+			result.txtSummary += bBandsDesc + ma200Desc; 
 			return result;
 		}
 		if (entryTrendID.equals(TREND_STATE.UP_STRONG)
@@ -155,6 +201,7 @@ public class FlexTASource {
 			result.taSituation = OverallTASituation.BULLISH;
 			result.taReason = TASituationReason.TREND;
 			result.txtSummary = entryTrendID.toString() + " (" + FXUtils.df1.format(maDistance) + ")";
+			result.txtSummary += bBandsDesc + ma200Desc; 
 			return result;
 		}
 		if (entryTrendID.equals(TREND_STATE.UP_MILD)
@@ -164,6 +211,7 @@ public class FlexTASource {
 			result.taSituation = OverallTASituation.BULLISH;
 			result.taReason = TASituationReason.TREND;
 			result.txtSummary = "Up mild, strong (" + FXUtils.df1.format(maDistance) + ")";
+			result.txtSummary += bBandsDesc + ma200Desc; 
 			return result;
 		}
 		if (entryTrendID.equals(TREND_STATE.UP_MILD)
@@ -173,6 +221,7 @@ public class FlexTASource {
 			result.taSituation = OverallTASituation.BULLISH;
 			result.taReason = TASituationReason.TREND;
 			result.txtSummary = entryTrendID.toString() + " (" + FXUtils.df1.format(maDistance) + ")";
+			result.txtSummary += bBandsDesc + ma200Desc; 
 			return result;
 		}
 		if (entryTrendID.equals(TREND_STATE.DOWN_STRONG)
@@ -182,6 +231,7 @@ public class FlexTASource {
 			result.taSituation = OverallTASituation.BEARISH;
 			result.taReason = TASituationReason.TREND;
 			result.txtSummary = "Strong downtrend (" + FXUtils.df1.format(maDistance) + ")";
+			result.txtSummary += bBandsDesc + ma200Desc; 
 			return result;
 		}
 		if (entryTrendID.equals(TREND_STATE.DOWN_STRONG)
@@ -191,6 +241,7 @@ public class FlexTASource {
 			result.taSituation = OverallTASituation.BEARISH;
 			result.taReason = TASituationReason.TREND;
 			result.txtSummary = entryTrendID.toString() + " (" + FXUtils.df1.format(maDistance) + ")";
+			result.txtSummary += bBandsDesc + ma200Desc; 
 			return result;
 		}		
 		if (entryTrendID.equals(TREND_STATE.DOWN_MILD)
@@ -200,6 +251,7 @@ public class FlexTASource {
 			result.taSituation = OverallTASituation.BEARISH;
 			result.taReason = TASituationReason.TREND;
 			result.txtSummary = "Down mild, strong (" + FXUtils.df1.format(maDistance) + ")";
+			result.txtSummary += bBandsDesc + ma200Desc; 
 			return result;
 		}
 		if (entryTrendID.equals(TREND_STATE.DOWN_MILD)
@@ -209,6 +261,7 @@ public class FlexTASource {
 			result.taSituation = OverallTASituation.BEARISH;
 			result.taReason = TASituationReason.TREND;
 			result.txtSummary = entryTrendID.toString() + " (" + FXUtils.df1.format(maDistance) + ")";
+			result.txtSummary += bBandsDesc + ma200Desc; 
 			return result;
 		}		
 		if ((result.smiState.equals(Momentum.SMI_STATE.BULLISH_BOTH_RAISING_IN_MIDDLE)
@@ -220,6 +273,7 @@ public class FlexTASource {
 			result.taSituation = OverallTASituation.BULLISH;
 			result.taReason = TASituationReason.MOMENTUM;
 			result.txtSummary = "Bullish momentum";
+			result.txtSummary += trendDesc + bBandsDesc + ma200Desc; 
 			return result;
 			
 		}
@@ -232,6 +286,7 @@ public class FlexTASource {
 			result.taSituation = OverallTASituation.BEARISH;
 			result.taReason = TASituationReason.MOMENTUM;
 			result.txtSummary = "Bearish momentum";
+			result.txtSummary += trendDesc + bBandsDesc + ma200Desc; 
 			return result;				
 		}
 		
@@ -242,12 +297,14 @@ public class FlexTASource {
 			result.taSituation = OverallTASituation.NEUTRAL;
 			result.taReason = TASituationReason.FLAT;
 			result.txtSummary = "Flat (" + isFlat.toString() + ")";
+			result.txtSummary += trendDesc + bBandsDesc + ma200Desc; 
 			return result;
 		}
 		
 		result.taSituation = OverallTASituation.NEUTRAL;
 		result.taReason = TASituationReason.NONE;
 		result.txtSummary = "Unclear, (TrendID " + entryTrendID.toString() + ")";
+		result.txtSummary += trendDesc + bBandsDesc + ma200Desc; 
 		return result;
 	}
 

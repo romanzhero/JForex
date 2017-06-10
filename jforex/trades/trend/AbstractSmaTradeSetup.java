@@ -282,8 +282,7 @@ public abstract class AbstractSmaTradeSetup extends TradeSetup {
 		if (!ma50Trailing.booleanValue()
 				&& bidBar.getLow() < ma50
 				&& (order.getStopLossPrice() == 0.0 || bidBar.getLow() > order.getStopLossPrice())) {
-			// put SL on low of the bar which crossed MA50. No real trailing, do
-			// it only once
+			// put SL on low of the bar which crossed MA50. No real trailing, do it only once
 			ma50TrailFlags.put(order.getInstrument().name(), new Boolean(true));
 			FXUtils.setStopLoss(order, FXUtils.roundToPip(bidBar.getLow(), order.getInstrument()), bidBar.getTime(), this.getClass());
 			lastTradingEvent = "start trailing long, ma50 broken";			

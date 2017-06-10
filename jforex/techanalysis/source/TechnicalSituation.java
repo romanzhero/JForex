@@ -14,7 +14,7 @@ import jforex.techanalysis.Momentum;
  *
  */
 public class TechnicalSituation {
-	public enum OverallTASituation {BULLISH, BEARISH, NEUTRAL, UNCLEAR, LOW_VOLA};
+	public enum OverallTASituation {BULLISH, BEARISH, NEUTRAL, UNCLEAR, LOW_VOLA, DUMMY};
 	public enum TASituationReason {TREND, MOMENTUM, LOW_VOLA, OVERSOLD, OVERBOUGHT, FLAT, NONE};
 	
 	public OverallTASituation taSituation = OverallTASituation.UNCLEAR;
