@@ -440,16 +440,16 @@ public class Trend {
 	}
 	
 	protected double[] getMA200MA100TrendDifferences(Instrument instrument, Period pPeriod, Filter filter, OfferSide side, IIndicators.AppliedPrice appliedPrice, long time, int lookBack) throws JFException {
-		double[] MAs20 = indicators.sma(instrument, pPeriod, side, appliedPrice, 20, filter, lookBack, time, 0);
-		double[] MAs50 = indicators.sma(instrument, pPeriod, side, appliedPrice, 50, filter, lookBack, time, 0);
+//		double[] MAs20 = indicators.sma(instrument, pPeriod, side, appliedPrice, 20, filter, lookBack, time, 0);
+//		double[] MAs50 = indicators.sma(instrument, pPeriod, side, appliedPrice, 50, filter, lookBack, time, 0);
 		double[] MAs100 = indicators.sma(instrument, pPeriod, side,	appliedPrice, 100, filter, lookBack, time, 0);
 		double[] MAs200 = indicators.sma(instrument, pPeriod, side, appliedPrice, 200, filter, lookBack, time, 0);
 
 		double[] result = new double[MAs200.length];
 		for (int i = 0; i < MAs200.length; i++) {
-			// valid only for clear trends, OK if MA20 below MA50
-			if ((MAs20[i] > MAs100[i] && MAs50[i] > MAs100[i] && MAs100[i] > MAs200[i])
-				|| (MAs20[i] < MAs100[i] && MAs50[i] < MAs100[i] && MAs100[i] < MAs200[i]))
+//			// valid only for clear trends, OK if MA20 below MA50
+//			if ((MAs20[i] > MAs100[i] && MAs50[i] > MAs100[i] && MAs100[i] > MAs200[i])
+//				|| (MAs20[i] < MAs100[i] && MAs50[i] < MAs100[i] && MAs100[i] < MAs200[i]))
 			result[i] = Math.abs(MAs200[i] - MAs100[i]);
 		}
 		return result;
@@ -491,10 +491,10 @@ public class Trend {
 		double[] MAs100 = indicators.sma(instrument, pPeriod, side,	appliedPrice, 100, filter, 1, time, 0);
 		double[] MAs200 = indicators.sma(instrument, pPeriod, side, appliedPrice, 200, filter, 1, time, 0);
 
-		// valid only for clear trends, OK if MA20 below MA50
-		if (!(MAs20[0] > MAs100[0] && MAs50[0] > MAs100[0] && MAs100[0] > MAs200[0])
-			&& !(MAs20[0] < MAs100[0] && MAs50[0] < MAs100[0] && MAs100[0] < MAs200[0]))
-			return -1;
+//		// valid only for clear trends, OK if MA20 below MA50
+//		if (!(MAs20[0] > MAs100[0] && MAs50[0] > MAs100[0] && MAs100[0] > MAs200[0])
+//			&& !(MAs20[0] < MAs100[0] && MAs50[0] < MAs100[0] && MAs100[0] < MAs200[0]))
+//			return -1;
 		
 		double[] rawData = getMA200MA100TrendDifferences(instrument, pPeriod, filter, side, appliedPrice, time, lookback);
 		double[] rank = new NaturalRanking().rank(rawData);

@@ -12,6 +12,12 @@ import com.dukascopy.api.IIndicators.AppliedPrice;
 import com.dukascopy.api.IIndicators.MaType;
 
 public class Volatility {
+	
+	public static final int
+		BBANDS_TOP = 0,
+		BBANDS_MIDDLE = 1,
+		BBANDS_BOTTOM = 2;
+	
 	private IIndicators indicators;
 
 	public Volatility(IIndicators indicators) {
@@ -68,12 +74,10 @@ public class Volatility {
 		return twoStDev / twoATRs * 100.0;
 	}
 
-	public double getBBandsSqueezePercentile(Instrument instrument,
-			Period pPeriod, OfferSide side,
+	public double getBBandsSqueezePercentile(Instrument instrument,	Period pPeriod, OfferSide side,
 			IIndicators.AppliedPrice appliedPrice, Filter filter, long time,
 			int lookback, int historyBars) throws JFException {
-		double[] rawData = getBBandsSqueezes(instrument, pPeriod, side,
-				appliedPrice, filter, time, lookback, historyBars);
+		double[] rawData = getBBandsSqueezes(instrument, pPeriod, side,	appliedPrice, filter, time, lookback, historyBars);
 		double[] rank = new NaturalRanking().rank(rawData);
 
 		// the last in rawData should be the latest bar. Rank 1 means it is the
@@ -84,11 +88,8 @@ public class Volatility {
 	private double[] getBBandsSqueezes(Instrument instrument, Period pPeriod,
 			OfferSide side, AppliedPrice appliedPrice, Filter filter,
 			long time, int lookback, int historyBars) throws JFException {
-		double[][] bBands = indicators.bbands(instrument, pPeriod, side,
-				AppliedPrice.CLOSE, lookback, 2.0, 2.0, MaType.SMA, filter,
-				historyBars, time, 0);
-		double[] ATRs = getATRTimeSeries(instrument, pPeriod, side, filter,
-				time, lookback, historyBars);
+		double[][] bBands = indicators.bbands(instrument, pPeriod, side, AppliedPrice.CLOSE, lookback, 2.0, 2.0, MaType.SMA, filter, historyBars, time, 0);
+		double[] ATRs = getATRTimeSeries(instrument, pPeriod, side, filter,	time, lookback, historyBars);
 		double[] results = new double[ATRs.length];
 
 		for (int i = 0; i < ATRs.length; i++) {

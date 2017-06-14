@@ -28,6 +28,7 @@ import java.util.Set;
 import java.util.StringTokenizer;
 import java.util.TimeZone;
 
+import jforex.techanalysis.Momentum;
 import jforex.techanalysis.Trend.FLAT_REGIME_CAUSE;
 import jforex.techanalysis.Trend.TREND_STATE;
 import jforex.techanalysis.source.TechnicalSituation.OverallTASituation;
@@ -48,6 +49,7 @@ import com.dukascopy.api.Instrument;
 import com.dukascopy.api.JFException;
 import com.dukascopy.api.OfferSide;
 import com.dukascopy.api.Period;
+import com.dukascopy.login.controller.ILoginDialogController.ModalMessageMode;
 
 public class FXUtils {
 
@@ -1414,5 +1416,16 @@ public class FXUtils {
 		return new String(prefix + "_" + instrument.name() + "_"
 				+ FXUtils.getFormatedTimeGMTforID(time) + "_" + orderCnt
 				+ "_" + taSituation.toString());
+	}
+
+	public static Momentum.SINGLE_LINE_STATE getLineDirection(double firstPoint, double middlePoint, double lastPoint) {
+		if (lastPoint > middlePoint && middlePoint > firstPoint)
+			return Momentum.SINGLE_LINE_STATE.RAISING_IN_MIDDLE;
+		else if (lastPoint < middlePoint && middlePoint < firstPoint)
+			return Momentum.SINGLE_LINE_STATE.FALLING_IN_MIDDLE;
+		else if (lastPoint >= middlePoint && middlePoint <= firstPoint)
+			return Momentum.SINGLE_LINE_STATE.TICKED_UP_IN_MIDDLE;
+		else
+			return Momentum.SINGLE_LINE_STATE.TICKED_DOWN_IN_MIDDLE;
 	}
 }

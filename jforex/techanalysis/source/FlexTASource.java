@@ -47,7 +47,8 @@ public class FlexTASource {
 		ICHI = "Ichi",
 		MA200MA100_TREND_DISTANCE_PERC = "MA200 MA100 Distance percentile",
 		BBANDS = "BBands",
-		TA_SITUATION = "TASituationDescription";
+		TA_SITUATION = "TASituationDescription",
+		CHANNEL_WIDTH_DIRECTION = "ChannelWidthDirection";
 	
 	protected IIndicators indicators = null;
 	protected IHistory history = null;
@@ -77,6 +78,7 @@ public class FlexTASource {
 		Map<String, FlexTAValue> result = new HashMap<String, FlexTAValue>();
 		addMAs(instrument, period, bidBar, result);
 		addBBands(instrument, period, bidBar, result);
+		addChannelWidthDirection(instrument, period, bidBar, result);
 		addSMI(instrument, period, bidBar, result);
 		
 		result.put(BULLISH_CANDLES, new FlexTAValue(BULLISH_CANDLES, candles.bullishReversalCandlePatternDesc(instrument, period, filter, OfferSide.ASK, askBar.getTime())));
@@ -93,13 +95,13 @@ public class FlexTASource {
 		result.put(BBANDS_SQUEEZE_PERC, new FlexTAValue(BBANDS_SQUEEZE_PERC, new Double(vola.getBBandsSqueezePercentile(instrument, period, OfferSide.BID, IIndicators.AppliedPrice.CLOSE, filter, bidBar.getTime(), 20, FXUtils.YEAR_WORTH_OF_4H_BARS)), FXUtils.df1));
 		result.put(FLAT_REGIME, new FlexTAValue(FLAT_REGIME, trend.isFlatRegime(instrument, period, OfferSide.BID, IIndicators.AppliedPrice.CLOSE, filter, bidBar.getTime(), FXUtils.YEAR_WORTH_OF_4H_BARS, 30)));
 		result.put(MAs_DISTANCE_PERC, new FlexTAValue(MAs_DISTANCE_PERC, new Double(trend.getMAsMaxDiffPercentile(instrument, period, filter, OfferSide.BID, IIndicators.AppliedPrice.CLOSE, bidBar.getTime(), FXUtils.YEAR_WORTH_OF_4H_BARS)), FXUtils.df1));
-		result.put(UPTREND_MAs_DISTANCE_PERC, new FlexTAValue(UPTREND_MAs_DISTANCE_PERC, new Double(trend.getUptrendMAsMaxDiffPercentile(instrument, period, filter, OfferSide.BID, IIndicators.AppliedPrice.CLOSE, bidBar.getTime(), FXUtils.YEAR_WORTH_OF_4H_BARS)), FXUtils.df1));
-		result.put(DOWNTREND_MAs_DISTANCE_PERC, new FlexTAValue(DOWNTREND_MAs_DISTANCE_PERC, new Double(trend.getDowntrendMAsMaxDiffPercentile(instrument, period, filter, OfferSide.BID, IIndicators.AppliedPrice.CLOSE, bidBar.getTime(), FXUtils.YEAR_WORTH_OF_4H_BARS)), FXUtils.df1));
+		//result.put(UPTREND_MAs_DISTANCE_PERC, new FlexTAValue(UPTREND_MAs_DISTANCE_PERC, new Double(trend.getUptrendMAsMaxDiffPercentile(instrument, period, filter, OfferSide.BID, IIndicators.AppliedPrice.CLOSE, bidBar.getTime(), FXUtils.YEAR_WORTH_OF_4H_BARS)), FXUtils.df1));
+		//result.put(DOWNTREND_MAs_DISTANCE_PERC, new FlexTAValue(DOWNTREND_MAs_DISTANCE_PERC, new Double(trend.getDowntrendMAsMaxDiffPercentile(instrument, period, filter, OfferSide.BID, IIndicators.AppliedPrice.CLOSE, bidBar.getTime(), FXUtils.YEAR_WORTH_OF_4H_BARS)), FXUtils.df1));
 		result.put(ATR, new FlexTAValue(ATR, new Double(vola.getATR(instrument, period, filter, OfferSide.BID, bidBar.getTime(), 14)), FXUtils.df1));
 		result.put(ICHI, new FlexTAValue(ICHI, trend.getIchi(history, instrument, period, OfferSide.BID, filter, bidBar.getTime())));
 		result.put(MA200MA100_TREND_DISTANCE_PERC, new FlexTAValue(MA200MA100_TREND_DISTANCE_PERC, new Double(trend.getMA200MA100TrendDiffPercentile(instrument, period, filter, OfferSide.BID, IIndicators.AppliedPrice.CLOSE, bidBar.getTime(), FXUtils.YEAR_WORTH_OF_4H_BARS)), FXUtils.df1));
 
-		result.put(TA_SITUATION, new FlexTAValue(TA_SITUATION, assessTASituation(result)));
+		result.put(TA_SITUATION, new FlexTAValue(TA_SITUATION, assessTASituation(result, bidBar, askBar)));
 		
 		lastResult = result;
 		return result;
@@ -114,7 +116,7 @@ public class FlexTASource {
 		return ma200 <= bBandsTop && ma200 >= bBandsBottom;
 	}
 
-	private TechnicalSituation assessTASituation(Map<String, FlexTAValue> taValues) {
+	private TechnicalSituation assessTASituation(Map<String, FlexTAValue> taValues, IBar bidBar, IBar askBar) {
 		TREND_STATE entryTrendID = taValues.get(TREND_ID).getTrendStateValue();
 		double 
 			maDistance = taValues.get(MAs_DISTANCE_PERC).getDoubleValue(),
@@ -161,7 +163,26 @@ public class FlexTASource {
 		if (isFlat.equals(FLAT_REGIME_CAUSE.MAs_WITHIN_CHANNEL))
 			bBandsDesc += ", all MAs in channel !";
 		
-		if (maDistance < 25.0 &&
+		Momentum.SINGLE_LINE_STATE channelWidthDirection = (Momentum.SINGLE_LINE_STATE)taValues.get(FlexTASource.CHANNEL_WIDTH_DIRECTION).getValue();
+		double[][] mas = taValues.get(FlexTASource.MAs).getDa2DimValue();
+		boolean 
+			closeAboveAllMAs = askBar.getClose() > mas[1][0] && askBar.getClose() > mas[1][1] && askBar.getClose() > mas[1][2] && askBar.getClose() > mas[1][3],
+			closeBelowAllMAs = bidBar.getClose() < mas[1][0] && bidBar.getClose() < mas[1][1] && bidBar.getClose() < mas[1][2] && bidBar.getClose() < mas[1][3],
+			bullishMomentum = closeAboveAllMAs && channelWidthDirection.equals(Momentum.SINGLE_LINE_STATE.RAISING_IN_MIDDLE)
+							&& (result.smiState.equals(Momentum.SMI_STATE.BULLISH_BOTH_RAISING_IN_MIDDLE)
+							|| result.smiState.equals(Momentum.SMI_STATE.BULLISH_OVERBOUGHT_BOTH)
+							|| result.smiState.equals(Momentum.SMI_STATE.BULLISH_OVERBOUGHT_FAST_ABOVE_RAISING_SLOW)
+							|| (result.smiState.equals(Momentum.SMI_STATE.BULLISH_WEAK_RAISING_IN_MIDDLE) && slowSMI > 0))
+							&& result.stochState.toString().startsWith("BULLISH"),
+			bearishMomentum = closeBelowAllMAs && channelWidthDirection.equals(Momentum.SINGLE_LINE_STATE.RAISING_IN_MIDDLE)
+							&& (result.smiState.equals(Momentum.SMI_STATE.BEARISH_BOTH_FALLING_IN_MIDDLE)
+							|| result.smiState.equals(Momentum.SMI_STATE.BEARISH_OVERSOLD_BOTH)
+							|| result.smiState.equals(Momentum.SMI_STATE.BEARISH_OVERSOLD_FAST_BELOW_FALLING_SLOW)
+							|| (result.smiState.equals(Momentum.SMI_STATE.BEARISH_WEAK_FALLING_IN_MIDDLE)&& slowSMI < 0))
+							&& result.stochState.toString().startsWith("BEARISH");
+		
+		if (!(bullishMomentum || bearishMomentum)
+			&& maDistance < 25.0 &&
 			(isFlat.equals(FLAT_REGIME_CAUSE.MAs_WITHIN_CHANNEL) || bBandsSqueeze < 25.0)) {
 			result.taSituation = OverallTASituation.NEUTRAL;
 			if (bBandsSqueeze < 25.0)
@@ -264,12 +285,7 @@ public class FlexTASource {
 			result.txtSummary += bBandsDesc + ma200Desc; 
 			return result;
 		}		
-		if ((result.smiState.equals(Momentum.SMI_STATE.BULLISH_BOTH_RAISING_IN_MIDDLE)
-			|| result.smiState.equals(Momentum.SMI_STATE.BULLISH_OVERBOUGHT_BOTH)
-			|| result.smiState.equals(Momentum.SMI_STATE.BULLISH_OVERBOUGHT_FAST_ABOVE_RAISING_SLOW)
-			|| (result.smiState.equals(Momentum.SMI_STATE.BULLISH_WEAK_RAISING_IN_MIDDLE)
-				&& slowSMI > 0))
-			&& result.stochState.toString().startsWith("BULLISH")) {
+		if (bullishMomentum) {
 			result.taSituation = OverallTASituation.BULLISH;
 			result.taReason = TASituationReason.MOMENTUM;
 			result.txtSummary = "Bullish momentum";
@@ -277,12 +293,7 @@ public class FlexTASource {
 			return result;
 			
 		}
-		if ((result.smiState.equals(Momentum.SMI_STATE.BEARISH_BOTH_FALLING_IN_MIDDLE)
-			|| result.smiState.equals(Momentum.SMI_STATE.BEARISH_OVERSOLD_BOTH)
-			|| result.smiState.equals(Momentum.SMI_STATE.BEARISH_OVERSOLD_FAST_BELOW_FALLING_SLOW)
-			|| (result.smiState.equals(Momentum.SMI_STATE.BEARISH_WEAK_FALLING_IN_MIDDLE)
-				&& slowSMI < 0))
-			&& result.stochState.toString().startsWith("BEARISH")) {
+		if (bearishMomentum) {
 			result.taSituation = OverallTASituation.BEARISH;
 			result.taReason = TASituationReason.MOMENTUM;
 			result.txtSummary = "Bearish momentum";
@@ -481,6 +492,16 @@ public class FlexTASource {
 	private void addBBands(Instrument instrument, Period period, IBar bidBar, Map<String, FlexTAValue> result) throws JFException {
 		double[][] bBands = indicators.bbands(instrument, period, OfferSide.BID, AppliedPrice.CLOSE, 20, 2.0, 2.0, MaType.SMA, filter, 1, bidBar.getTime(), 0);
 		result.put(BBANDS, new FlexTAValue(BBANDS, bBands, instrument.getPipScale() == 5 ? FXUtils.df5 : FXUtils.df2));
+	}
+	
+	private void addChannelWidthDirection(Instrument instrument, Period period, IBar bidBar, Map<String, FlexTAValue> result) throws JFException {
+		double[][] bBands = indicators.bbands(instrument, period, OfferSide.BID, AppliedPrice.CLOSE, 20, 2.0, 2.0, MaType.SMA, filter, 3, bidBar.getTime(), 0);
+		double
+			lastChannelWidth = bBands[Volatility.BBANDS_TOP][2] - bBands[Volatility.BBANDS_BOTTOM][2],
+			middleChannelWidth = bBands[Volatility.BBANDS_TOP][1] - bBands[Volatility.BBANDS_BOTTOM][1],
+			firstChannelWidth = bBands[Volatility.BBANDS_TOP][0] - bBands[Volatility.BBANDS_BOTTOM][0];
+		
+		result.put(CHANNEL_WIDTH_DIRECTION, new FlexTAValue(CHANNEL_WIDTH_DIRECTION, FXUtils.getLineDirection(firstChannelWidth, middleChannelWidth, lastChannelWidth)));
 	}
 
 	private void addSMI(Instrument instrument, Period period, IBar bidBar, Map<String, FlexTAValue> result) throws JFException {
