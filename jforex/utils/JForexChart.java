@@ -121,6 +121,30 @@ public class JForexChart {
 		}
 	}
 	
+	public void showArrowOnGUI(boolean isLong, Instrument instrument, long time, double level) {
+		if (visualMode) {
+			chart = context.getChart(instrument);
+			if (chart == null) {
+				// chart is not opened, we can't plot an object
+				console.getOut().println("Can't open the chart for " + instrument.toString() + ", stop !");
+				context.stop();
+			}
+			if (isLong) {
+				ISignalUpChartObject up = chart.getChartObjectFactory().createSignalUp();
+				up.setMenuEnabled(true);
+				up.setTime(0, time);
+				up.setPrice(0, level);
+				chart.add(up);
+				
+			} else {
+				ISignalDownChartObject down = chart.getChartObjectFactory().createSignalDown();
+				down.setMenuEnabled(true);
+				down.setTime(0, time);
+				down.setPrice(0, level);
+				chart.add(down);
+			}
+		}
+	}
 	
 	public void showVerticalLineOnGUI(Instrument instrument, long time, Color color) {
 		if (visualMode) {
