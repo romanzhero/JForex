@@ -30,6 +30,11 @@ public class FlexTASource {
 		BULLISH_CANDLES = "Bullish candles",
 		BEARISH_CANDLES = "Bearish candles",
 		MAs = "Moving averages",
+		MA20_SLOPE = "MA20 slope",
+		MA50_SLOPE = "MA50 slope",
+		MA100_SLOPE = "MA100 slope",
+		MA200_SLOPE = "MA200 slope",
+		MA_SLOPES_SCORE = "MA slopes slope",
 		TREND_ID = "TrendID",
 		MA200_HIGHEST = "MA200Highest",
 		MA200_LOWEST = "MA200Lowest",
@@ -129,7 +134,7 @@ public class FlexTASource {
 			ma200InChannel = taValues.get(MA200_IN_CHANNEL).getBooleanValue();
 		double[][] smis = taValues.get(SMI).getDa2DimValue();
 		double
-			fastSMI = smis[0][2],
+			//fastSMI = smis[0][2],
 			slowSMI = smis[1][2];
 		
 		// first fill out the description fields before deciding on definitive situation flag
@@ -166,15 +171,15 @@ public class FlexTASource {
 		Momentum.SINGLE_LINE_STATE channelWidthDirection = (Momentum.SINGLE_LINE_STATE)taValues.get(FlexTASource.CHANNEL_WIDTH_DIRECTION).getValue();
 		double[][] mas = taValues.get(FlexTASource.MAs).getDa2DimValue();
 		boolean 
-			closeAboveAllMAs = askBar.getClose() > mas[1][0] && askBar.getClose() > mas[1][1] && askBar.getClose() > mas[1][2] && askBar.getClose() > mas[1][3],
-			closeBelowAllMAs = bidBar.getClose() < mas[1][0] && bidBar.getClose() < mas[1][1] && bidBar.getClose() < mas[1][2] && bidBar.getClose() < mas[1][3],
-			bullishMomentum = closeAboveAllMAs && channelWidthDirection.equals(Momentum.SINGLE_LINE_STATE.RAISING_IN_MIDDLE)
+			highAboveAllMAs = askBar.getHigh() > mas[1][0] && askBar.getHigh() > mas[1][1] && askBar.getHigh() > mas[1][2] && askBar.getHigh() > mas[1][3],
+			lowBelowAllMAs = bidBar.getLow() < mas[1][0] && bidBar.getLow() < mas[1][1] && bidBar.getLow() < mas[1][2] && bidBar.getLow() < mas[1][3],
+			bullishMomentum = highAboveAllMAs && channelWidthDirection.equals(Momentum.SINGLE_LINE_STATE.RAISING_IN_MIDDLE)
 							&& (result.smiState.equals(Momentum.SMI_STATE.BULLISH_BOTH_RAISING_IN_MIDDLE)
 							|| result.smiState.equals(Momentum.SMI_STATE.BULLISH_OVERBOUGHT_BOTH)
 							|| result.smiState.equals(Momentum.SMI_STATE.BULLISH_OVERBOUGHT_FAST_ABOVE_RAISING_SLOW)
 							|| (result.smiState.equals(Momentum.SMI_STATE.BULLISH_WEAK_RAISING_IN_MIDDLE) && slowSMI > 0))
 							&& result.stochState.toString().startsWith("BULLISH"),
-			bearishMomentum = closeBelowAllMAs && channelWidthDirection.equals(Momentum.SINGLE_LINE_STATE.RAISING_IN_MIDDLE)
+			bearishMomentum = lowBelowAllMAs && channelWidthDirection.equals(Momentum.SINGLE_LINE_STATE.RAISING_IN_MIDDLE)
 							&& (result.smiState.equals(Momentum.SMI_STATE.BEARISH_BOTH_FALLING_IN_MIDDLE)
 							|| result.smiState.equals(Momentum.SMI_STATE.BEARISH_OVERSOLD_BOTH)
 							|| result.smiState.equals(Momentum.SMI_STATE.BEARISH_OVERSOLD_FAST_BELOW_FALLING_SLOW)
@@ -182,6 +187,10 @@ public class FlexTASource {
 							&& result.stochState.toString().startsWith("BEARISH");
 		
 		if (!(bullishMomentum || bearishMomentum)
+			&& !(result.stochState.equals(Momentum.STOCH_STATE.BULLISH_OVERBOUGHT_BOTH)
+				|| result.stochState.equals(Momentum.STOCH_STATE.BEARISH_OVERSOLD_BOTH)
+				|| result.smiState.equals(Momentum.SMI_STATE.BULLISH_OVERBOUGHT_BOTH)
+				|| result.smiState.equals(Momentum.SMI_STATE.BEARISH_OVERSOLD_BOTH))
 			&& maDistance < 25.0 &&
 			(isFlat.equals(FLAT_REGIME_CAUSE.MAs_WITHIN_CHANNEL) || bBandsSqueeze < 25.0)) {
 			result.taSituation = OverallTASituation.NEUTRAL;
@@ -325,13 +334,9 @@ public class FlexTASource {
 			slowStochPrev = stochs[1][0], 
 			fastStochLast = stochs[0][1], 
 			slowStochLast = stochs[1][1];
+		taSituation.fastStoch = fastStochLast;
+		taSituation.slowStoch = slowStochLast;
 		
-/*		public enum STOCH_STATE {
-			BULLISH_CROSS, 
-			BEARISH_CROSS, 
-			NONE, OTHER
-		}
-*/
 		if (fastStochLast <= 20 && slowStochLast <= 20)
 			taSituation.stochState = Momentum.STOCH_STATE.BEARISH_OVERSOLD_BOTH;
 		else if (fastStochLast >= 80 && slowStochLast >= 80)
@@ -374,6 +379,8 @@ public class FlexTASource {
 			slowSMIFirst = smis[1][0],
 			slowSMIPrev = smis[1][1],
 			slowSMILast = smis[1][2];
+		taSituation.fastSMI = fastSMILast;
+		taSituation.slowSMI = slowSMILast;
 		if (slowSMILast <= -60 && slowSMILast < slowSMIPrev && slowSMIPrev < slowSMIFirst)
 			taSituation.slowSMIState = Momentum.SINGLE_LINE_STATE.FALLING_OVERSOLD;
 		else if (slowSMILast <= -60 && slowSMILast > slowSMIPrev && slowSMIPrev > slowSMIFirst)
@@ -524,22 +531,52 @@ public class FlexTASource {
 
 	protected void addMAs(Instrument instrument, Period period, IBar bidBar, Map<String, FlexTAValue> result) throws JFException {
 		double[] 
-				mas20 = indicators.sma(instrument, period, OfferSide.BID, IIndicators.AppliedPrice.CLOSE, 20, filter, 2, bidBar.getTime(), 0),
-				mas50 = indicators.sma(instrument, period, OfferSide.BID, IIndicators.AppliedPrice.CLOSE, 50, filter, 2, bidBar.getTime(), 0),
-				mas100 = indicators.sma(instrument, period, OfferSide.BID, IIndicators.AppliedPrice.CLOSE, 100, filter, 2, bidBar.getTime(), 0),
-				mas200 = indicators.sma(instrument, period, OfferSide.BID, IIndicators.AppliedPrice.CLOSE, 200, filter, 2, bidBar.getTime(), 0);
+				mas20 = indicators.sma(instrument, period, OfferSide.BID, IIndicators.AppliedPrice.CLOSE, 20, filter, 3, bidBar.getTime(), 0),
+				mas50 = indicators.sma(instrument, period, OfferSide.BID, IIndicators.AppliedPrice.CLOSE, 50, filter, 3, bidBar.getTime(), 0),
+				mas100 = indicators.sma(instrument, period, OfferSide.BID, IIndicators.AppliedPrice.CLOSE, 100, filter, 3, bidBar.getTime(), 0),
+				mas200 = indicators.sma(instrument, period, OfferSide.BID, IIndicators.AppliedPrice.CLOSE, 200, filter, 3, bidBar.getTime(), 0);
 		double[][] mas = new double[2][4];
 		// first block - previous, last block - current bar values
-		mas[0][0] = mas20[0];
-		mas[0][1] = mas50[0];
-		mas[0][2] = mas100[0];
-		mas[0][3] = mas200[0];
+		mas[0][0] = mas20[1];
+		mas[0][1] = mas50[1];
+		mas[0][2] = mas100[1];
+		mas[0][3] = mas200[1];
 		
-		mas[1][0] = mas20[1];
-		mas[1][1] = mas50[1];
-		mas[1][2] = mas100[1];
-		mas[1][3] = mas200[1];
+		mas[1][0] = mas20[2];
+		mas[1][1] = mas50[2];
+		mas[1][2] = mas100[2];
+		mas[1][3] = mas200[2];
 		result.put(MAs, new FlexTAValue(MAs, mas, instrument.getPipScale() == 5 ? FXUtils.df5 : FXUtils.df2));
+		
+		Momentum.SINGLE_LINE_STATE
+			ma20Slope = FXUtils.getLineDirection(mas20[0], mas20[1], mas20[2]),
+			ma50Slope = FXUtils.getLineDirection(mas50[0], mas50[1], mas50[2]),
+			ma100Slope = FXUtils.getLineDirection(mas100[0], mas100[1], mas100[2]),
+			ma200Slope = FXUtils.getLineDirection(mas200[0], mas200[1], mas200[2]);
+		result.put(MA20_SLOPE, new FlexTAValue(MA20_SLOPE, ma20Slope));
+		result.put(MA50_SLOPE, new FlexTAValue(MA50_SLOPE, ma50Slope));
+		result.put(MA100_SLOPE, new FlexTAValue(MA100_SLOPE, ma100Slope));
+		result.put(MA200_SLOPE, new FlexTAValue(MA200_SLOPE, ma200Slope));
+		int
+			bullishCnt = 0,
+			bearishCnt = 0;
+		if (ma20Slope.equals(Momentum.SINGLE_LINE_STATE.RAISING_IN_MIDDLE) || ma20Slope.equals(Momentum.SINGLE_LINE_STATE.TICKED_UP_IN_MIDDLE))
+			bullishCnt++;
+		if (ma20Slope.equals(Momentum.SINGLE_LINE_STATE.FALLING_IN_MIDDLE) || ma20Slope.equals(Momentum.SINGLE_LINE_STATE.TICKED_DOWN_IN_MIDDLE))
+			bearishCnt++;
+		if (ma50Slope.equals(Momentum.SINGLE_LINE_STATE.RAISING_IN_MIDDLE) || ma50Slope.equals(Momentum.SINGLE_LINE_STATE.TICKED_UP_IN_MIDDLE))
+			bullishCnt++;
+		if (ma50Slope.equals(Momentum.SINGLE_LINE_STATE.FALLING_IN_MIDDLE) || ma50Slope.equals(Momentum.SINGLE_LINE_STATE.TICKED_DOWN_IN_MIDDLE))
+			bearishCnt++;
+		if (ma100Slope.equals(Momentum.SINGLE_LINE_STATE.RAISING_IN_MIDDLE) || ma100Slope.equals(Momentum.SINGLE_LINE_STATE.TICKED_UP_IN_MIDDLE))
+			bullishCnt++;
+		if (ma100Slope.equals(Momentum.SINGLE_LINE_STATE.FALLING_IN_MIDDLE) || ma100Slope.equals(Momentum.SINGLE_LINE_STATE.TICKED_DOWN_IN_MIDDLE))
+			bearishCnt++;
+		if (ma200Slope.equals(Momentum.SINGLE_LINE_STATE.RAISING_IN_MIDDLE) || ma200Slope.equals(Momentum.SINGLE_LINE_STATE.TICKED_UP_IN_MIDDLE))
+			bullishCnt++;
+		if (ma200Slope.equals(Momentum.SINGLE_LINE_STATE.FALLING_IN_MIDDLE) || ma200Slope.equals(Momentum.SINGLE_LINE_STATE.TICKED_DOWN_IN_MIDDLE))
+			bearishCnt++;
+		result.put(MA_SLOPES_SCORE, new FlexTAValue(MA_SLOPES_SCORE, bullishCnt + ":" + bearishCnt));
 	}
 
 }

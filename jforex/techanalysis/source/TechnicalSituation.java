@@ -4,6 +4,7 @@
 package jforex.techanalysis.source;
 
 import jforex.techanalysis.Momentum;
+import jforex.utils.FXUtils;
 
 /**
  * A central class to describe complete technical situation
@@ -25,6 +26,11 @@ public class TechnicalSituation {
 	public Momentum.SINGLE_LINE_STATE
 		slowSMIState, fastSMIState;
 	public Momentum.STOCH_STATE stochState;
+	public double
+		fastSMI = 0.0,
+		slowSMI = 0.0,
+		fastStoch = 0.0,
+		slowStoch = 0.0;
 	
 	@Override
 	public String toString() {
@@ -33,9 +39,10 @@ public class TechnicalSituation {
 			+ "| reason: " + taReason.toString()
 			+ "| summary: " + txtSummary
 			+ "| SMI state: " + smiState.toString()
-			+ " (slow: " + slowSMIState.toString()
-			+ ", fast: " + fastSMIState.toString() 
-			+ ") Stoch state: " + stochState.toString();		
+			+ " (slow: " + slowSMIState.toString() + ", " + FXUtils.df1.format(fastSMI)
+			+ ", fast: " + fastSMIState.toString()  + ", " + FXUtils.df1.format(slowSMI)
+			+ ") Stoch state: " + stochState.toString()  
+			+ " (" + FXUtils.df1.format(fastStoch)  + "/" + FXUtils.df1.format(slowStoch) + ")";		
 		return res;
 	}
 

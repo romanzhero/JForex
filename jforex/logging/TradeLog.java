@@ -213,6 +213,35 @@ public class TradeLog {
 	}
 	
 	public void addTAData(Map<String, FlexTAValue> taValues) {
+		//TODO: promeniti u eksplicitni REDOSLED tako da bude citljivije. Paziti na EXIT values !!
+/*		
+ * 		TA_SITUATION = "TASituationDescription",
+		TREND_ID = "TrendID",
+		MAs_DISTANCE_PERC = "MAs distance percentile",
+		FLAT_REGIME = "Flat regime",
+		BBANDS_SQUEEZE_PERC = "BBands squeeze percentile",
+		MA200_HIGHEST = "MA200Highest",
+		MA200_LOWEST = "MA200Lowest",
+		MA200_IN_CHANNEL = "MA200InChannel",
+		MA200MA100_TREND_DISTANCE_PERC = "MA200 MA100 Distance percentile",
+		MA20_SLOPE = "MA20 slope",
+		MA50_SLOPE = "MA50 slope",
+		MA100_SLOPE = "MA100 slope",
+		MA200_SLOPE = "MA200 slope",
+		MA_SLOPES_SCORE = "MA slopes slope",
+ * 
+		BULLISH_CANDLES = "Bullish candles",
+		BEARISH_CANDLES = "Bearish candles",
+		MAs = "Moving averages",
+		SMI = "SMI",
+		STOCH = "Stoch",
+		RSI3 = "RSI3",
+		CHANNEL_POS = "Channel position",
+		ATR = "ATR",
+		ICHI = "Ichi",
+		BBANDS = "BBands",
+		CHANNEL_WIDTH_DIRECTION = "ChannelWidthDirection";
+*/
 		for (Map.Entry<String, FlexTAValue> curr : taValues.entrySet()) {
 			FlexTAValue taValue = curr.getValue();
 			addLogEntry(taValue);
