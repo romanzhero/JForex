@@ -39,8 +39,8 @@ public class TechnicalSituation {
 			+ ";" + taReason.toString()
 			+ ";" + txtSummary
 			+ "| SMI state: " + smiState.toString()
-			+ " (slow: " + slowSMIState.toString() + ", " + FXUtils.df1.format(fastSMI)
-			+ ", fast: " + fastSMIState.toString()  + ", " + FXUtils.df1.format(slowSMI)
+			+ " (slow: " + slowSMIState.toString() + ", " + FXUtils.df1.format(slowSMI)
+			+ ", fast: " + fastSMIState.toString()  + ", " + FXUtils.df1.format(fastSMI)
 			+ ") Stoch state: " + stochState.toString()  
 			+ " (" + FXUtils.df1.format(fastStoch)  + "/" + FXUtils.df1.format(slowStoch) + ")";		
 		return res;
