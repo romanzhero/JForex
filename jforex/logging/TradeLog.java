@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
+import jforex.techanalysis.source.FlexTASource;
 import jforex.techanalysis.source.FlexTAValue;
 import jforex.utils.FXUtils;
 import jforex.utils.log.FlexLogEntry;
@@ -220,6 +221,8 @@ public class TradeLog {
 		MAs_DISTANCE_PERC = "MAs distance percentile",
 		FLAT_REGIME = "Flat regime",
 		BBANDS_SQUEEZE_PERC = "BBands squeeze percentile",
+		CHANNEL_WIDTH_DIRECTION = "ChannelWidthDirection";
+		CHANNEL_POS = "Channel position",
 		MA200_HIGHEST = "MA200Highest",
 		MA200_LOWEST = "MA200Lowest",
 		MA200_IN_CHANNEL = "MA200InChannel",
@@ -229,23 +232,38 @@ public class TradeLog {
 		MA100_SLOPE = "MA100 slope",
 		MA200_SLOPE = "MA200 slope",
 		MA_SLOPES_SCORE = "MA slopes slope",
- * 
 		BULLISH_CANDLES = "Bullish candles",
 		BEARISH_CANDLES = "Bearish candles",
-		MAs = "Moving averages",
 		SMI = "SMI",
 		STOCH = "Stoch",
 		RSI3 = "RSI3",
-		CHANNEL_POS = "Channel position",
+ * 
+		MAs = "Moving averages",
 		ATR = "ATR",
 		ICHI = "Ichi",
 		BBANDS = "BBands",
-		CHANNEL_WIDTH_DIRECTION = "ChannelWidthDirection";
 */
-		for (Map.Entry<String, FlexTAValue> curr : taValues.entrySet()) {
-			FlexTAValue taValue = curr.getValue();
-			addLogEntry(taValue);
-		}		
+		addLogEntry(taValues.get(FlexTASource.TA_SITUATION));
+		addLogEntry(taValues.get(FlexTASource.TREND_ID));
+		addLogEntry(taValues.get(FlexTASource.MAs_DISTANCE_PERC));
+		addLogEntry(taValues.get(FlexTASource.FLAT_REGIME));
+		addLogEntry(taValues.get(FlexTASource.BBANDS_SQUEEZE_PERC));
+		addLogEntry(taValues.get(FlexTASource.CHANNEL_WIDTH_DIRECTION));
+		addLogEntry(taValues.get(FlexTASource.CHANNEL_POS));
+		addLogEntry(taValues.get(FlexTASource.MA200_HIGHEST));
+		addLogEntry(taValues.get(FlexTASource.MA200_LOWEST));
+		addLogEntry(taValues.get(FlexTASource.MA200_IN_CHANNEL));
+		addLogEntry(taValues.get(FlexTASource.MA200MA100_TREND_DISTANCE_PERC));
+		addLogEntry(taValues.get(FlexTASource.MA20_SLOPE));
+		addLogEntry(taValues.get(FlexTASource.MA50_SLOPE));
+		addLogEntry(taValues.get(FlexTASource.MA100_SLOPE));
+		addLogEntry(taValues.get(FlexTASource.MA200_SLOPE));
+		addLogEntry(taValues.get(FlexTASource.MA_SLOPES_SCORE));
+		addLogEntry(taValues.get(FlexTASource.BULLISH_CANDLES));
+		addLogEntry(taValues.get(FlexTASource.BEARISH_CANDLES));
+		addLogEntry(taValues.get(FlexTASource.SMI));
+		addLogEntry(taValues.get(FlexTASource.STOCH));
+		addLogEntry(taValues.get(FlexTASource.RSI3));
 	}
 
 	public void setPnLInPips(double exitPrice, Instrument instrument) {

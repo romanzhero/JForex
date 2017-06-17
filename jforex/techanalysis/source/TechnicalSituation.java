@@ -35,9 +35,9 @@ public class TechnicalSituation {
 	@Override
 	public String toString() {
 		String res = new String();
-		res += "Overall: " + taSituation.toString() 
-			+ "| reason: " + taReason.toString()
-			+ "| summary: " + txtSummary
+		res += taSituation.toString() 
+			+ ";" + taReason.toString()
+			+ ";" + txtSummary
 			+ "| SMI state: " + smiState.toString()
 			+ " (slow: " + slowSMIState.toString() + ", " + FXUtils.df1.format(fastSMI)
 			+ ", fast: " + fastSMIState.toString()  + ", " + FXUtils.df1.format(slowSMI)

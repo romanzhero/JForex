@@ -576,7 +576,7 @@ public class FlexTASource {
 			bullishCnt++;
 		if (ma200Slope.equals(Momentum.SINGLE_LINE_STATE.FALLING_IN_MIDDLE) || ma200Slope.equals(Momentum.SINGLE_LINE_STATE.TICKED_DOWN_IN_MIDDLE))
 			bearishCnt++;
-		result.put(MA_SLOPES_SCORE, new FlexTAValue(MA_SLOPES_SCORE, bullishCnt + ":" + bearishCnt));
+		result.put(MA_SLOPES_SCORE, new FlexTAValue(MA_SLOPES_SCORE, FXUtils.if1.format(bullishCnt) + ":" + FXUtils.if1.format(bearishCnt)));
 	}
 
 }

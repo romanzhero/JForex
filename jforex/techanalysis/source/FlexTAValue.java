@@ -227,6 +227,8 @@ public class FlexTAValue extends FlexLogEntry {
 		} else if (getLabel().equals(FlexTASource.TA_SITUATION)) {
 			String res = new String();
 			res += "TA situation";
+			res += ";" + "reason";
+			res += ";" + "Summary";
 			res += ";" + "SMI state";
 			res += ";" + "Slow SMI";
 			res += ";" + "Fast SMI";
