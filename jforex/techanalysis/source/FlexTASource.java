@@ -374,7 +374,6 @@ public class FlexTASource {
 	}
 
 	private void assessSMIState(double[][] smis, TechnicalSituation taSituation) {
-		// TODO Auto-generated method stub
 		double
 			fastSMIFirst = smis[0][0],
 			fastSMIPrev = smis[0][1],
@@ -385,6 +384,7 @@ public class FlexTASource {
 			slowSMILast = smis[1][2];
 		taSituation.fastSMI = fastSMILast;
 		taSituation.slowSMI = slowSMILast;
+
 		if (slowSMILast <= -60 && slowSMILast < slowSMIPrev && slowSMIPrev < slowSMIFirst)
 			taSituation.slowSMIState = Momentum.SINGLE_LINE_STATE.FALLING_OVERSOLD;
 		else if (slowSMILast <= -60 && slowSMILast > slowSMIPrev && slowSMIPrev > slowSMIFirst)
@@ -479,22 +479,20 @@ public class FlexTASource {
 					|| taSituation.slowSMIState.equals(Momentum.SINGLE_LINE_STATE.TICKED_DOWN_IN_MIDDLE)))
 			taSituation.smiState = Momentum.SMI_STATE.BEARISH_BOTH_FALLING_IN_MIDDLE;
 		else if (fastSMILast > slowSMILast
-				&& !taSituation.slowSMIState.equals(Momentum.SINGLE_LINE_STATE.FALLING_IN_MIDDLE)
-				&& (taSituation.fastSMIState.equals(Momentum.SINGLE_LINE_STATE.RAISING_IN_MIDDLE)
-					|| taSituation.fastSMIState.equals(Momentum.SINGLE_LINE_STATE.TICKED_UP_IN_MIDDLE)))
+				&& !taSituation.slowSMIState.equals(Momentum.SINGLE_LINE_STATE.FALLING_IN_MIDDLE))
 			taSituation.smiState = Momentum.SMI_STATE.BULLISH_WEAK_RAISING_IN_MIDDLE;
 		else if (fastSMILast >= slowSMILast
-				&& !taSituation.slowSMIState.equals(Momentum.SINGLE_LINE_STATE.RAISING_IN_MIDDLE)
+				&& ((!taSituation.slowSMIState.equals(Momentum.SINGLE_LINE_STATE.RAISING_IN_MIDDLE)
 				&& !taSituation.fastSMIState.equals(Momentum.SINGLE_LINE_STATE.RAISING_IN_MIDDLE))
+				|| taSituation.slowSMIState.toString().contains("FALLING")))
 			taSituation.smiState = Momentum.SMI_STATE.BEARISH_WEAK_FALLING_IN_MIDDLE;
 		else if (fastSMILast < slowSMILast
-				&& !taSituation.slowSMIState.equals(Momentum.SINGLE_LINE_STATE.RAISING_IN_MIDDLE)
-				&& (taSituation.fastSMIState.equals(Momentum.SINGLE_LINE_STATE.RAISING_IN_MIDDLE)
-					|| taSituation.fastSMIState.equals(Momentum.SINGLE_LINE_STATE.TICKED_UP_IN_MIDDLE)))
+				&& !taSituation.slowSMIState.equals(Momentum.SINGLE_LINE_STATE.RAISING_IN_MIDDLE))
 			taSituation.smiState = Momentum.SMI_STATE.BEARISH_WEAK_FALLING_IN_MIDDLE;
 		else if (fastSMILast <= slowSMILast
-				&& !taSituation.slowSMIState.equals(Momentum.SINGLE_LINE_STATE.FALLING_IN_MIDDLE)
+				&& ((!taSituation.slowSMIState.equals(Momentum.SINGLE_LINE_STATE.FALLING_IN_MIDDLE)
 				&& !taSituation.fastSMIState.equals(Momentum.SINGLE_LINE_STATE.FALLING_IN_MIDDLE))
+					|| taSituation.slowSMIState.toString().contains("RAISING")))
 			taSituation.smiState = Momentum.SMI_STATE.BULLISH_WEAK_RAISING_IN_MIDDLE;
 		else
 			taSituation.smiState = Momentum.SMI_STATE.OTHER;
