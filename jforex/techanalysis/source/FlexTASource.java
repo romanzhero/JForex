@@ -134,7 +134,7 @@ public class FlexTASource {
 			ma200InChannel = taValues.get(MA200_IN_CHANNEL).getBooleanValue();
 		double[][] smis = taValues.get(SMI).getDa2DimValue();
 		double
-			//fastSMI = smis[0][2],
+			fastSMI = smis[0][2],
 			slowSMI = smis[1][2];
 		
 		// first fill out the description fields before deciding on definitive situation flag
@@ -175,28 +175,28 @@ public class FlexTASource {
 		boolean 
 			highAboveAllMAs = askBar.getHigh() > mas[1][0] && askBar.getHigh() > mas[1][1] && askBar.getHigh() > mas[1][2] && askBar.getHigh() > mas[1][3],
 			lowBelowAllMAs = bidBar.getLow() < mas[1][0] && bidBar.getLow() < mas[1][1] && bidBar.getLow() < mas[1][2] && bidBar.getLow() < mas[1][3],
-			bullishMomentum = highAboveAllMAs && askBar.getHigh() > bBands[Volatility.BBANDS_TOP][0] 
-							&& channelWidthDirection.equals(Momentum.SINGLE_LINE_STATE.RAISING_IN_MIDDLE)
+			bullishMomentum = highAboveAllMAs //&& askBar.getHigh() > bBands[Volatility.BBANDS_TOP][0] 
+							&& !channelWidthDirection.equals(Momentum.SINGLE_LINE_STATE.FALLING_IN_MIDDLE)
 							&& (result.smiState.equals(Momentum.SMI_STATE.BULLISH_BOTH_RAISING_IN_MIDDLE)
 							|| result.smiState.equals(Momentum.SMI_STATE.BULLISH_OVERBOUGHT_BOTH)
 							|| result.smiState.equals(Momentum.SMI_STATE.BULLISH_OVERBOUGHT_FAST_ABOVE_RAISING_SLOW)
 							|| (result.smiState.equals(Momentum.SMI_STATE.BULLISH_WEAK_RAISING_IN_MIDDLE) && slowSMI > 0))
 							&& result.stochState.toString().startsWith("BULLISH"),
-			bearishMomentum = lowBelowAllMAs && bidBar.getLow() < bBands[Volatility.BBANDS_BOTTOM][0] 
-							&& channelWidthDirection.equals(Momentum.SINGLE_LINE_STATE.RAISING_IN_MIDDLE)
+			bearishMomentum = lowBelowAllMAs //&& bidBar.getLow() < bBands[Volatility.BBANDS_BOTTOM][0] 
+							&& !channelWidthDirection.equals(Momentum.SINGLE_LINE_STATE.FALLING_IN_MIDDLE)
 							&& (result.smiState.equals(Momentum.SMI_STATE.BEARISH_BOTH_FALLING_IN_MIDDLE)
 							|| result.smiState.equals(Momentum.SMI_STATE.BEARISH_OVERSOLD_BOTH)
 							|| result.smiState.equals(Momentum.SMI_STATE.BEARISH_OVERSOLD_FAST_BELOW_FALLING_SLOW)
-							|| (result.smiState.equals(Momentum.SMI_STATE.BEARISH_WEAK_FALLING_IN_MIDDLE)&& slowSMI < 0))
+							|| (result.smiState.equals(Momentum.SMI_STATE.BEARISH_WEAK_FALLING_IN_MIDDLE) && slowSMI < 0))
 							&& result.stochState.toString().startsWith("BEARISH");
 		
 		if (!(bullishMomentum || bearishMomentum)
-			&& !(result.stochState.equals(Momentum.STOCH_STATE.BULLISH_OVERBOUGHT_BOTH)
-				|| result.stochState.equals(Momentum.STOCH_STATE.BEARISH_OVERSOLD_BOTH)
-				|| result.smiState.equals(Momentum.SMI_STATE.BULLISH_OVERBOUGHT_BOTH)
-				|| result.smiState.equals(Momentum.SMI_STATE.BEARISH_OVERSOLD_BOTH))
-			&& maDistance < 25.0 &&
-			(isFlat.equals(FLAT_REGIME_CAUSE.MAs_WITHIN_CHANNEL) || bBandsSqueeze < 25.0)) {
+			&& !(result.smiState.equals(Momentum.SMI_STATE.BULLISH_OVERBOUGHT_BOTH)
+				|| result.smiState.equals(Momentum.SMI_STATE.BEARISH_OVERSOLD_BOTH)
+				|| (result.stochState.equals(Momentum.STOCH_STATE.BULLISH_OVERBOUGHT_BOTH) && (slowSMI > 60 || fastSMI > 60))
+				|| (result.stochState.equals(Momentum.STOCH_STATE.BEARISH_OVERSOLD_BOTH) && (slowSMI < 60) || fastSMI < 60))
+			&& maDistance < 25.0 
+			&& (isFlat.equals(FLAT_REGIME_CAUSE.MAs_WITHIN_CHANNEL) || bBandsSqueeze < 25.0)) {
 			result.taSituation = OverallTASituation.NEUTRAL;
 			if (bBandsSqueeze < 25.0)
 				result.taReason = TASituationReason.LOW_VOLA;

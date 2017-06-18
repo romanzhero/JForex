@@ -116,7 +116,6 @@ public class TrendLengthExplorer implements IStrategy {
 	public Filter selectedFilter = Filter.ALL_FLATS;	
 	
 	private IEngine engine;
-	private IContext context;
 	private IConsole console;
 	private IHistory history;
 	private IIndicators indicators;
@@ -154,7 +153,6 @@ public class TrendLengthExplorer implements IStrategy {
 		this.console = context.getConsole();
 		this.history = context.getHistory();
 		this.indicators = context.getIndicators();
-		this.context = context;
 		FXUtils.setProfitLossHelper(context.getAccount().getAccountCurrency(), history);
 		dataService = context.getDataService();
 		
