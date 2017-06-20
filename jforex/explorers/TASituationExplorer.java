@@ -120,7 +120,7 @@ public class TASituationExplorer implements IStrategy {
 
 		log = new Logger(reportDir + "//TASituation_Length_report_" + FXUtils.getFileTimeStamp(System.currentTimeMillis()) + ".txt");
 		statsLog = new Logger(reportDir + "//TASituation_Length_stat_report_" + FXUtils.getFileTimeStamp(System.currentTimeMillis()) + ".txt");
-		
+		statsLog.createXLS(reportDir + "//TASituation_Length_stat_report_" + FXUtils.getFileTimeStamp(System.currentTimeMillis()) + ".xls");
 		chart = new JForexChart(context, visualMode, selectedInstrument, console, showIndicators, indicators);
 		chart.showChart(context);
 	}
@@ -145,11 +145,14 @@ public class TASituationExplorer implements IStrategy {
 			if (tradeLog != null) {
 				if (!headerPrinted) {
 					headerPrinted = true;
-					statsLog.print(tradeLog.prepareHeader());
+					String header = tradeLog.prepareHeader();
+					statsLog.print(header);
+					statsLog.printXlsCSVLine(header);
 				}
 				String logLine = tradeLog.prepareExitReport(instrument);
 				console.getOut().println(logLine);					
 				statsLog.print(logLine);
+				statsLog.printXlsCSVLine(logLine);
 			}
 			
 			tradeLog = new TradeLog(FXUtils.getOrderLabel(instrument, "TrendLength", bidBar.getTime(), currTA.taSituation, orderCnt++), 

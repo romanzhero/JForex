@@ -1,18 +1,33 @@
 package jforex.utils.log;
 
 import java.io.BufferedWriter;
+import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.text.DecimalFormat;
 import java.util.List;
+import java.util.StringTokenizer;
 
 import com.dukascopy.api.IConsole;
+
+import jxl.Workbook;
+import jxl.write.Label;
+import jxl.write.WritableSheet;
+import jxl.write.WritableWorkbook;
+import jxl.write.WriteException;
+import jxl.write.biff.RowsExceededException;
+import jxl.write.Number;
 
 public class Logger {
 	IConsole console;
 	BufferedWriter logFile;
 	boolean isOpen = false;
 	static String SEPARATOR = ";";
+	String xlsReportFileName;
+	File xlsFile = null;
+	WritableWorkbook xlsWB = null;
+	WritableSheet xlsSheet = null;
+	private int xlsRow = 0; // Same call for header and data !
 
 	public enum logTags {
 		ORDER, // log entries for orders
@@ -44,6 +59,16 @@ public class Logger {
 	public Logger(IConsole pConsole) {
 		super();
 		this.console = pConsole;
+	}
+	
+	public void createXLS(String xlsName) {
+		xlsFile = new File(xlsName);
+		try {
+			xlsWB = Workbook.createWorkbook(xlsFile);
+			xlsSheet = xlsWB.createSheet("Stats", 0);
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
 	}
 
 	public void printAction(String type, String orderID, String timestamp,
@@ -159,9 +184,90 @@ public class Logger {
 				isOpen = false;
 				logFile.close();
 			} catch (IOException e) {
-				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
+		if (xlsWB != null)
+			try {
+				xlsWB.close();
+			} catch (WriteException e) {
+				e.printStackTrace();
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+	}	
+   
+    private void writeCell(WritableSheet sheet, int column, int row, String s) throws RowsExceededException, WriteException {
+        Label label = new Label(column, row, s);
+        sheet.addCell(label);
+    }
+    
+    public void printXlsCSVLine(String csvLine) {
+    	if (xlsWB == null)
+    		return;
+    	
+    	StringTokenizer st = new StringTokenizer(csvLine, SEPARATOR);
+		int column = 0;
+    	while (st.hasMoreTokens()) {
+    		String currCell = st.nextToken();
+    		try {
+				writeCell(xlsSheet, column++, xlsRow, currCell);
+			} catch (RowsExceededException e) {
+				e.printStackTrace();
+			} catch (WriteException e) {
+				e.printStackTrace();
+			}
+    	}
+    	try {
+			xlsWB.write();
+			xlsRow++;
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+    }
+    
+	public void printXlsLabelsFlex(List<FlexLogEntry> line) {
+    	if (xlsWB == null)
+    		return;
+		int column = 0;
+		for (FlexLogEntry e : line) {
+			try {
+				writeCell(xlsSheet, column++, 0, e.getLabel());
+			} catch (RowsExceededException e1) {
+				e1.printStackTrace();
+			} catch (WriteException e1) {
+				e1.printStackTrace();
+			}
+		}
+		try {
+			xlsWB.write();
+		} catch (IOException e1) {
+			e1.printStackTrace();
+		}
 	}
-
+	
+	public void printXlsValuesFlex(List<FlexLogEntry> line) {
+    	if (xlsWB == null)
+    		return;
+    	
+		int cnt = 0;
+		if (xlsRow == 0)
+			xlsRow++; // avoid overwriting the first row with labels
+		
+		for (FlexLogEntry e : line) {
+			try {
+				writeCell(xlsSheet, cnt++, xlsRow, e.getFormattedValue());
+			} catch (RowsExceededException e1) {
+				e1.printStackTrace();
+			} catch (WriteException e1) {
+				e1.printStackTrace();
+			}
+		}
+		try {
+			xlsWB.write();
+			xlsRow++;
+		} catch (IOException e1) {
+			e1.printStackTrace();
+		}
+	}
+    
 }
