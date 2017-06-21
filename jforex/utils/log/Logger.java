@@ -188,6 +188,7 @@ public class Logger {
 			}
 		if (xlsWB != null)
 			try {
+				xlsWB.write();				
 				xlsWB.close();
 			} catch (WriteException e) {
 				e.printStackTrace();
@@ -217,12 +218,7 @@ public class Logger {
 				e.printStackTrace();
 			}
     	}
-    	try {
-			xlsWB.write();
-			xlsRow++;
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
+		xlsRow++;
     }
     
 	public void printXlsLabelsFlex(List<FlexLogEntry> line) {
