@@ -1062,9 +1062,10 @@ public class TradeTrigger {
 			IBar[] patternBars = new IBar[1];
 			patternBars[0] = pivotLowBar;
 			// calc % of the combined candle
-			double range = pivotLowBar.getHigh() - pivotLowBar.getLow(), bodyTop = Math
-					.max(pivotLowBar.getOpen(), pivotLowBar.getClose()), bodyBottom = Math
-					.min(pivotLowBar.getOpen(), pivotLowBar.getClose());
+			double 
+				range = pivotLowBar.getHigh() - pivotLowBar.getLow(), 
+				bodyTop = Math.max(pivotLowBar.getOpen(), pivotLowBar.getClose()), 
+				bodyBottom = Math.min(pivotLowBar.getOpen(), pivotLowBar.getClose());
 			double[] bBandsDesc = priceChannelPos(instrument, pPeriod, filter, side, time, pivotLowBar.getLow(), 0);
 
 			return new TriggerDesc(TriggerType.BULLISH_1_BAR, 1, 
@@ -1085,10 +1086,14 @@ public class TradeTrigger {
 			patternBars[0] = prevBar;
 			patternBars[1] = currBar;
 			// calc % of the combined candle
-			double h = Math.max(prevBar.getHigh(), currBar.getHigh()), l = Math
-					.min(prevBar.getLow(), currBar.getLow()), o = prevBar
-					.getOpen(), c = currBar.getClose(), range = h - l, bodyTop = Math
-					.max(o, c), bodyBottom = Math.min(o, c);
+			double 
+				h = Math.max(prevBar.getHigh(), currBar.getHigh()), 
+				l = Math.min(prevBar.getLow(), currBar.getLow()), 
+				o = prevBar.getOpen(), 
+				c = currBar.getClose(), 
+				range = h - l, 
+				bodyTop = Math.max(o, c), 
+				bodyBottom = Math.min(o, c);
 			double[] bBandsDesc = priceChannelPos(instrument, pPeriod, filter, side, time, pivotLowBar.getLow(), prevBar.getLow() < currBar.getLow() ? 1 : 0);
 
 			lastBullishTrigger = TriggerType.BULLISH_2_BARS;
@@ -1116,14 +1121,17 @@ public class TradeTrigger {
 			patternBars[2] = currBar;
 			// calc % of the combined candle
 			double 
-				h = Math.max(Math.max(firstBar.getHigh(), middleBar.getHigh()),	currBar.getHigh()), l = pivotLowBar.getLow(), 
-				o = firstBar.getOpen(), c = currBar.getClose(), 
+				h = Math.max(Math.max(firstBar.getHigh(), middleBar.getHigh()),	currBar.getHigh()), 
+				l = pivotLowBar.getLow(), 
+				o = firstBar.getOpen(), 
+				c = currBar.getClose(), 
 				range = h - l, 
 				bodyTop = Math.max(o, c), 
 				bodyBottom = Math.min(o, c);
 			double[] bBandsDesc = priceChannelPos(instrument, pPeriod, filter, side, time, pivotLowBar.getLow(), 1);
 
-			return new TriggerDesc(TriggerType.BULLISH_3_BARS, 3, barLengthPercentile(instrument, pPeriod, filter, OfferSide.ASK, time, range, FXUtils.YEAR_WORTH_OF_4H_BARS), 
+			return new TriggerDesc(TriggerType.BULLISH_3_BARS, 3, 
+					barLengthPercentile(instrument, pPeriod, filter, OfferSide.ASK, time, range, FXUtils.YEAR_WORTH_OF_4H_BARS), 
 					patternBars,
 					pivotLowBar.getLow(),
 					getBullishPivotalThreeBarsSRLevel(middleBar),
@@ -1137,12 +1145,14 @@ public class TradeTrigger {
 			IBar[] patternBars = new IBar[1];
 			patternBars[0] = pivotLowBar;
 			// calc % of the combined candle
-			double range = pivotLowBar.getHigh() - pivotLowBar.getLow(), bodyTop = Math
-					.max(pivotLowBar.getOpen(), pivotLowBar.getClose()), bodyBottom = Math
-					.min(pivotLowBar.getOpen(), pivotLowBar.getClose());
+			double 
+				range = pivotLowBar.getHigh() - pivotLowBar.getLow(), 
+				bodyTop = Math.max(pivotLowBar.getOpen(), pivotLowBar.getClose()), 
+				bodyBottom = Math.min(pivotLowBar.getOpen(), pivotLowBar.getClose());
 			double[] bBandsDesc = priceChannelPos(instrument, pPeriod, filter, side, time, pivotLowBar.getLow(), 0);
 
-			return new TriggerDesc(TriggerType.BULLISH_1_BAR, 1, barLengthPercentile(instrument, pPeriod, filter, OfferSide.ASK, time, range, FXUtils.YEAR_WORTH_OF_4H_BARS), 
+			return new TriggerDesc(TriggerType.BULLISH_1_BAR, 1, 
+					barLengthPercentile(instrument, pPeriod, filter, OfferSide.ASK, time, range, FXUtils.YEAR_WORTH_OF_4H_BARS), 
 					patternBars,
 					pivotLowBar.getLow(), getLowerHandleMiddle(pivotLowBar),
 					bBandsDesc[0], bBandsDesc[1], bBandsDesc[2], bBandsDesc[3],
@@ -1170,7 +1180,8 @@ public class TradeTrigger {
 					.min(patternBars[0].getOpen(), patternBars[0].getClose());
 			double[] bBandsDesc = priceChannelPos(instrument, pPeriod, filter, side, time, pivotHigh, 0);
 
-			return new TriggerDesc(TriggerType.BEARISH_1_BAR, 1, barLengthPercentile(instrument, pPeriod, filter, OfferSide.BID, time, range, FXUtils.YEAR_WORTH_OF_4H_BARS),
+			return new TriggerDesc(TriggerType.BEARISH_1_BAR, 1, 
+					barLengthPercentile(instrument, pPeriod, filter, OfferSide.BID, time, range, FXUtils.YEAR_WORTH_OF_4H_BARS),
 					patternBars,
 					pivotHigh,
 					getUpperHandleMiddle(history.getBars(instrument, pPeriod, side, filter, 1, time, 0).get(0)),
@@ -1189,7 +1200,8 @@ public class TradeTrigger {
 			// calc % of the combined candle
 			double h = Math.max(prevBar.getHigh(), currBar.getHigh()), l = Math
 					.min(prevBar.getLow(), currBar.getLow()), o = prevBar
-					.getOpen(), c = currBar.getClose(), range = h - l, bodyTop = Math
+					.getOpen(), c = currBar.getClose(), 
+					range = h - l, bodyTop = Math
 					.max(o, c), bodyBottom = Math.min(o, c);
 			double[] bBandsDesc = priceChannelPos(instrument, pPeriod, filter, side, time, pivotHigh, prevBar.getHigh() > currBar.getHigh() ? 1	: 0);
 

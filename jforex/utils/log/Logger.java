@@ -5,11 +5,15 @@ import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.text.DecimalFormat;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.StringTokenizer;
 
 import com.dukascopy.api.IConsole;
 
+import jxl.Cell;
+import jxl.CellFormat;
+import jxl.CellView;
 import jxl.Workbook;
 import jxl.write.Label;
 import jxl.write.WritableSheet;
@@ -188,6 +192,15 @@ public class Logger {
 			}
 		if (xlsWB != null)
 			try {
+				// remove columns with same content
+				xlsRemoveSameContentColumns();
+				
+				//TODO: mozda ovo treba pri otvaranju, pre pisanja sadrzaja...
+		    	CellView cv = new CellView();
+		    	cv.setAutosize(true);
+		    	for (int i = 0; i < xlsSheet.getColumns(); i++)
+		    		xlsSheet.setColumnView(i, cv);
+		    	
 				xlsWB.write();				
 				xlsWB.close();
 			} catch (WriteException e) {
@@ -195,6 +208,59 @@ public class Logger {
 			} catch (IOException e) {
 				e.printStackTrace();
 			}
+	}
+
+	protected void xlsRemoveSameContentColumns() {
+		List<Integer> columnsToRemove = new ArrayList<Integer>();
+		List<String> 
+			removedHeaders = new ArrayList<String>(),
+			removedCellContent = new ArrayList<String>();
+		WritableSheet xlsSh = xlsWB.getSheet(0);
+		for (int i = 0; i < xlsSh.getColumns(); i++) {
+			Cell[] currColumn = xlsSh.getColumn(i);
+			boolean differentCellContent = false;
+			// Skip header !
+			for (int j = 1; j < currColumn.length - 1; j++) {
+				Cell 
+					currCell = currColumn[j],
+					nextCell = currColumn[j+1];
+				differentCellContent = !currCell.getContents().equals(nextCell.getContents());
+				if (differentCellContent) {
+					break;
+				}
+			}
+			if (differentCellContent == false) {
+				columnsToRemove.add(new Integer(i));
+				removedHeaders.add(new String(currColumn[0].getContents()));
+				removedCellContent.add(new String(currColumn[1].getContents()));
+			}
+		}
+		String removedColumnsIdxs = new String("Removed columns indices: ");
+		int 
+			initialColumnsNo = xlsSh.getColumns(),
+			newColumnsNo = -1,
+			deletedColumns = 0;
+		for (Integer currCol : columnsToRemove) {
+			// koriguj vrednost indexa preostalih kolona nakon brisanja kolone !
+			xlsSh.removeColumn(currCol.intValue() - deletedColumns++);
+			newColumnsNo = xlsSh.getColumns();
+			removedColumnsIdxs += currCol.intValue() + ", ";
+		}
+		// Write removed headers to second sheet for reference
+		WritableSheet reportSheet = xlsWB.createSheet("Removed columns", xlsWB.getNumberOfSheets());
+		int currRow = 0;
+		try {
+			int i = 0;
+			for (String currHeader: removedHeaders) {
+				writeCell(reportSheet, 0, currRow, currHeader);
+				writeCell(reportSheet, 1, currRow++, removedCellContent.get(i++));
+			}
+			writeCell(reportSheet, 0, currRow, removedColumnsIdxs);
+		} catch (RowsExceededException e) {
+			e.printStackTrace();
+		} catch (WriteException e) {
+			e.printStackTrace();
+		}
 	}	
    
     private void writeCell(WritableSheet sheet, int column, int row, String s) throws RowsExceededException, WriteException {
