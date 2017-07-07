@@ -43,6 +43,8 @@ public class FlexTASource {
 		STOCH = "Stoch",
 		RSI3 = "RSI3",
 		CHANNEL_POS = "Channel position",
+		CLOSE_ABOVE_ALL_MAs = "Close above all MAs",
+		CLOSE_BELOW_ALL_MAs = "Close below all MAs",
 		BBANDS_SQUEEZE_PERC = "BBands squeeze percentile",
 		FLAT_REGIME = "Flat regime",
 		MAs_DISTANCE_PERC = "MAs distance percentile",
@@ -126,12 +128,15 @@ public class FlexTASource {
 		double 
 			maDistance = taValues.get(MAs_DISTANCE_PERC).getDoubleValue(),
 			bBandsSqueeze = taValues.get(BBANDS_SQUEEZE_PERC).getDoubleValue(),
-			ma200ma100distance = taValues.get(MA200MA100_TREND_DISTANCE_PERC).getDoubleValue();
+			ma200ma100distance = taValues.get(MA200MA100_TREND_DISTANCE_PERC).getDoubleValue(),
+			chPos = taValues.get(CHANNEL_POS).getDoubleValue();
 		FLAT_REGIME_CAUSE isFlat = (FLAT_REGIME_CAUSE)taValues.get(FLAT_REGIME).getValue();
 		boolean 
 			ma200Highest = taValues.get(MA200_HIGHEST).getBooleanValue(), 
 			ma200Lowest = taValues.get(MA200_LOWEST).getBooleanValue(),
 			ma200InChannel = taValues.get(MA200_IN_CHANNEL).getBooleanValue(),
+			closeAboveAllMAs = taValues.get(CLOSE_ABOVE_ALL_MAs).getBooleanValue(),
+			closeBelowAllMSs = taValues.get(CLOSE_BELOW_ALL_MAs).getBooleanValue(),
 			channelWidthDescDone = false;
 		double[][] smis = taValues.get(SMI).getDa2DimValue();
 		double
@@ -165,8 +170,11 @@ public class FlexTASource {
 			ma200Desc = new String(),
 			bBandsDesc = new String(),
 			auxDescChannel = new String(),
-			auxDescMAs = new String();
-		auxDescChannel += " Channel width: " + FXUtils.df1.format(bBandsSqueeze) + " (" + channelWidthDirection.toString() + ")";
+			auxDescMAs = new String(),
+			closeAboveOrBelowAllMAsStr = new String();
+		auxDescChannel += " Channel width: " + FXUtils.df1.format(bBandsSqueeze) 
+			+ " (" + channelWidthDirection.toString() + "), price position: "
+			+ FXUtils.df1.format(chPos) + "%";
 		auxDescMAs += " MA slopes bullish-bearish: " + maSlopesScore
 				+ " (MA20: " + ma20Slope 
 				+ ", MA50: " + ma50Slope
@@ -180,6 +188,11 @@ public class FlexTASource {
 			ma200Desc += " (MA200 bullish (lowest), MA100-MA200 distance " + FXUtils.df1.format(ma200ma100distance) + ")";
 		if (ma200InChannel)
 			ma200Desc += ", MA200 in channel !";
+		if (closeAboveAllMAs)
+			closeAboveOrBelowAllMAsStr = new String(", Close ABOVE all MAs !");
+		else if (closeBelowAllMSs)
+			closeAboveOrBelowAllMAsStr = new String(", Close BELOW all MAs !");
+		
 		if (bBandsSqueeze < 25.0) {
 			bBandsDesc += ", narrow channel: " + FXUtils.df1.format(bBandsSqueeze) + " (" + channelWidthDirection.toString() + ")";
 			channelWidthDescDone = true;
@@ -230,7 +243,7 @@ public class FlexTASource {
 				+ ", trend ID: " + taValues.get(TREND_ID).getTrendStateValue().toString();
 			if (isFlat.equals(FLAT_REGIME_CAUSE.MAs_WITHIN_CHANNEL))
 				result.txtSummary += ", all MAs in channel !";
-			result.txtSummary += ma200Desc + auxDescMAs;
+			result.txtSummary += ma200Desc + auxDescMAs + closeAboveOrBelowAllMAsStr;
 			return result;
 		}
 		
@@ -248,7 +261,7 @@ public class FlexTASource {
 			result.taSituation = OverallTASituation.BULLISH;
 			result.taReason = TASituationReason.TREND;
 			result.txtSummary = "Strong uptrend (" + FXUtils.df1.format(maDistance) + ")";
-			result.txtSummary += bBandsDesc + ma200Desc + (!channelWidthDescDone ? auxDescChannel : "") + auxDescMAs; 
+			result.txtSummary += bBandsDesc + ma200Desc + (!channelWidthDescDone ? auxDescChannel : "") + auxDescMAs + closeAboveOrBelowAllMAsStr; 
 			return result;
 		}
 		if (entryTrendID.equals(TREND_STATE.UP_STRONG)
@@ -258,7 +271,7 @@ public class FlexTASource {
 			result.taSituation = OverallTASituation.BULLISH;
 			result.taReason = TASituationReason.TREND;
 			result.txtSummary = entryTrendID.toString() + " (" + FXUtils.df1.format(maDistance) + ")";
-			result.txtSummary += bBandsDesc + ma200Desc + (!channelWidthDescDone ? auxDescChannel : "") + auxDescMAs; 
+			result.txtSummary += bBandsDesc + ma200Desc + (!channelWidthDescDone ? auxDescChannel : "") + auxDescMAs + closeAboveOrBelowAllMAsStr; 
 			return result;
 		}
 		if (entryTrendID.equals(TREND_STATE.UP_MILD)
@@ -268,7 +281,7 @@ public class FlexTASource {
 			result.taSituation = OverallTASituation.BULLISH;
 			result.taReason = TASituationReason.TREND;
 			result.txtSummary = "Up mild, strong (" + FXUtils.df1.format(maDistance) + ")";
-			result.txtSummary += bBandsDesc + ma200Desc + (!channelWidthDescDone ? auxDescChannel : "") + auxDescMAs; 
+			result.txtSummary += bBandsDesc + ma200Desc + (!channelWidthDescDone ? auxDescChannel : "") + auxDescMAs + closeAboveOrBelowAllMAsStr; 
 			return result;
 		}
 		if (entryTrendID.equals(TREND_STATE.UP_MILD)
@@ -278,7 +291,7 @@ public class FlexTASource {
 			result.taSituation = OverallTASituation.BULLISH;
 			result.taReason = TASituationReason.TREND;
 			result.txtSummary = entryTrendID.toString() + " (" + FXUtils.df1.format(maDistance) + ")";
-			result.txtSummary += bBandsDesc + ma200Desc + (!channelWidthDescDone ? auxDescChannel : "") + auxDescMAs; 
+			result.txtSummary += bBandsDesc + ma200Desc + (!channelWidthDescDone ? auxDescChannel : "") + auxDescMAs + closeAboveOrBelowAllMAsStr; 
 			return result;
 		}
 		if (entryTrendID.equals(TREND_STATE.DOWN_STRONG)
@@ -288,7 +301,7 @@ public class FlexTASource {
 			result.taSituation = OverallTASituation.BEARISH;
 			result.taReason = TASituationReason.TREND;
 			result.txtSummary = "Strong downtrend (" + FXUtils.df1.format(maDistance) + ")";
-			result.txtSummary += bBandsDesc + ma200Desc + (!channelWidthDescDone ? auxDescChannel : "") + auxDescMAs; 
+			result.txtSummary += bBandsDesc + ma200Desc + (!channelWidthDescDone ? auxDescChannel : "") + auxDescMAs + closeAboveOrBelowAllMAsStr; 
 			return result;
 		}
 		if (entryTrendID.equals(TREND_STATE.DOWN_STRONG)
@@ -298,7 +311,7 @@ public class FlexTASource {
 			result.taSituation = OverallTASituation.BEARISH;
 			result.taReason = TASituationReason.TREND;
 			result.txtSummary = entryTrendID.toString() + " (" + FXUtils.df1.format(maDistance) + ")";
-			result.txtSummary += bBandsDesc + ma200Desc + (!channelWidthDescDone ? auxDescChannel : "") + auxDescMAs; 
+			result.txtSummary += bBandsDesc + ma200Desc + (!channelWidthDescDone ? auxDescChannel : "") + auxDescMAs + closeAboveOrBelowAllMAsStr; 
 			return result;
 		}		
 		if (entryTrendID.equals(TREND_STATE.DOWN_MILD)
@@ -308,7 +321,7 @@ public class FlexTASource {
 			result.taSituation = OverallTASituation.BEARISH;
 			result.taReason = TASituationReason.TREND;
 			result.txtSummary = "Down mild, strong (" + FXUtils.df1.format(maDistance) + ")";
-			result.txtSummary += bBandsDesc + ma200Desc + (!channelWidthDescDone ? auxDescChannel : "") + auxDescMAs; 
+			result.txtSummary += bBandsDesc + ma200Desc + (!channelWidthDescDone ? auxDescChannel : "") + auxDescMAs + closeAboveOrBelowAllMAsStr; 
 			return result;
 		}
 		if (entryTrendID.equals(TREND_STATE.DOWN_MILD)
@@ -318,14 +331,14 @@ public class FlexTASource {
 			result.taSituation = OverallTASituation.BEARISH;
 			result.taReason = TASituationReason.TREND;
 			result.txtSummary = entryTrendID.toString() + " (" + FXUtils.df1.format(maDistance) + ")";
-			result.txtSummary += bBandsDesc + ma200Desc + (!channelWidthDescDone ? auxDescChannel : "") + auxDescMAs; 
+			result.txtSummary += bBandsDesc + ma200Desc + (!channelWidthDescDone ? auxDescChannel : "") + auxDescMAs + closeAboveOrBelowAllMAsStr; 
 			return result;
 		}		
 		if (bullishMomentum) {
 			result.taSituation = OverallTASituation.BULLISH;
 			result.taReason = TASituationReason.MOMENTUM;
 			result.txtSummary = "Bullish momentum";
-			result.txtSummary += trendDesc + bBandsDesc + ma200Desc + (!channelWidthDescDone ? auxDescChannel : "") + auxDescMAs; 
+			result.txtSummary += trendDesc + bBandsDesc + ma200Desc + (!channelWidthDescDone ? auxDescChannel : "") + auxDescMAs + closeAboveOrBelowAllMAsStr; 
 			return result;
 			
 		}
@@ -333,7 +346,7 @@ public class FlexTASource {
 			result.taSituation = OverallTASituation.BEARISH;
 			result.taReason = TASituationReason.MOMENTUM;
 			result.txtSummary = "Bearish momentum";
-			result.txtSummary += trendDesc + bBandsDesc + ma200Desc + (!channelWidthDescDone ? auxDescChannel : "") + auxDescMAs; 
+			result.txtSummary += trendDesc + bBandsDesc + ma200Desc + (!channelWidthDescDone ? auxDescChannel : "") + auxDescMAs + closeAboveOrBelowAllMAsStr; 
 			return result;				
 		}
 		
@@ -344,14 +357,14 @@ public class FlexTASource {
 			result.taSituation = OverallTASituation.NEUTRAL;
 			result.taReason = TASituationReason.FLAT;
 			result.txtSummary = "Flat (" + isFlat.toString() + ")";
-			result.txtSummary += trendDesc + bBandsDesc + ma200Desc + (!channelWidthDescDone ? auxDescChannel : "") + auxDescMAs; 
+			result.txtSummary += trendDesc + bBandsDesc + ma200Desc + (!channelWidthDescDone ? auxDescChannel : "") + auxDescMAs + closeAboveOrBelowAllMAsStr; 
 			return result;
 		}
 		
 		result.taSituation = OverallTASituation.NEUTRAL;
 		result.taReason = TASituationReason.NONE;
 		result.txtSummary = "Unclear, (TrendID " + entryTrendID.toString() + ")";
-		result.txtSummary += trendDesc + bBandsDesc + ma200Desc + (!channelWidthDescDone ? auxDescChannel : "") + auxDescMAs; 
+		result.txtSummary += trendDesc + bBandsDesc + ma200Desc + (!channelWidthDescDone ? auxDescChannel : "") + auxDescMAs + closeAboveOrBelowAllMAsStr; 
 		return result;
 	}
 
@@ -571,6 +584,22 @@ public class FlexTASource {
 		mas[1][1] = mas50[2];
 		mas[1][2] = mas100[2];
 		mas[1][3] = mas200[2];
+		
+		if (bidBar.getClose() > mas20[2] 
+			&& bidBar.getClose() > mas50[2] 
+			&& bidBar.getClose() > mas100[2]
+			&& bidBar.getClose() > mas200[2])
+			result.put(CLOSE_ABOVE_ALL_MAs, new FlexTAValue(CLOSE_ABOVE_ALL_MAs, new Boolean(true)));
+		else
+			result.put(CLOSE_ABOVE_ALL_MAs, new FlexTAValue(CLOSE_ABOVE_ALL_MAs, new Boolean(false)));	
+		if (bidBar.getClose() < mas20[2] 
+			&& bidBar.getClose() < mas50[2] 
+			&& bidBar.getClose() < mas100[2]
+			&& bidBar.getClose() < mas200[2])
+			result.put(CLOSE_BELOW_ALL_MAs, new FlexTAValue(CLOSE_BELOW_ALL_MAs, new Boolean(true)));
+		else
+			result.put(CLOSE_BELOW_ALL_MAs, new FlexTAValue(CLOSE_BELOW_ALL_MAs, new Boolean(false)));
+		
 		result.put(MAs, new FlexTAValue(MAs, mas, instrument.getPipScale() == 5 ? FXUtils.df5 : FXUtils.df2));
 		
 		Momentum.SINGLE_LINE_STATE
