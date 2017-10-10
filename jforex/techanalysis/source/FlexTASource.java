@@ -201,8 +201,7 @@ public class FlexTASource {
 			bBandsDesc += ", all MAs in channel !";
 		
 		double[][] 
-				mas = taValues.get(FlexTASource.MAs).getDa2DimValue(),
-				bBands = taValues.get(FlexTASource.BBANDS).getDa2DimValue();
+				mas = taValues.get(FlexTASource.MAs).getDa2DimValue();
 		boolean 
 			highAboveAllMAs = askBar.getHigh() > mas[1][0] && askBar.getHigh() > mas[1][1] && askBar.getHigh() > mas[1][2] && askBar.getHigh() > mas[1][3],
 			lowBelowAllMAs = bidBar.getLow() < mas[1][0] && bidBar.getLow() < mas[1][1] && bidBar.getLow() < mas[1][2] && bidBar.getLow() < mas[1][3],

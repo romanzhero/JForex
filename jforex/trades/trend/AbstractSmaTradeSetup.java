@@ -11,9 +11,7 @@ import jforex.techanalysis.Trend;
 import jforex.techanalysis.Trend.FLAT_REGIME_CAUSE;
 import jforex.techanalysis.source.FlexTASource;
 import jforex.techanalysis.source.FlexTAValue;
-import jforex.trades.ITradeSetup;
 import jforex.trades.TradeSetup;
-import jforex.trades.ITradeSetup.EntryDirection;
 import jforex.utils.FXUtils;
 
 import com.dukascopy.api.Filter;
@@ -36,9 +34,14 @@ public abstract class AbstractSmaTradeSetup extends TradeSetup {
 	protected Map<String, Boolean> ma50TrailFlags = new HashMap<String, Boolean>();
 	protected double flatPercThreshold;
 	protected double bBandsSqueezeThreshold;
-	private double lastSL;
+	protected double lastSL;
 	
-	public AbstractSmaTradeSetup(IEngine engine, IContext context, Set<Instrument> subscribedInstruments, boolean mktEntry, boolean onlyCross, double pFlatPercThreshold, double pBBandsSqueezeThreshold, boolean trailsOnMA50) {
+	public AbstractSmaTradeSetup(IEngine engine, IContext context, Set<Instrument> subscribedInstruments, 
+			boolean mktEntry, 
+			boolean onlyCross, 
+			double pFlatPercThreshold, 
+			double pBBandsSqueezeThreshold, 
+			boolean trailsOnMA50) {
 		super(engine, context);
 		this.mktEntry = mktEntry;
 		this.onlyCross = onlyCross;

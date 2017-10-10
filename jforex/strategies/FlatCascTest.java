@@ -33,6 +33,7 @@ import jforex.trades.momentum.SmiTradeSetup;
 import jforex.trades.trend.SmaCrossTradeSetup;
 import jforex.trades.trend.SmaSoloTradeSetup;
 import jforex.trades.trend.SmaTradeSetup;
+import jforex.trades.trend.TrendSprint;
 
 public class FlatCascTest implements IStrategy {
 	@Configurable(value = "Period", description = "Choose the time frame")
@@ -115,6 +116,7 @@ public class FlatCascTest implements IStrategy {
 		this.visualMode = p.getProperty("visualMode", "no").equalsIgnoreCase("yes"); 
 		this.showIndicators = p.getProperty("showIndicators", "no").equalsIgnoreCase("yes");
 		this.reportDir = p.getProperty("reportDirectory", ".");
+		this.selectedAmount = Double.parseDouble(p.getProperty("tradeAmount", "100000.0"));
 		conf = p;
 	}
 
@@ -165,6 +167,8 @@ public class FlatCascTest implements IStrategy {
 			tradeSetups.add(new SmaTradeSetup(indicators, context, history, engine, context.getSubscribedInstruments(), true, false, 30.0, 30.0, false));
 		else if (conf.getProperty("TrendIDFollowSoloSetup", "no").equals("yes"))
 			tradeSetups.add(new SmaSoloTradeSetup(engine, context, context.getSubscribedInstruments(), true, false, 30.0, 30.0, false, true));
+		else if (conf.getProperty("TrendSprint", "no").equals("yes"))
+			tradeSetups.add(new TrendSprint(engine, context, context.getSubscribedInstruments(), true, false, 30.0, 30.0, true));
 		
 		//taEvents.add(new LongCandlesEvent(indicators, history));
 		//taEvents.add(new ShortCandlesEvent(indicators, history));
@@ -241,7 +245,7 @@ public class FlatCascTest implements IStrategy {
 		double dailyPnLvsRange = dailyPnL.ratioPnLAvgRange(instrument);
 		if (order != null) {
 			// there is an open order, might be pending (waiting) or filled !
-			if (order.getState().equals(IOrder.State.OPENED)
+/*			if (order.getState().equals(IOrder.State.OPENED)
 				&& dailyPnLvsRange > 0.5) {
 				// cancel pending order if daily profit OK and skip further trading
 				order.close();
@@ -250,8 +254,8 @@ public class FlatCascTest implements IStrategy {
 				orderPerPair.put(instrument.name(), null);	
 				dailyPnL.resetInstrumentDailyPnL(instrument, bidBar.getTime());
 				return;
-			}
-			long tradingHoursEnd = TradingHours.tradingHoursEnd(instrument, bidBar.getTime());
+			}*/
+/*			long tradingHoursEnd = TradingHours.tradingHoursEnd(instrument, bidBar.getTime());
 			if (tradingHoursEnd != -1 && bidBar.getTime() + 3600 * 1000 > tradingHoursEnd) {
 				order.close();
 				order.waitForUpdate(null);
@@ -259,7 +263,7 @@ public class FlatCascTest implements IStrategy {
 				orderPerPair.put(instrument.name(), null);	
 				dailyPnL.resetInstrumentDailyPnL(instrument, bidBar.getTime());
 				return;				
-			}
+			}*/
 				
 			order = openOrderProcessing(instrument, period, askBar, bidBar, order);
 		}
@@ -273,10 +277,10 @@ public class FlatCascTest implements IStrategy {
 			return;
 		}
 		// no more entries if daily profit is OK or less then 1 hour before close
-		if (dailyPnLvsRange > 0.5) {			
+/*		if (dailyPnLvsRange > 0.5) {			
 			lastTradingEvent = "Daily profit more then 50% of daily range - no trading until the end of the day";
 			return;
-		}		
+		}	*/	
 		// enable re-entry on the same bar !
 		if (order == null) {
 			newOrderProcessing(instrument, period, askBar, bidBar);

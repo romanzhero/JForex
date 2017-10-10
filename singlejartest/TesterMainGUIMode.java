@@ -59,7 +59,9 @@ import org.slf4j.LoggerFactory;
 
 import com.dukascopy.api.Filter;
 import com.dukascopy.api.IChart;
+import com.dukascopy.api.ICurrency;
 import com.dukascopy.api.Instrument;
+import com.dukascopy.api.JFCurrency;
 import com.dukascopy.api.LoadingProgressListener;
 import com.dukascopy.api.Period;
 import com.dukascopy.api.feed.IFeedDescriptor;
@@ -112,7 +114,7 @@ public class TesterMainGUIMode extends JFrame implements ITesterUserInterface, I
 			ITesterGui currGui = entry.getValue();
 			currGui.getTesterChartController().addOHLCInformer();
 			currGui.getTesterChartController().setFilter(Filter.ALL_FLATS);
-			IFeedDescriptor fd = new TimePeriodAggregationFeedDescriptor(null, Period.THIRTY_MINS, null);
+			IFeedDescriptor fd = new TimePeriodAggregationFeedDescriptor(null, Period.FIVE_MINS, null);
 			fd.setFilter(Filter.ALL_FLATS);
 			currGui.getTesterChartController().setFeedDescriptor(fd);
 			JPanel chartPanel = currGui.getChartPanel();
@@ -202,7 +204,7 @@ public class TesterMainGUIMode extends JFrame implements ITesterUserInterface, I
 		client.setCacheDirectory(new File(properties.getProperty("cachedir")));
 		client.setSubscribedInstruments(instruments);
 		// setting initial deposit
-		client.setInitialDeposit(Instrument.EURUSD.getSecondaryJFCurrency(), Double.parseDouble(properties.getProperty("initialdeposit", "100000.0")));
+		client.setInitialDeposit(JFCurrency.getInstance("USD"), Double.parseDouble(properties.getProperty("initialdeposit", "100000.0")));
 		client.setDataInterval(Period.ONE_MIN, null, InterpolationMethod.FOUR_TICKS, properties.getTestIntervalStart().getMillis(), properties.getTestIntervalEnd().getMillis());
 		// load data
 		LOGGER.info("Downloading data");
@@ -213,10 +215,9 @@ public class TesterMainGUIMode extends JFrame implements ITesterUserInterface, I
 		LOGGER.info("Starting strategy");
 
 		client.startStrategy(
-				new TASituationExplorer(instrument, properties),
+				//new TASituationExplorer(instrument, properties),
 				// new TrendLengthExplorer(instrument, properties),
-				// new FlatCascTest(instrument, properties),
-				// new MA_Play(),
+				new FlatCascTest(instrument, properties),
 				new LoadingProgressListener() {
 					@Override
 					public void dataLoaded(long startTime, long endTime, long currentTime, String information) {
