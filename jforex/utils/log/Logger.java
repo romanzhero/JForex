@@ -21,6 +21,7 @@ import jxl.write.WritableWorkbook;
 import jxl.write.WriteException;
 import jxl.write.biff.RowsExceededException;
 import jxl.write.Number;
+import jxl.write.WritableCell;
 
 public class Logger {
 	IConsole console;
@@ -230,9 +231,14 @@ public class Logger {
 				}
 			}
 			if (differentCellContent == false) {
-				columnsToRemove.add(new Integer(i));
-				removedHeaders.add(new String(currColumn[0].getContents()));
-				removedCellContent.add(new String(currColumn[1].getContents()));
+				if (currColumn.length > 1) {
+					columnsToRemove.add(new Integer(i));
+					removedHeaders.add(new String(currColumn[0].getContents()));
+					removedCellContent.add(new String(currColumn[1].getContents()));
+				} else {
+					removedHeaders.add("Column with no content, not removed: " + new String(currColumn[0].getContents()));					
+					removedCellContent.add("Column empty");
+				}
 			}
 		}
 		String removedColumnsIdxs = new String("Removed columns indices: ");
@@ -266,6 +272,21 @@ public class Logger {
     private void writeCell(WritableSheet sheet, int column, int row, String s) throws RowsExceededException, WriteException {
         Label label = new Label(column, row, s);
         sheet.addCell(label);
+    }
+    
+    private void writeCell(WritableSheet sheet, int column, int row, FlexLogEntry logEntry) throws RowsExceededException, WriteException {
+    	WritableCell cell = null;
+    	if (logEntry.getValue() == null)
+    		cell = new Label(column, row, "");
+    	else if (logEntry.isDouble() )
+    		cell = new Number(column, row, logEntry.getDoubleValue());
+    	else if (logEntry.isInteger())
+    		cell = new Number(column, row, logEntry.getIntegerValue());
+    	else if (logEntry.isLong())
+    		cell = new Number(column, row, logEntry.getLongValue());
+    	else 
+    		cell = new Label(column, row, logEntry.getFormattedValue());
+        sheet.addCell(cell);
     }
     
     public void printXlsCSVLine(String csvLine) {
@@ -311,25 +332,27 @@ public class Logger {
     	if (xlsWB == null)
     		return;
     	
-		int cnt = 0;
+		int column = 0;
 		if (xlsRow == 0)
 			xlsRow++; // avoid overwriting the first row with labels
 		
 		for (FlexLogEntry e : line) {
 			try {
-				writeCell(xlsSheet, cnt++, xlsRow, e.getFormattedValue());
+				writeCell(xlsSheet, column++, xlsRow, e);
 			} catch (RowsExceededException e1) {
 				e1.printStackTrace();
 			} catch (WriteException e1) {
 				e1.printStackTrace();
 			}
 		}
-		try {
+		xlsRow++;
+
+		/*		try {
 			xlsWB.write();
 			xlsRow++;
 		} catch (IOException e1) {
 			e1.printStackTrace();
-		}
+		}*/
 	}
     
 }

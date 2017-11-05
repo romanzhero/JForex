@@ -49,7 +49,6 @@ import com.dukascopy.api.Instrument;
 import com.dukascopy.api.JFException;
 import com.dukascopy.api.OfferSide;
 import com.dukascopy.api.Period;
-import com.dukascopy.login.controller.ILoginDialogController.ModalMessageMode;
 
 public class FXUtils {
 

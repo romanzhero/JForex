@@ -156,6 +156,7 @@ public class TradeLog {
 						+ FXUtils.getFormatedTimeGMT(exitTime) + ";"
 						+ exitReason + ";"
 						+ duration + ";"
+						+ (PnL > 0 ? "WIN" : "LOSS") + ";"
 						+ FXUtils.df1.format(PnL) + ";"
 						+ FXUtils.df2.format(PnLPerc) + ";"
 						+ FXUtils.df1.format(maxProfit * Math.pow(10, instrument.getPipScale())) + ";"
@@ -179,6 +180,43 @@ public class TradeLog {
 
 	}
 	
+	public List<FlexLogEntry> prepareExitReportAsList(Instrument instrument) {
+		List<FlexLogEntry> exitReport = new ArrayList<FlexLogEntry>();
+		exitReport.add(new FlexLogEntry("ER", "ER"));
+		exitReport.add(new FlexLogEntry("Instrument", instrument.name()));
+		exitReport.add(new FlexLogEntry("OrderLabel", orderLabel));
+		exitReport.add(new FlexLogEntry("Direction", (isLong ? "LONG" : "SHORT")));
+		exitReport.add(new FlexLogEntry("Setup", setup));
+		exitReport.add(new FlexLogEntry("signalTime", FXUtils.getFormatedTimeGMT(signalTime)));
+		exitReport.add(new FlexLogEntry("fillTime", FXUtils.getFormatedTimeGMT(fillTime)));
+		exitReport.add(new FlexLogEntry("fillTime", FXUtils.getFormatedTimeGMT(exitTime)));
+		exitReport.add(new FlexLogEntry("exitReason", exitReason));
+		exitReport.add(new FlexLogEntry("duration", new Long(duration)));
+		exitReport.add(new FlexLogEntry("Direction", (PnL > 0 ? "WIN" : "LOSS")));
+		exitReport.add(new FlexLogEntry("PnL", new Double(PnL), FXUtils.df1));
+		exitReport.add(new FlexLogEntry("PnLPerc", new Double(PnLPerc), FXUtils.df2));
+		exitReport.add(new FlexLogEntry("maxProfit", new Double(maxProfit * Math.pow(10, instrument.getPipScale())), FXUtils.df1));
+		exitReport.add(new FlexLogEntry("maxProfit2", new Double((isLong ? maxProfitPrice - entryPrice : entryPrice - maxProfitPrice) / entryPrice * 100), FXUtils.df2));
+		exitReport.add(new FlexLogEntry("missedProfit", new Double(missedProfit(instrument)), FXUtils.df1));
+		exitReport.add(new FlexLogEntry("missedProfitPerc", new Double(missedProfitPerc(instrument)), FXUtils.df1));
+		exitReport.add(new FlexLogEntry("maxProfitPrice", new Double(maxProfitPrice), (instrument.getPipScale() != 2 ? FXUtils.df5 : FXUtils.df2)));
+		exitReport.add(new FlexLogEntry("maxLoss", new Double(maxLoss * Math.pow(10, instrument.getPipScale())), FXUtils.df1));
+		exitReport.add(new FlexLogEntry("maxLossATR", new Double(maxLossATR), FXUtils.df2));
+		exitReport.add(new FlexLogEntry("entryPrice", new Double(entryPrice), (instrument.getPipScale() != 2 ? FXUtils.df5 : FXUtils.df2)));
+		exitReport.add(new FlexLogEntry("entryPrice", new Double(fillPrice), (instrument.getPipScale() != 2 ? FXUtils.df5 : FXUtils.df2)));
+		exitReport.add(new FlexLogEntry("entryPrice", new Double(SL), (instrument.getPipScale() != 2 ? FXUtils.df5 : FXUtils.df2)));
+		exitReport.add(new FlexLogEntry("initialRisk", new Double(initialRisk * Math.pow(10, instrument.getPipScale())), FXUtils.df1));
+		exitReport.add(new FlexLogEntry("maxRisk", new Double(maxRisk * Math.pow(10, instrument.getPipScale())), FXUtils.df1));
+		exitReport.add(new FlexLogEntry("maxDD", new Double(maxDD	* Math.pow(10, instrument.getPipScale())), FXUtils.df1));
+		exitReport.add(new FlexLogEntry("maxDD", new Double(maxDDATR), FXUtils.df2));
+		exitReport.add(new FlexLogEntry("signalTime", FXUtils.getFormatedTimeGMT(maxDDTime)));
+
+		for (FlexLogEntry e : entryData)
+			exitReport.add(e);
+		return exitReport;
+
+	}
+	
 	public String prepareHeader() {
 		String result = new String("Header;"
 						+ "Instrument;"
@@ -190,6 +228,7 @@ public class TradeLog {
 						+ "exitTime;"
 						+ "exitReason;"
 						+ "duration (bars);"
+						+ "WinOrLoss;"
 						+ "PnL;"
 						+ "PnLPerc;"
 						+ "maxProfit;"

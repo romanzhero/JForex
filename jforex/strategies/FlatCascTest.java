@@ -147,6 +147,7 @@ public class FlatCascTest implements IStrategy {
 
 		log = new Logger(reportDir + "//Casc_report_" + FXUtils.getFileTimeStamp(System.currentTimeMillis()) + ".txt");
 		statsLog = new Logger(reportDir + "//Casc_stat_report_" + FXUtils.getFileTimeStamp(System.currentTimeMillis()) + ".txt");
+		statsLog.createXLS(reportDir + "//Casc_stat_report_" + FXUtils.getFileTimeStamp(System.currentTimeMillis()) + ".xls");
 
 		Set<Instrument> pairs = context.getSubscribedInstruments();
 		for (Instrument currI : pairs) {
@@ -752,12 +753,15 @@ public class FlatCascTest implements IStrategy {
 				
 				if (!headerPrinted) {
 					headerPrinted = true;
-					statsLog.print(tradeLog.prepareHeader());
+					String header = tradeLog.prepareHeader(); 
+					statsLog.print(header);
+					statsLog.printXlsCSVLine(header);
 				}
 				String logLine = tradeLog.prepareExitReport(message.getOrder().getInstrument());
 				console.getOut().println(logLine);					
 				statsLog.print(logLine);
-				
+				//statsLog.printXlsCSVLine(logLine);
+				statsLog.printXlsValuesFlex(tradeLog.prepareExitReportAsList(message.getOrder().getInstrument()));
 			}
 
 			orderPerPair.put(message.getOrder().getInstrument().name(), null);

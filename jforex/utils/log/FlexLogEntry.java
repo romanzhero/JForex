@@ -52,6 +52,15 @@ public class FlexLogEntry {
 		}
 	}
 	
+	public double getLongValue() {
+		if (isLong()) {
+			return ((Long)value).intValue();
+		} else {
+			return -1;
+		}
+	}
+	
+	
 	public boolean getBooleanValue() {
 		return ((Boolean) value).booleanValue();
 	}
@@ -71,6 +80,10 @@ public class FlexLogEntry {
 
 	public boolean isInteger() {
 		return value.getClass().equals(Integer.class);
+	}
+	
+	public boolean isLong() {
+		return value.getClass().equals(Long.class);
 	}
 	
 	public boolean isBoolean() {
