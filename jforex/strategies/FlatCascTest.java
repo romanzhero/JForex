@@ -38,7 +38,7 @@ import jforex.trades.trend.TrendSprint;
 public class FlatCascTest implements IStrategy {
 	@Configurable(value = "Period", description = "Choose the time frame")
 	public Period 
-		selectedPeriod = Period.FIVE_MINS,
+		selectedPeriod = null,
 		orderSubmitPeriod = Period.ONE_MIN;
 
 	@Configurable(value = "Filter", description = "Choose the candle filter")
@@ -117,6 +117,7 @@ public class FlatCascTest implements IStrategy {
 		this.showIndicators = p.getProperty("showIndicators", "no").equalsIgnoreCase("yes");
 		this.reportDir = p.getProperty("reportDirectory", ".");
 		this.selectedAmount = Double.parseDouble(p.getProperty("tradeAmount", "100000.0"));
+		this.selectedPeriod = FXUtils.reverseTimeFrameNamesMap.get(p.getProperty("timeFrame"));
 		conf = p;
 	}
 

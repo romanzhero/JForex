@@ -11,17 +11,29 @@ import java.util.StringTokenizer;
 
 import com.dukascopy.api.IConsole;
 
+import jforex.utils.FXUtils;
 import jxl.Cell;
 import jxl.CellFormat;
 import jxl.CellView;
 import jxl.Workbook;
+import jxl.format.Alignment;
+import jxl.format.Border;
+import jxl.format.BorderLineStyle;
+import jxl.format.Colour;
+import jxl.format.Font;
+import jxl.format.Format;
+import jxl.format.Orientation;
+import jxl.format.Pattern;
+import jxl.format.VerticalAlignment;
 import jxl.write.Label;
 import jxl.write.WritableSheet;
 import jxl.write.WritableWorkbook;
 import jxl.write.WriteException;
 import jxl.write.biff.RowsExceededException;
 import jxl.write.Number;
+import jxl.write.NumberFormat;
 import jxl.write.WritableCell;
+import jxl.write.WritableCellFormat;
 
 public class Logger {
 	IConsole console;
@@ -274,19 +286,48 @@ public class Logger {
         sheet.addCell(label);
     }
     
-    private void writeCell(WritableSheet sheet, int column, int row, FlexLogEntry logEntry) throws RowsExceededException, WriteException {
+    private int writeCell(WritableSheet sheet, int column, int row, FlexLogEntry logEntry) throws RowsExceededException, WriteException {
     	WritableCell cell = null;
-    	if (logEntry.getValue() == null)
-    		cell = new Label(column, row, "");
-    	else if (logEntry.isDouble() )
-    		cell = new Number(column, row, logEntry.getDoubleValue());
+    	if (logEntry.getValue() == null)  {
+        	StringTokenizer st = new StringTokenizer(logEntry.getHeaderLabel(), SEPARATOR);
+        	int additionalColumns = 0;
+        	while (st.hasMoreTokens()) {
+            	st.nextToken();
+	    		additionalColumns++;
+        	}
+        	return additionalColumns > 0 ? additionalColumns - 1 : 0;    		
+    	} else if (logEntry.isDouble()) {
+    		if (logEntry.getDecimalFormat() == null)
+    			cell = new Number(column, row, logEntry.getDoubleValue());
+    		else {
+    			NumberFormat format = null; 
+    			if (logEntry.getDecimalFormat().equals(FXUtils.df1))
+    				format = new NumberFormat("#.#"); 
+    			else if (logEntry.getDecimalFormat().equals(FXUtils.df2))
+    				format = new NumberFormat("#.##");
+    			else
+    				format = new NumberFormat("#.#####"); 
+    			WritableCellFormat cellFormat = new WritableCellFormat(format); 
+    			cell = new Number(column, row, logEntry.getDoubleValue(), cellFormat);
+    		}
+    	}
     	else if (logEntry.isInteger())
     		cell = new Number(column, row, logEntry.getIntegerValue());
     	else if (logEntry.isLong())
     		cell = new Number(column, row, logEntry.getLongValue());
-    	else 
-    		cell = new Label(column, row, logEntry.getFormattedValue());
+    	else {
+        	StringTokenizer st = new StringTokenizer(logEntry.getFormattedValue(), SEPARATOR);
+        	int additionalColumns = 0;
+        	while (st.hasMoreTokens()) {
+            	String nextToken = st.nextToken();
+	    		cell = new Label(column + additionalColumns, row, nextToken);
+	    		sheet.addCell(cell);
+	    		additionalColumns++;
+        	}
+        	return additionalColumns > 0 ? additionalColumns - 1 : 0;
+    	}
         sheet.addCell(cell);
+        return 0;
     }
     
     public void printXlsCSVLine(String csvLine) {
@@ -332,13 +373,16 @@ public class Logger {
     	if (xlsWB == null)
     		return;
     	
-		int column = 0;
+		int 
+			column = 0,
+			additionalColumn = 0;
 		if (xlsRow == 0)
 			xlsRow++; // avoid overwriting the first row with labels
 		
 		for (FlexLogEntry e : line) {
 			try {
-				writeCell(xlsSheet, column++, xlsRow, e);
+				additionalColumn = writeCell(xlsSheet, column, xlsRow, e);
+				column += additionalColumn + 1;
 			} catch (RowsExceededException e1) {
 				e1.printStackTrace();
 			} catch (WriteException e1) {

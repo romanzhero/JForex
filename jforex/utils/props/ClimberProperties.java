@@ -7,6 +7,10 @@ import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
 import org.slf4j.Logger;
 
+import com.dukascopy.api.Period;
+
+import jforex.utils.FXUtils;
+
 public class ClimberProperties extends SortedProperties {
 
 	/**
@@ -324,7 +328,17 @@ public class ClimberProperties extends SortedProperties {
 				System.exit(1);
 			}
 		}
-
+		if (!containsKey("timeFrame")) {
+			pLog.info("No time frame set, using 30min");
+			this.setProperty("timeFrame", "30min");
+		} else {
+			// check if valid TF was set
+			Period selectedTimeFrame = FXUtils.reverseTimeFrameNamesMap.get(getProperty("timeFrame"));
+			if (selectedTimeFrame == null) {
+				pLog.error("Unknown time frame set: " + getProperty("timeFrame") + " !");
+				System.exit(1);
+			}
+		}
 	}
 
 	public DateTime getTestIntervalStart() {

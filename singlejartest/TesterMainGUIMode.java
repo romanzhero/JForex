@@ -48,8 +48,6 @@ import javax.swing.JFrame;
 import javax.swing.JPanel;
 import javax.swing.SwingUtilities;
 
-import jforex.explorers.TASituationExplorer;
-import jforex.explorers.TrendLengthExplorer;
 import jforex.strategies.FlatCascTest;
 import jforex.utils.FXUtils;
 import jforex.utils.props.ClimberProperties;
@@ -59,7 +57,6 @@ import org.slf4j.LoggerFactory;
 
 import com.dukascopy.api.Filter;
 import com.dukascopy.api.IChart;
-import com.dukascopy.api.ICurrency;
 import com.dukascopy.api.Instrument;
 import com.dukascopy.api.JFCurrency;
 import com.dukascopy.api.LoadingProgressListener;
@@ -114,7 +111,7 @@ public class TesterMainGUIMode extends JFrame implements ITesterUserInterface, I
 			ITesterGui currGui = entry.getValue();
 			currGui.getTesterChartController().addOHLCInformer();
 			currGui.getTesterChartController().setFilter(Filter.ALL_FLATS);
-			IFeedDescriptor fd = new TimePeriodAggregationFeedDescriptor(null, Period.FIVE_MINS, null);
+			IFeedDescriptor fd = new TimePeriodAggregationFeedDescriptor(null, FXUtils.reverseTimeFrameNamesMap.get(properties.getProperty("timeFrame")), null);
 			fd.setFilter(Filter.ALL_FLATS);
 			currGui.getTesterChartController().setFeedDescriptor(fd);
 			JPanel chartPanel = currGui.getChartPanel();

@@ -224,7 +224,7 @@ public class FlexTASource {
 			&& !(result.smiState.equals(Momentum.SMI_STATE.BULLISH_OVERBOUGHT_BOTH)
 				|| result.smiState.equals(Momentum.SMI_STATE.BEARISH_OVERSOLD_BOTH)
 				|| (result.stochState.equals(Momentum.STOCH_STATE.BULLISH_OVERBOUGHT_BOTH) && (slowSMI > 60 || fastSMI > 60))
-				|| (result.stochState.equals(Momentum.STOCH_STATE.BEARISH_OVERSOLD_BOTH) && (slowSMI < 60) || fastSMI < 60))
+				|| (result.stochState.equals(Momentum.STOCH_STATE.BEARISH_OVERSOLD_BOTH) && (slowSMI < -60) || fastSMI < -60))
 			&& maDistance < 25.0 
 			&& (isFlat.equals(FLAT_REGIME_CAUSE.MAs_WITHIN_CHANNEL) || bBandsSqueeze < 25.0)) {
 			result.taSituation = OverallTASituation.NEUTRAL;

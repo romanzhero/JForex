@@ -118,4 +118,8 @@ public class FlexLogEntry {
 	public String getHeaderLabel() {
 		return getLabel();
 	}
+
+	public DecimalFormat getDecimalFormat() {
+		return df;
+	}
 }

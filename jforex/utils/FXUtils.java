@@ -126,48 +126,46 @@ public class FXUtils {
 	}
 	
 
-	public static Period lowestTimeframeSupported = Period.TEN_MINS;
-	public static Period secondLowestTimeframeSupported = Period.FIFTEEN_MINS; // needed
-																				// for
-																				// :15
-																				// and
-																				// :45
-																				// strategy
-																				// calls
+	public static Period lowestTimeframeSupported = Period.FIVE_MINS;
+	public static Period secondLowestTimeframeSupported = Period.FIFTEEN_MINS; 
+	// needed for :15 and :45 strategy calls
 
 	public static List<Period> sortedTimeFrames = new ArrayList<Period>();
 	static {
+		sortedTimeFrames.add(Period.FIVE_MINS);
 		sortedTimeFrames.add(Period.TEN_MINS);
 		sortedTimeFrames.add(Period.FIFTEEN_MINS);
 		sortedTimeFrames.add(Period.TWENTY_MINS);
 		sortedTimeFrames.add(Period.THIRTY_MINS);
 		sortedTimeFrames.add(Period.ONE_HOUR);
 		sortedTimeFrames.add(Period.FOUR_HOURS);
-		sortedTimeFrames.add(Period.DAILY_SUNDAY_IN_MONDAY);
+		sortedTimeFrames.add(Period.DAILY);
 		sortedTimeFrames.add(Period.WEEKLY);
 	}
 
 	public static Map<String, String> timeFrameNamesMap = new HashMap<String, String>();
 	static {
+		timeFrameNamesMap.put(Period.FIVE_MINS.toString(), "5min");
 		timeFrameNamesMap.put(Period.TEN_MINS.toString(), "10min");
 		timeFrameNamesMap.put(Period.FIFTEEN_MINS.toString(), "15min");
 		timeFrameNamesMap.put(Period.TWENTY_MINS.toString(), "20min");
 		timeFrameNamesMap.put(Period.THIRTY_MINS.toString(), "30min");
 		timeFrameNamesMap.put(Period.ONE_HOUR.toString(), "1h");
 		timeFrameNamesMap.put(Period.FOUR_HOURS.toString(), "4h");
-		timeFrameNamesMap.put(Period.DAILY_SUNDAY_IN_MONDAY.toString(), "1d");
+		timeFrameNamesMap.put(Period.DAILY.toString(), "1d");
 		timeFrameNamesMap.put(Period.WEEKLY.toString(), "1w");
 	}
 
 	public static Map<String, Period> reverseTimeFrameNamesMap = new HashMap<String, Period>();
 	static {
+		reverseTimeFrameNamesMap.put("5min", Period.FIVE_MINS);
 		reverseTimeFrameNamesMap.put("10min", Period.TEN_MINS);
 		reverseTimeFrameNamesMap.put("15min", Period.FIFTEEN_MINS);
 		reverseTimeFrameNamesMap.put("20min", Period.TWENTY_MINS);
 		reverseTimeFrameNamesMap.put("30min", Period.THIRTY_MINS);
 		reverseTimeFrameNamesMap.put("1h", Period.ONE_HOUR);
 		reverseTimeFrameNamesMap.put("4h", Period.FOUR_HOURS);
-		reverseTimeFrameNamesMap.put("1d", Period.DAILY_SUNDAY_IN_MONDAY);
+		reverseTimeFrameNamesMap.put("1d", Period.DAILY);
 		reverseTimeFrameNamesMap.put("1w", Period.WEEKLY);
 	}
 

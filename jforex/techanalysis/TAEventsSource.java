@@ -121,42 +121,33 @@ public class TAEventsSource {
 			logLine.add(new FlexLogEntry("setup4h", setups));
 	}
 
-	public void addCandlesOneTimeFrame(Instrument instrument, IBar bidBar,
-			Period period, List<FlexLogEntry> logLine) throws JFException {
+	public void addCandlesOneTimeFrame(Instrument instrument, IBar bidBar, Period period, List<FlexLogEntry> logLine) throws JFException {
 		logLine.add(new FlexLogEntry("barOpen"
-				+ FXUtils.timeFrameNamesMap.get(period.toString()), new Double(
-				bidBar.getOpen()), FXUtils.df5));
+				+ FXUtils.timeFrameNamesMap.get(period.toString()), new Double(bidBar.getOpen()), FXUtils.df5));
 		logLine.add(new FlexLogEntry("barClose"
-				+ FXUtils.timeFrameNamesMap.get(period.toString()), new Double(
-				bidBar.getClose()), FXUtils.df5));
+				+ FXUtils.timeFrameNamesMap.get(period.toString()), new Double(bidBar.getClose()), FXUtils.df5));
 		logLine.add(new FlexLogEntry("barLow"
-				+ FXUtils.timeFrameNamesMap.get(period.toString()), new Double(
-				bidBar.getLow()), FXUtils.df5));
+				+ FXUtils.timeFrameNamesMap.get(period.toString()), new Double(bidBar.getLow()), FXUtils.df5));
 		logLine.add(new FlexLogEntry("barHigh"
-				+ FXUtils.timeFrameNamesMap.get(period.toString()), new Double(
-				bidBar.getHigh()), FXUtils.df5));
+				+ FXUtils.timeFrameNamesMap.get(period.toString()), new Double(bidBar.getHigh()), FXUtils.df5));
 
 		if (bidBar.getHigh() != bidBar.getLow()) {
 			logLine.add(new FlexLogEntry("upperHandlePerc"
 					+ FXUtils.timeFrameNamesMap.get(period.toString()),
-					new Double(tradeTrigger.barsUpperHandlePerc(bidBar)),
-					FXUtils.df1));
+					new Double(tradeTrigger.barsUpperHandlePerc(bidBar)), FXUtils.df1));
 			int sign = bidBar.getClose() > bidBar.getOpen() ? 1 : -1;
 			logLine.add(new FlexLogEntry("barBodyPerc"
 					+ FXUtils.timeFrameNamesMap.get(period.toString()),
-					new Double(sign * tradeTrigger.barsBodyPerc(bidBar)),
-					FXUtils.df1));
+					new Double(sign * tradeTrigger.barsBodyPerc(bidBar)), FXUtils.df1));
 			logLine.add(new FlexLogEntry("lowerHandlePerc"
 					+ FXUtils.timeFrameNamesMap.get(period.toString()),
-					new Double(tradeTrigger.barsLowerHandlePerc(bidBar)),
-					FXUtils.df1));
+					new Double(tradeTrigger.barsLowerHandlePerc(bidBar)), FXUtils.df1));
 		}
 
 		double barStat = tradeTrigger.barLengthStatPos(instrument, period,
 				OfferSide.BID, bidBar, FXUtils.MONTH_WORTH_OF_30min_BARS);
 		logLine.add(new FlexLogEntry("barStat"
-				+ FXUtils.timeFrameNamesMap.get(period.toString()), new Double(
-				barStat), FXUtils.df1));
+				+ FXUtils.timeFrameNamesMap.get(period.toString()), new Double(barStat), FXUtils.df1));
 		barStat = tradeTrigger.avgBarLength(instrument, period, OfferSide.BID,
 				bidBar, FXUtils.MONTH_WORTH_OF_30min_BARS);
 		logLine.add(new FlexLogEntry("bar"
@@ -166,13 +157,11 @@ public class TAEventsSource {
 		double barOverlap = tradeTrigger.previousBarOverlap(instrument, period,
 				OfferSide.BID, bidBar.getTime());
 		logLine.add(new FlexLogEntry("prevBarOverlap"
-				+ FXUtils.timeFrameNamesMap.get(period.toString()), new Double(
-				barOverlap), FXUtils.df1));
+				+ FXUtils.timeFrameNamesMap.get(period.toString()), new Double(barOverlap), FXUtils.df1));
 
 		String candleTriggerStr = new String();
 		TradeTrigger.TriggerDesc bullishTriggerDesc = null, bearishTriggerDesc = null;
-		if ((bullishTriggerDesc = tradeTrigger
-				.bullishReversalCandlePatternDesc(instrument, period,
+		if ((bullishTriggerDesc = tradeTrigger.bullishReversalCandlePatternDesc(instrument, period,
 						OfferSide.BID, bidBar.getTime())) != null) {
 			candleTriggerStr += bullishTriggerDesc.type.toString();
 			logLine.add(new FlexLogEntry("bullishCandleTriggerChannelPos"
@@ -223,12 +212,10 @@ public class TAEventsSource {
 					+ FXUtils.timeFrameNamesMap.get(period.toString()),
 					new Double(0), FXUtils.df1));
 		}
-		if ((bearishTriggerDesc = tradeTrigger
-				.bearishReversalCandlePatternDesc(instrument, period,
+		if ((bearishTriggerDesc = tradeTrigger.bearishReversalCandlePatternDesc(instrument, period,
 						OfferSide.BID, bidBar.getTime())) != null) {
 			if (candleTriggerStr.length() > 0)
-				candleTriggerStr += " AND "
-						+ bearishTriggerDesc.type.toString();
+				candleTriggerStr += " AND "	+ bearishTriggerDesc.type.toString();
 			else
 				candleTriggerStr += bearishTriggerDesc.type.toString();
 			logLine.add(new FlexLogEntry("bearishCandleTriggerChannelPos"
