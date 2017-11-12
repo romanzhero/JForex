@@ -48,4 +48,6 @@ public interface ITradeSetup {
 	public String getLastTradingEvent();
 	
 	public void updateOnBar(Instrument instrument, Period period, IBar askBar, IBar bidBar);
+
+	public void setLastTradingEvent(String lastTradingEvent);
 }

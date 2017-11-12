@@ -229,6 +229,7 @@ public class FlatCascTest implements IStrategy {
 			&& !TradingHours.barProcessingAllowed(dataService, bidBar.getTime(), 4 * 3600 * 1000)) {
 			// and also close any open positions - no open positions left over weekend !
 			if (order != null) {
+				currentSetup.setLastTradingEvent("Trade closed due to Friday end of trading");
 				order.close();
 				order.waitForUpdate(null);
 			}
@@ -439,6 +440,7 @@ public class FlatCascTest implements IStrategy {
 					console.getOut().println(logLine);
 					log.print(logLine);
 
+					currentSetup.setLastTradingEvent("Closed due to exist signal");
 					order.close();
 					order.waitForUpdate(null);
 					order = null;

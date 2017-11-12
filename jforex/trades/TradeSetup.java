@@ -293,4 +293,9 @@ public abstract class TradeSetup implements ITradeSetup {
 				}
 		}
 	}
+
+	@Override
+	public void setLastTradingEvent(String lastTradingEvent) {
+		this.lastTradingEvent = lastTradingEvent;		
+	}
 }
