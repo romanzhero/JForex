@@ -5,7 +5,8 @@ import java.util.Set;
 
 import jforex.techanalysis.Trend.FLAT_REGIME_CAUSE;
 import jforex.techanalysis.source.FlexTASource;
-import jforex.techanalysis.source.FlexTAValue;
+import jforex.utils.log.FlexLogEntry;
+
 import com.dukascopy.api.Filter;
 import com.dukascopy.api.IBar;
 import com.dukascopy.api.IContext;
@@ -27,7 +28,7 @@ public class SmaTradeSetup extends AbstractSmaTradeSetup {
 		return new String("SMATrendIDFollow");
 	}
 
-	protected boolean buySignal(Instrument instrument, Period period, Filter filter, double[] ma20, double[] ma50, double[] ma100, double[] ma200, IBar bidBar, boolean strict, Map<String, FlexTAValue> taValues) throws JFException {
+	protected boolean buySignal(Instrument instrument, Period period, Filter filter, double[] ma20, double[] ma50, double[] ma100, double[] ma200, IBar bidBar, boolean strict, Map<String, FlexLogEntry> taValues) throws JFException {
 		double currMA20 = ma20[1], currMA50 = ma50[1], currMA100 = ma100[1], prevMA20 = ma20[0], prevMA50 = ma50[0], prevMA100 = ma100[0];
 
 		if (strict)
@@ -42,7 +43,7 @@ public class SmaTradeSetup extends AbstractSmaTradeSetup {
 		}
 	}
 
-	protected boolean sellSignal(Instrument instrument, Period period, Filter filter, double[] ma20, double[] ma50, double[] ma100, double[] ma200, IBar bidBar, boolean strict, Map<String, FlexTAValue> taValues) throws JFException {
+	protected boolean sellSignal(Instrument instrument, Period period, Filter filter, double[] ma20, double[] ma50, double[] ma100, double[] ma200, IBar bidBar, boolean strict, Map<String, FlexLogEntry> taValues) throws JFException {
 		double currMA20 = ma20[1], currMA50 = ma50[1], currMA100 = ma100[1], prevMA20 = ma20[0], prevMA50 = ma50[0], prevMA100 = ma100[0];
 
 		if (strict)

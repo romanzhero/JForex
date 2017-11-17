@@ -26,7 +26,6 @@ import com.dukascopy.api.Period;
 import jforex.events.TAEventDesc;
 import jforex.logging.TradeLog;
 import jforex.techanalysis.source.FlexTASource;
-import jforex.techanalysis.source.FlexTAValue;
 import jforex.trades.trend.SmaCrossAdvancedTradeSetup;
 import jforex.utils.FXUtils;
 import jforex.utils.JForexChart;
@@ -122,7 +121,7 @@ public class TrendLengthExplorer implements IStrategy {
 	private IDataService dataService;
 		
 	private FlexTASource taSource = null;
-	private Map<String, FlexTAValue> 
+	private Map<String, FlexLogEntry> 
 		lastTaValues = null,
 		prevTaValues = null;
 	private SmaCrossAdvancedTradeSetup setup = null;

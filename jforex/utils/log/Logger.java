@@ -288,7 +288,9 @@ public class Logger {
     
     private int writeCell(WritableSheet sheet, int column, int row, FlexLogEntry logEntry) throws RowsExceededException, WriteException {
     	WritableCell cell = null;
-    	if (logEntry.getValue() == null)  {
+    	if (logEntry.getValue() == null
+    		&& logEntry.getDa1dim_values() == null
+    		&& logEntry.getDa2DimValue() == null)  {
         	StringTokenizer st = new StringTokenizer(logEntry.getHeaderLabel(), SEPARATOR);
         	int additionalColumns = 0;
         	while (st.hasMoreTokens()) {

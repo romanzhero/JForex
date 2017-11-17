@@ -27,12 +27,12 @@ import jforex.techanalysis.Trend;
 import jforex.techanalysis.Trend.FLAT_REGIME_CAUSE;
 import jforex.techanalysis.Trend.TREND_STATE;
 import jforex.techanalysis.source.FlexTASource;
-import jforex.techanalysis.source.FlexTAValue;
 import jforex.techanalysis.source.TechnicalSituation;
 import jforex.trades.ITradeSetup;
 import jforex.trades.TradeSetup;
 import jforex.utils.FXUtils;
 import jforex.utils.RollingAverage;
+import jforex.utils.log.FlexLogEntry;
 
 /**
  * Simple setup to enter on 3 candles all in the same direction. At least one must be strong, with range above average and 80% body
@@ -84,7 +84,7 @@ public class CandleImpulsSetup extends TradeSetup implements ITradeSetup {
 		return "CandleImpulsSetup";
 	}
 
-	public TAEventDesc checkEntry(Instrument instrument, Period period, IBar askBar, IBar bidBar, Filter filter, Map<String, FlexTAValue> taValues) throws JFException {
+	public TAEventDesc checkEntry(Instrument instrument, Period period, IBar askBar, IBar bidBar, Filter filter, Map<String, FlexLogEntry> taValues) throws JFException {
 		//TODO: potrebna poboljsanja:
 		// - nema breakout ulaza, pogotovo ne kada je uzak kanal !
 		// - vezano sa tim, dno prve od trie svecice mora biti u povoljnoj polovini kanala, mozda cak i 30%-40%:
@@ -173,11 +173,11 @@ public class CandleImpulsSetup extends TradeSetup implements ITradeSetup {
 	}
 
 
-	protected void updateTradeStats(Map<String, FlexTAValue> taValues, SignalDesc signal) {
-		taValues.put("CandleImpulsSizes", new FlexTAValue("CandleImpulsSizesAvg", new Double(signal.avgBarSize), FXUtils.df1));
-		taValues.put("CandleImpulsBodies", new FlexTAValue("CandleImpulsBodiesAvg", new Double(signal.avgBodySize), FXUtils.df2));
+	protected void updateTradeStats(Map<String, FlexLogEntry> taValues, SignalDesc signal) {
+		taValues.put("CandleImpulsSizes", new FlexLogEntry("CandleImpulsSizesAvg", new Double(signal.avgBarSize), FXUtils.df1));
+		taValues.put("CandleImpulsBodies", new FlexLogEntry("CandleImpulsBodiesAvg", new Double(signal.avgBodySize), FXUtils.df2));
 		taValues.put("CandleImpuls", 
-				new FlexTAValue("CandleImpuls", "bar sizes: (" 
+				new FlexLogEntry("CandleImpuls", "bar sizes: (" 
 						+ FXUtils.df1.format(signal.bar1Size) + ", " 
 						+ FXUtils.df1.format(signal.bar2Size) + ", " 
 						+ FXUtils.df1.format(signal.bar3Size) + "), avg: " 
@@ -241,7 +241,7 @@ public class CandleImpulsSetup extends TradeSetup implements ITradeSetup {
 	 */
 	@Override
 	public void inTradeProcessing(Instrument instrument, Period period, IBar askBar, IBar bidBar, Filter filter,
-			IOrder order, Map<String, FlexTAValue> taValues, List<TAEventDesc> marketEvents) throws JFException {
+			IOrder order, Map<String, FlexLogEntry> taValues, List<TAEventDesc> marketEvents) throws JFException {
 		super.inTradeProcessing(instrument, period, askBar, bidBar, filter, order, taValues, marketEvents);
 		// analyze the overall situation. If favourable don't do anything !
 		TechnicalSituation taSituation = taValues.get(FlexTASource.TA_SITUATION).getTehnicalSituationValue();
@@ -315,7 +315,7 @@ public class CandleImpulsSetup extends TradeSetup implements ITradeSetup {
 	}
 
 
-	protected boolean oppositeSignal(IOrder order, List<TAEventDesc> marketEvents, Map<String, FlexTAValue> taValues) {
+	protected boolean oppositeSignal(IOrder order, List<TAEventDesc> marketEvents, Map<String, FlexLogEntry> taValues) {
 		for (TAEventDesc event : marketEvents) {
 			if (event.eventType.equals(TAEventType.ENTRY_SIGNAL)
 				&& event.eventName.equals(getName())

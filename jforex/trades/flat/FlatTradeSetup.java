@@ -8,12 +8,12 @@ import jforex.events.TAEventDesc.TAEventType;
 import jforex.techanalysis.TradeTrigger;
 import jforex.techanalysis.Trend;
 import jforex.techanalysis.source.FlexTASource;
-import jforex.techanalysis.source.FlexTAValue;
 import jforex.trades.ITradeSetup;
 import jforex.trades.TradeSetup;
 import jforex.trades.momentum.LongCandleAndMomentumDetector;
 import jforex.trades.momentum.ShortCandleAndMomentumDetector;
 import jforex.utils.FXUtils;
+import jforex.utils.log.FlexLogEntry;
 
 import com.dukascopy.api.Filter;
 import com.dukascopy.api.IBar;
@@ -51,8 +51,35 @@ public class FlatTradeSetup extends TradeSetup implements ITradeSetup {
 		return new String("Flat");
 	}
 
+/* 
+Kriterijumi za ulazak u LONG trejd:
+Grupa 1: trend ili flat
+1. TREND_ID							
+2. MAs_DISTANCE_PERC						
+3. MA200_HIGHEST						
+4. MA200_LOWEST							
+5. MA200_IN_CHANNEL						DA ! OBAVEZNO !
+6. MA200MA100_TREND_DISTANCE_PERC			
+7. FLAT_REGIME polozaj MAs u kanalu		DA ! Bilo koje od dve mogucnosti (svi MA u kanalu ili MAs blizu, cak i ako je jedan izvan)	
+8. ICHI							
+9. MAs SLOPE !!
+
+Grupa 2: momentum i OS/OB
+9. Stanje STOCH linija					Vidi LongCandleAndMomentumDetector. Mora jedan od cistih BULLISH stanja	
+10. Stanje SMI linija					Brza mora rasti ili ticked_up, ili brza iznad spore bez obzira na pravac obe	
+11. Stanje RSI linije ?
+12. Stanje CCI linije ?
+13. CHANNEL_POS (close)					NE SME iznad cca. 70% ! Inace je prekasno i SL postaje prevelik !
+
+Grupa 3: volatilitet (uzak / sirok kanal)
+14. BBANDS_SQUEEZE_PERC					NE SME ispod 30. Nema ulazaka u uskom kanalu !!!
+
+Grupa 4: price action / candlestick paterns
+15. BULLISH_CANDLES / BEARISH_CANDLES	DA ! Vidi LongCandleAndMomentumDetector. Mora BULLISH_CANDLES ciji je pivot probio dno kanala.
+16. poslednja svecica						
+*/	
 	@Override
-	public TAEventDesc checkEntry(Instrument instrument, Period period,	IBar askBar, IBar bidBar, Filter filter, Map<String, FlexTAValue> taValues) throws JFException {
+	public TAEventDesc checkEntry(Instrument instrument, Period period,	IBar askBar, IBar bidBar, Filter filter, Map<String, FlexLogEntry> taValues) throws JFException {
 		TradeTrigger.TriggerDesc 
 			currLongSignal = longCmd.checkEntry(instrument, period, OfferSide.BID, filter, bidBar, askBar, taValues), 
 			currShortSignal = shortCmd.checkEntry(instrument, period, OfferSide.BID, filter, bidBar, askBar, taValues);
@@ -64,24 +91,24 @@ public class FlatTradeSetup extends TradeSetup implements ITradeSetup {
 		if (currBarFlat.equals(Trend.FLAT_REGIME_CAUSE.NONE))
 			return null;
 
-		Trend.TREND_STATE trendState = taValues.get(FlexTASource.TREND_ID).getTrendStateValue();
-		boolean 
-			isMA200Highest = taValues.get(FlexTASource.MA200_HIGHEST).getBooleanValue(), 
-			isMA200Lowest = taValues.get(FlexTASource.MA200_LOWEST).getBooleanValue();
 		double 
 			trendStrengthPerc = taValues.get(FlexTASource.MAs_DISTANCE_PERC).getDoubleValue(), 
-			bBandsSquezeePerc = taValues.get(FlexTASource.BBANDS_SQUEEZE_PERC).getDoubleValue();
-		if (bBandsSquezeePerc > 75.0
-			&& ((trendState.equals(Trend.TREND_STATE.UP_STRONG) && isMA200Lowest)
-				|| (trendState.equals(Trend.TREND_STATE.UP_STRONG) && trendStrengthPerc > 30.0)
-				|| (trendState.equals(Trend.TREND_STATE.DOWN_STRONG) && isMA200Highest) 
-				|| (trendState.equals(Trend.TREND_STATE.DOWN_STRONG) && trendStrengthPerc > 30.0))) {
-			return null; // per definition no flat exists in high volatility and at least decent trend !!
-		}
-		// there is a signal !
+			bBandsSquezeePerc = taValues.get(FlexTASource.BBANDS_SQUEEZE_PERC).getDoubleValue(),
+			channelPos = taValues.get(FlexTASource.CHANNEL_POS).getDoubleValue();
+		if (bBandsSquezeePerc < 30.0)
+			return null;
+		
 		boolean 
-			bulishSignal = currLongSignal != null && currLongSignal.channelPosition < 0,
-			bearishSignal = currShortSignal != null && currShortSignal.channelPosition > 100;
+			isMA200InChannel = taValues.get(FlexTASource.MA200_IN_CHANNEL).getBooleanValue(),
+			isMA200Highest = taValues.get(FlexTASource.MA200_HIGHEST).getBooleanValue(), 
+			isMA200Lowest = taValues.get(FlexTASource.MA200_LOWEST).getBooleanValue();
+		if (!isMA200InChannel)
+			return null;
+		
+		// there is a signal, assuming favourable channel pos of the last candle !
+		boolean 
+			bulishSignal = currLongSignal != null && currLongSignal.channelPosition < 0 && channelPos < 70,
+			bearishSignal = currShortSignal != null && currShortSignal.channelPosition > 100 && channelPos > 30;
 		locked = bulishSignal || bearishSignal;
 		if (bulishSignal) {
 			//lastTradingEvent = "buy signal";
@@ -98,20 +125,39 @@ public class FlatTradeSetup extends TradeSetup implements ITradeSetup {
 		} else
 			return null;
 	}
+	
+	/* 
+	Kriterijumi za zatvaranje LONG trejda ili stavljanje SL na brake even:
+	Grupa 1: trend ili flat
+	1. TREND_ID							
+	2. MAs_DISTANCE_PERC						
+	3. MA200_HIGHEST						
+	4. MA200_LOWEST							
+	5. MA200_IN_CHANNEL						
+	6. MA200MA100_TREND_DISTANCE_PERC			
+	7. FLAT_REGIME polozaj MAs u kanalu			
+	8. ICHI		
+	9. MAs SLOPE !!					
+
+	Grupa 2: momentum i OS/OB
+	9. Stanje STOCH linija					
+	10. Stanje SMI linija					
+	11. Stanje RSI linije ?
+	12. Stanje CCI linije ?
+	13. CHANNEL_POS (close)					
+
+	Grupa 3: volatilitet (uzak / sirok kanal)
+	14. BBANDS_SQUEEZE_PERC					NISTA se ne radie ako je ispod 30. Nema promena u uskom kanalu !!!
+
+	Grupa 4: price action / candlestick paterns
+	15. BULLISH_CANDLES / BEARISH_CANDLES	.
+	16. poslednja svecica						
+	*/	
 
 	@Override
-	public void inTradeProcessing(Instrument instrument, Period period,	IBar askBar, IBar bidBar, Filter filter, IOrder order, Map<String, FlexTAValue> taValues, List<TAEventDesc> marketEvents) throws JFException {
+	public void inTradeProcessing(Instrument instrument, Period period,	IBar askBar, IBar bidBar, Filter filter, IOrder order, Map<String, FlexLogEntry> taValues, List<TAEventDesc> marketEvents) throws JFException {
 		IBar barToCheck = null;
-		/*
-		 * if ((lastLongSignal != null && lastShortSignal != null &&
-		 * lastLongSignal.getLastBar().getTime() >
-		 * lastShortSignal.getLastBar().getTime()) || (lastLongSignal != null &&
-		 * lastShortSignal == null)) barToCheck = bidBar; else if
-		 * ((lastLongSignal != null && lastShortSignal != null &&
-		 * lastShortSignal.getLastBar().getTime() >
-		 * lastLongSignal.getLastBar().getTime()) || (lastShortSignal != null &&
-		 * lastLongSignal == null)) barToCheck = askBar;
-		 */
+
 		if (order.isLong())
 			barToCheck = bidBar;
 		else
@@ -143,13 +189,27 @@ public class FlatTradeSetup extends TradeSetup implements ITradeSetup {
 			TradeTrigger.TriggerDesc 
 				currLongSignal = longCmd.checkEntry(instrument, period, OfferSide.BID, filter, bidBar, askBar, taValues), 
 				currShortSignal = shortCmd.checkEntry(instrument, period, OfferSide.BID, filter, bidBar, askBar, taValues);
-			double ma20 = taValues.get(FlexTASource.MAs).getDa2DimValue()[1][0]; 
+
+			double 
+				bBandsSquezeePerc = taValues.get(FlexTASource.BBANDS_SQUEEZE_PERC).getDoubleValue();
+			if (bBandsSquezeePerc < 30.0)
+				return;
+			
+			Trend.FLAT_REGIME_CAUSE currBarFlat = (Trend.FLAT_REGIME_CAUSE)taValues.get(FlexTASource.FLAT_REGIME).getValue();
+			boolean 
+				isMA200InChannel = taValues.get(FlexTASource.MA200_IN_CHANNEL).getBooleanValue(),
+				isMA200Highest = taValues.get(FlexTASource.MA200_HIGHEST).getBooleanValue(), 
+				isMA200Lowest = taValues.get(FlexTASource.MA200_LOWEST).getBooleanValue();
+			// should react to opposite signals only when there is still flat regime !
+			if (!isMA200InChannel || currBarFlat.equals(Trend.FLAT_REGIME_CAUSE.NONE))
+				return;
+			
 			boolean
 				longExitSignal = currShortSignal != null && currShortSignal.channelPosition > 100,
 				shortExitSignal = currLongSignal != null && currLongSignal.channelPosition < 0, 
-				// opposite signals anywhere above channel middle, at least last bar extreme also
-				longProtectSignal = currShortSignal != null && currShortSignal.channelPosition > 50 && bidBar.getHigh() > ma20,
-				shortProtectSignal = currLongSignal != null && currLongSignal.channelPosition < 50 && askBar.getLow() < ma20;				
+				//TODO: to be defined, probably very clear momentum against the trade
+				longProtectSignal = false, //currShortSignal != null && currShortSignal.channelPosition > 50 && bidBar.getHigh() > ma20,
+				shortProtectSignal = false; //currLongSignal != null && currLongSignal.channelPosition < 50 && askBar.getLow() < ma20;				
 
 			if (order.isLong() && longProtectSignal) {
 				lastTradingEvent = "long move SL signal";				
@@ -159,7 +219,7 @@ public class FlatTradeSetup extends TradeSetup implements ITradeSetup {
 				FXUtils.setStopLoss(order, askBar.getHigh(), bidBar.getTime(), this.getClass());
 			}
 			// check for opposite signal. Depending on the configuration either set break even or close the trade
-			else if (aggressive) {
+			else {
 				if ((order.isLong() && longExitSignal)
 					|| (!order.isLong() && shortExitSignal)) {
 					lastTradingEvent = "exit due to opposite flat signal";				
@@ -167,7 +227,7 @@ public class FlatTradeSetup extends TradeSetup implements ITradeSetup {
 					order.waitForUpdate(null);
 					//afterTradeReset(instrument);
 				}
-			} else {
+			} /*else {
 				// set to break even. However check if current price allows it !
 				// If not set SL on extreme of the last bar (if it not already
 				// exceeded the SL !)
@@ -188,7 +248,7 @@ public class FlatTradeSetup extends TradeSetup implements ITradeSetup {
 						}
 					}
 				}
-			}
+			}*/
 		}
 	}
 

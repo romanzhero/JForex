@@ -5,7 +5,6 @@ import java.util.List;
 import java.util.Map;
 
 import jforex.techanalysis.source.FlexTASource;
-import jforex.techanalysis.source.FlexTAValue;
 import jforex.utils.FXUtils;
 import jforex.utils.log.FlexLogEntry;
 import jforex.utils.log.Logger;
@@ -252,7 +251,7 @@ public class TradeLog {
 
 	}
 	
-	public void addTAData(Map<String, FlexTAValue> taValues) {
+	public void addTAData(Map<String, FlexLogEntry> taValues) {
 		//TODO: promeniti u eksplicitni REDOSLED tako da bude citljivije. Paziti na EXIT values !!
 /*		
  * 		TA_SITUATION = "TASituationDescription",

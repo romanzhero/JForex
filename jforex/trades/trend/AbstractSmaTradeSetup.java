@@ -10,9 +10,9 @@ import jforex.events.TAEventDesc.TAEventType;
 import jforex.techanalysis.Trend;
 import jforex.techanalysis.Trend.FLAT_REGIME_CAUSE;
 import jforex.techanalysis.source.FlexTASource;
-import jforex.techanalysis.source.FlexTAValue;
 import jforex.trades.TradeSetup;
 import jforex.utils.FXUtils;
+import jforex.utils.log.FlexLogEntry;
 
 import com.dukascopy.api.Filter;
 import com.dukascopy.api.IBar;
@@ -74,16 +74,16 @@ public abstract class AbstractSmaTradeSetup extends TradeSetup {
 	}
 
 	protected abstract boolean sellSignal(Instrument instrument, Period period, Filter filter, double[] ma20, double[] ma50, double[] ma100, double[] ma200,
-			IBar bidBar, boolean strict, Map<String, FlexTAValue> taValues) throws JFException;
+			IBar bidBar, boolean strict, Map<String, FlexLogEntry> taValues) throws JFException;
 
 	protected abstract boolean buySignal(Instrument instrument, Period period, Filter filter,	double[] ma20, double[] ma50, double[] ma100, double[] ma200, 
-			IBar bidBar, boolean strict, Map<String, FlexTAValue> taValues) throws JFException;
+			IBar bidBar, boolean strict, Map<String, FlexLogEntry> taValues) throws JFException;
 
 	public abstract String getName();
 
 	@Override
 	public TAEventDesc checkEntry(Instrument instrument, Period period, IBar askBar,
-			IBar bidBar, Filter filter, Map<String, FlexTAValue> taValues) throws JFException {
+			IBar bidBar, Filter filter, Map<String, FlexLogEntry> taValues) throws JFException {
 				double[][] mas = taValues.get(FlexTASource.MAs).getDa2DimValue();
 				double[] 
 						ma20 = new double[]{ mas[0][0], mas[1][0]}, 
@@ -108,7 +108,7 @@ public abstract class AbstractSmaTradeSetup extends TradeSetup {
 			}
 
 	protected boolean isDownMomentum(Instrument instrument, Period period, Filter filter,
-			IBar bidBar, Map<String, FlexTAValue> taValues) throws JFException {
+			IBar bidBar, Map<String, FlexLogEntry> taValues) throws JFException {
 				double[][] 
 						smis = taValues.get(FlexTASource.SMI).getDa2DimValue(),
 						stochs = taValues.get(FlexTASource.STOCH).getDa2DimValue();	
@@ -125,7 +125,7 @@ public abstract class AbstractSmaTradeSetup extends TradeSetup {
 			}
 
 	protected boolean isUpMomentum(Instrument instrument, Period period, Filter filter,
-			IBar bidBar, Map<String, FlexTAValue> taValues) throws JFException {
+			IBar bidBar, Map<String, FlexLogEntry> taValues) throws JFException {
 				double[][] 
 						smis = taValues.get(FlexTASource.SMI).getDa2DimValue(),
 						stochs = taValues.get(FlexTASource.STOCH).getDa2DimValue();	
@@ -142,7 +142,7 @@ public abstract class AbstractSmaTradeSetup extends TradeSetup {
 			}
 
 	@Override
-	public void inTradeProcessing(Instrument instrument, Period period,	IBar askBar, IBar bidBar, Filter filter, IOrder order, Map<String, FlexTAValue> taValues, List<TAEventDesc> marketEvents) throws JFException {
+	public void inTradeProcessing(Instrument instrument, Period period,	IBar askBar, IBar bidBar, Filter filter, IOrder order, Map<String, FlexLogEntry> taValues, List<TAEventDesc> marketEvents) throws JFException {
 		super.inTradeProcessing(instrument, period, askBar, bidBar, filter,	order, taValues, marketEvents);
 		if (order == null || marketEvents == null)
 			return;
@@ -346,7 +346,7 @@ public abstract class AbstractSmaTradeSetup extends TradeSetup {
 	
 	@Override
 	public boolean isTradeLocked(Instrument instrument, Period period, IBar askBar,
-			IBar bidBar, Filter filter, IOrder order, Map<String, FlexTAValue> taValues)
+			IBar bidBar, Filter filter, IOrder order, Map<String, FlexLogEntry> taValues)
 			throws JFException {
 				double[][] mas = taValues.get(FlexTASource.MAs).getDa2DimValue();
 				double[] 
@@ -372,7 +372,7 @@ public abstract class AbstractSmaTradeSetup extends TradeSetup {
 			}
 
 	@Override
-	public EntryDirection checkTakeOver(Instrument instrument, Period period, IBar askBar, IBar bidBar, Filter filter,	Map<String, FlexTAValue> taValues) throws JFException {
+	public EntryDirection checkTakeOver(Instrument instrument, Period period, IBar askBar, IBar bidBar, Filter filter,	Map<String, FlexLogEntry> taValues) throws JFException {
 		double[][] mas = taValues.get(FlexTASource.MAs).getDa2DimValue();
 		double[] 
 				ma20 = new double[]{ mas[0][0], mas[1][0]}, 
@@ -396,7 +396,7 @@ public abstract class AbstractSmaTradeSetup extends TradeSetup {
 	}
 	
 	boolean takeOverBuySignal(Instrument instrument, Period period, Filter filter, double[] ma20, double[] ma50, double[] ma100, double[] ma200, IBar bidBar, boolean strict, 
-			FLAT_REGIME_CAUSE isFlat, double bBandsSqueezePerc, boolean isMA200Highest, Map<String, FlexTAValue> taValues) throws JFException {
+			FLAT_REGIME_CAUSE isFlat, double bBandsSqueezePerc, boolean isMA200Highest, Map<String, FlexLogEntry> taValues) throws JFException {
 		if (!isFlat.equals(FLAT_REGIME_CAUSE.NONE) || bBandsSqueezePerc < bBandsSqueezeThreshold || isMA200Highest)
 			return false;
 		
@@ -411,7 +411,7 @@ public abstract class AbstractSmaTradeSetup extends TradeSetup {
 	}
 
 	boolean takeOverSellSignal(Filter filter, Period period, Instrument instrument, double[] ma20, double[] ma50, double[] ma100, double[] ma200, IBar bidBar, boolean strict, 
-			FLAT_REGIME_CAUSE isFlat, double bBandsSqueezePerc, boolean isMA200Lowest, Map<String, FlexTAValue> taValues) throws JFException {
+			FLAT_REGIME_CAUSE isFlat, double bBandsSqueezePerc, boolean isMA200Lowest, Map<String, FlexLogEntry> taValues) throws JFException {
 		if (!isFlat.equals(FLAT_REGIME_CAUSE.NONE) || bBandsSqueezePerc < bBandsSqueezeThreshold || isMA200Lowest)
 			return false;
 

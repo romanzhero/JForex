@@ -8,8 +8,8 @@ import jforex.events.TAEventDesc.TAEventType;
 import jforex.techanalysis.TradeTrigger;
 import jforex.techanalysis.Trend;
 import jforex.techanalysis.source.FlexTASource;
-import jforex.techanalysis.source.FlexTAValue;
 import jforex.trades.flat.FlatTradeSetup;
+import jforex.utils.log.FlexLogEntry;
 
 import com.dukascopy.api.Filter;
 import com.dukascopy.api.IBar;
@@ -36,7 +36,7 @@ public class PUPBSetup extends FlatTradeSetup implements ITradeSetup {
 	}
 
 	@Override
-	public TAEventDesc checkEntry(Instrument instrument, Period period,	IBar askBar, IBar bidBar, Filter filter, Map<String, FlexTAValue> taValues) throws JFException {
+	public TAEventDesc checkEntry(Instrument instrument, Period period,	IBar askBar, IBar bidBar, Filter filter, Map<String, FlexLogEntry> taValues) throws JFException {
 			TradeTrigger.TriggerDesc 
 			currLongSignal = longCmd.checkEntry(instrument, period, OfferSide.BID, filter, bidBar, askBar, taValues), 
 			currShortSignal = shortCmd.checkEntry(instrument, period, OfferSide.BID, filter, bidBar, askBar, taValues);
@@ -79,7 +79,7 @@ public class PUPBSetup extends FlatTradeSetup implements ITradeSetup {
 	}
 
 	@Override
-	public void inTradeProcessing(Instrument instrument, Period period,	IBar askBar, IBar bidBar, Filter filter, IOrder order, Map<String, FlexTAValue> taValues,	List<TAEventDesc> marketEvents) throws JFException {
+	public void inTradeProcessing(Instrument instrument, Period period,	IBar askBar, IBar bidBar, Filter filter, IOrder order, Map<String, FlexLogEntry> taValues,	List<TAEventDesc> marketEvents) throws JFException {
 		IBar barToCheck = null;
 		if (order.isLong())
 			barToCheck = bidBar;

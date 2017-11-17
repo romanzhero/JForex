@@ -22,9 +22,10 @@ import jforex.techanalysis.Trend;
 import jforex.techanalysis.Trend.TREND_STATE;
 import jforex.techanalysis.Volatility;
 import jforex.techanalysis.source.FlexTASource;
-import jforex.techanalysis.source.FlexTAValue;
 import jforex.techanalysis.source.TechnicalSituation;
+import jforex.utils.FXUtils;
 import jforex.utils.StopLoss;
+import jforex.utils.log.FlexLogEntry;
 
 public class TrendSprint extends AbstractSmaTradeSetup {
 
@@ -43,7 +44,7 @@ public class TrendSprint extends AbstractSmaTradeSetup {
 
 	@Override
 	protected boolean sellSignal(Instrument instrument, Period period, Filter filter, double[] ma20, double[] ma50, double[] ma100, double[] ma200, 
-			IBar bidBar, boolean strict, Map<String, FlexTAValue> taValues)
+			IBar bidBar, boolean strict, Map<String, FlexLogEntry> taValues)
 			throws JFException {
 		if(taValues.get(FlexTASource.MA200_LOWEST).getBooleanValue()
 			|| taValues.get(FlexTASource.BBANDS_SQUEEZE_PERC).getDoubleValue() < 30.0)
@@ -103,7 +104,7 @@ Grupa 4: price action / candlestick paterns
 			double[] ma20, double[] ma50, double[] ma100, double[] ma200, 
 			IBar bidBar, 
 			boolean strict, 
-			Map<String, FlexTAValue> taValues)
+			Map<String, FlexLogEntry> taValues)
 			throws JFException {
 		if(taValues.get(FlexTASource.MA200_HIGHEST).getBooleanValue()
 			|| taValues.get(FlexTASource.BBANDS_SQUEEZE_PERC).getDoubleValue() < 30.0)
@@ -198,7 +199,7 @@ Grupa 4: price action / candlestick paterns
 	 */
 
 	@Override
-	public void inTradeProcessing(Instrument instrument, Period period, IBar askBar, IBar bidBar, Filter filter, IOrder order, Map<String, FlexTAValue> taValues, List<TAEventDesc> marketEvents) throws JFException {
+	public void inTradeProcessing(Instrument instrument, Period period, IBar askBar, IBar bidBar, Filter filter, IOrder order, Map<String, FlexLogEntry> taValues, List<TAEventDesc> marketEvents) throws JFException {
 		// set SL to breakeven in case of clear opposite momentum
 		TechnicalSituation taSituation = taValues.get(FlexTASource.TA_SITUATION).getTehnicalSituationValue();
 		Momentum.SMI_STATE smiState = taSituation.smiState;
@@ -231,11 +232,36 @@ Grupa 4: price action / candlestick paterns
 			}
 			
 		}
+		double 
+			ma200ma100Distance = taValues.get(FlexTASource.MA200MA100_TREND_DISTANCE_PERC).getDoubleValue(),
+			ma200 = mas[1][3];
+		boolean 
+			ma200InChannel = taValues.get(FlexTASource.MA200_IN_CHANNEL).getBooleanValue();
+		String masSlopes = taValues.get(FlexTASource.MA_SLOPES_SCORE).getFormattedValue();
+		
 		boolean stopLossSet = ma50TrailFlags.get(instrument.name()).booleanValue();
 		IBar prevBar = this.context.getHistory().getBars(instrument, period, OfferSide.BID, Filter.WEEKENDS, 2, bidBar.getTime(), 0).get(0);
 		
 		if (!stopLossSet) {
 			if (order.isLong()) {
+				boolean ma200Lowest = taValues.get(FlexTASource.MA200_LOWEST).getBooleanValue();
+				// NO cross of MA100 is observed in a very strong trend (MA200 outside of channel and decent distance MA200 - MA100)
+				// AND a consolidation (MA100 in channel). In that case MA200 is SL
+				if (!ma200InChannel 
+					&& ma200Lowest
+					&& ma200ma100Distance > 30 
+					&& ma100[1] >= bBands[Volatility.BBANDS_BOTTOM][0]) {
+					lastTradingEvent = "SL set to MA200 long";
+					FXUtils.setStopLoss(order, ma200, bidBar.getTime(), this.getClass());
+					order.setStopLossPrice(ma200);
+					order.waitForUpdate(null);				
+					return;
+				}
+				// BUT what happens if in the meantime price ALREADY CROSSED MA100 / MA50 ??
+				// Either let SL at MA200 be hit or close the trade !
+				
+				// Cross of MA100 is observed in stronger trend, when MA100 is below channel or at least above MA50 
+				// (i.e. TrendID in (5, 6, but also fresh downtrend !)
 				if (ma100[1] < bBands[Volatility.BBANDS_BOTTOM][0]
 					|| ma100[1] < ma50[1]) {
 					if (prevBar.getClose() > ma100[0] && bidBar.getClose() < ma100[1]) {
@@ -245,6 +271,8 @@ Grupa 4: price action / candlestick paterns
 						order.waitForUpdate(null);
 					}					
 				} else {
+					// Cross of MA50 is observed in a consolidation, when MA100 is in channel
+					// and MA50 is ABOVE MA100 (TrendID in 1, 2 or fresh uptrend)
 					if (prevBar.getClose() > ma50[0] && bidBar.getClose() < ma50[1]) {
 						lastTradingEvent = "SL set long";
 						ma50TrailFlags.put(instrument.name(), new Boolean(true));
@@ -253,6 +281,17 @@ Grupa 4: price action / candlestick paterns
 					}
 				}					
 			} else {
+				boolean ma200Highest = taValues.get(FlexTASource.MA200_HIGHEST).getBooleanValue();
+				if (!ma200InChannel 
+					&& ma200Highest
+					&& ma200ma100Distance > 30 
+					&& ma100[1] <= bBands[Volatility.BBANDS_TOP][0]) {
+					lastTradingEvent = "SL set to MA200 long";
+					FXUtils.setStopLoss(order, ma200, bidBar.getTime(), this.getClass());
+					order.setStopLossPrice(ma200);
+					order.waitForUpdate(null);					
+					return;
+				}
 				if (ma100[1] > bBands[Volatility.BBANDS_TOP][0]
 					|| ma100[1] > ma50[1]) {
 					if (prevBar.getClose() < ma100[0] && bidBar.getClose() > ma100[1]) {
@@ -292,7 +331,7 @@ Grupa 4: price action / candlestick paterns
 	}
 
 	@Override
-	public TAEventDesc checkEntry(Instrument instrument, Period period, IBar askBar, IBar bidBar, Filter filter, Map<String, FlexTAValue> taValues) throws JFException {
+	public TAEventDesc checkEntry(Instrument instrument, Period period, IBar askBar, IBar bidBar, Filter filter, Map<String, FlexLogEntry> taValues) throws JFException {
 		TAEventDesc eventDesc = super.checkEntry(instrument, period, askBar, bidBar, filter, taValues);
 		lastSL = -1.0; // no SL set at open
 		return eventDesc ;

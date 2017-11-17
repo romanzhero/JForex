@@ -13,8 +13,8 @@ import com.dukascopy.api.Period;
 
 import jforex.techanalysis.Trend.FLAT_REGIME_CAUSE;
 import jforex.techanalysis.source.FlexTASource;
-import jforex.techanalysis.source.FlexTAValue;
 import jforex.techanalysis.source.TechnicalSituation;
+import jforex.utils.log.FlexLogEntry;
 
 public class SmaCrossAdvancedTradeSetup extends SmaCrossTradeSetup {
 
@@ -30,7 +30,7 @@ public class SmaCrossAdvancedTradeSetup extends SmaCrossTradeSetup {
 	 */
 	@Override
 	protected boolean sellSignal(Instrument instrument, Period period, Filter filter, double[] ma20, double[] ma50,
-			double[] ma100, double[] ma200, IBar bidBar, boolean strict, Map<String, FlexTAValue> taValues)
+			double[] ma100, double[] ma200, IBar bidBar, boolean strict, Map<String, FlexLogEntry> taValues)
 			throws JFException {
 		double currMA20 = ma20[1], currMA50 = ma50[1], currMA100 = ma100[1], prevMA20 = ma20[0], prevMA50 = ma50[0], prevMA100 = ma100[0];
 
@@ -94,7 +94,7 @@ Grupa 4: price action / candlestick paterns
 	 */
 	@Override
 	protected boolean buySignal(Instrument instrument, Period period, Filter filter, double[] ma20, double[] ma50,
-			double[] ma100, double[] ma200, IBar bidBar, boolean strict, Map<String, FlexTAValue> taValues) throws JFException {
+			double[] ma100, double[] ma200, IBar bidBar, boolean strict, Map<String, FlexLogEntry> taValues) throws JFException {
 		
 		double currMA20 = ma20[1], currMA50 = ma50[1], currMA100 = ma100[1], prevMA20 = ma20[0], prevMA50 = ma50[0], prevMA100 = ma100[0];
 

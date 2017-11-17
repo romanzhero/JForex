@@ -3,6 +3,8 @@ package jforex.trades.flat;
 import java.util.List;
 import java.util.Map;
 
+import jforex.utils.log.FlexLogEntry;
+
 import jforex.events.TAEventDesc;
 import jforex.events.TAEventDesc.TAEventType;
 import jforex.techanalysis.TradeTrigger;
@@ -10,7 +12,6 @@ import jforex.techanalysis.Trend;
 import jforex.techanalysis.Trend.FLAT_REGIME_CAUSE;
 import jforex.techanalysis.Trend.TREND_STATE;
 import jforex.techanalysis.source.FlexTASource;
-import jforex.techanalysis.source.FlexTAValue;
 import jforex.trades.ITradeSetup;
 import jforex.trades.TradeSetup;
 import jforex.trades.momentum.LongStrongCandleAndMomentumDetector;
@@ -57,7 +58,7 @@ public class FlatStrongTradeSetup extends TradeSetup implements ITradeSetup {
 	}
 
 	@Override
-	public TAEventDesc checkEntry(Instrument instrument, Period period,	IBar askBar, IBar bidBar, Filter filter, Map<String, FlexTAValue> taValues) throws JFException {
+	public TAEventDesc checkEntry(Instrument instrument, Period period,	IBar askBar, IBar bidBar, Filter filter, Map<String, FlexLogEntry> taValues) throws JFException {
 		TradeTrigger.TriggerDesc 
 			currLongSignal = longCmd.checkEntry(instrument, period, OfferSide.BID, filter, bidBar, askBar, taValues), 
 			currShortSignal = shortCmd.checkEntry(instrument, period, OfferSide.BID, filter, bidBar, askBar, taValues);
@@ -111,7 +112,7 @@ public class FlatStrongTradeSetup extends TradeSetup implements ITradeSetup {
 	}
 
 	@Override
-	public void inTradeProcessing(Instrument instrument, Period period,	IBar askBar, IBar bidBar, Filter filter, IOrder order, Map<String, FlexTAValue> taValues, List<TAEventDesc> marketEvents) throws JFException {
+	public void inTradeProcessing(Instrument instrument, Period period,	IBar askBar, IBar bidBar, Filter filter, IOrder order, Map<String, FlexLogEntry> taValues, List<TAEventDesc> marketEvents) throws JFException {
 		IBar barToCheck = null;
 		/*
 		 * if ((lastLongSignal != null && lastShortSignal != null &&

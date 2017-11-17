@@ -24,7 +24,6 @@ import jforex.events.TAEventDesc.TAEventType;
 import jforex.logging.TradeLog;
 import jforex.techanalysis.Trend;
 import jforex.techanalysis.source.FlexTASource;
-import jforex.techanalysis.source.FlexTAValue;
 import jforex.trades.*;
 import jforex.trades.flat.FlatStrongTradeSetup;
 import jforex.trades.flat.FlatTradeSetup;
@@ -68,7 +67,7 @@ public class FlatCascTest implements IStrategy {
 	private ITradeSetup currentSetup = null;
 
 	private FlexTASource taSource = null;
-	private Map<String, FlexTAValue> lastTaValues = null;
+	private Map<String, FlexLogEntry> lastTaValues = null;
 	
 	private Map<Instrument, InstrumentRangeStats> dayRanges = null;
 	private DailyPnL dailyPnL = null;	
@@ -211,6 +210,7 @@ public class FlatCascTest implements IStrategy {
 	public void onBar(Instrument instrument, Period period, IBar askBar, IBar bidBar) throws JFException {
 		if (instrument.equals(selectedInstrument) 
 			&& period.equals(orderSubmitPeriod)
+			&& conf.getProperty("noWeekendPositions", "no").equals("yes")
 			&& TradingHours.tradingAllowed(dataService, bidBar.getTime(), period) 
 			&& !(bidBar.getClose() == bidBar.getOpen() && bidBar.getClose() == bidBar.getHigh() && bidBar.getClose() == bidBar.getLow())) {
 			submitOrderFromQueue(selectedInstrument, bidBar, askBar);
@@ -225,7 +225,8 @@ public class FlatCascTest implements IStrategy {
 		IOrder order = orderPerPair.get(instrument.name());
 		if (instrument.equals(selectedInstrument)
 			&& period.equals(selectedPeriod)
-			// no more trading 4 hours before close on Fridays
+			// no more trading 4 hours before close on Fridays, but only if explicitly configured !
+			&& conf.getProperty("noWeekendPositions", "no").equals("yes")
 			&& !TradingHours.barProcessingAllowed(dataService, bidBar.getTime(), 4 * 3600 * 1000)) {
 			// and also close any open positions - no open positions left over weekend !
 			if (order != null) {
@@ -325,7 +326,7 @@ public class FlatCascTest implements IStrategy {
 						level = calcNextShortLevel(askBar, instrument, chart.getMinPrice(), chart.getMaxPrice());
 					String textToShow = new String(orderCnt + "." + commentCnt++ + ": " + (signal.isLong ? "Long" : "Short") + " entry signal with " + currentSetup.getName());
 					chart.showTradingEventOnGUI(textToShow, instrument, bidBar.getTime(), level);
-				} else {
+				} else if (conf.getProperty("noWeekendPositions", "no").equals("yes")) {
 					// put in the order in the "queue" to be submitted on Sunday
 					orderWaitinginQueue = true;
 					queueOrderLabel = orderLabel;
@@ -541,7 +542,7 @@ public class FlatCascTest implements IStrategy {
 		return levelToCheck;
 	}
 
-	private void createTradeLog(Instrument instrument, Period period, IBar bar, OfferSide side, String orderLabel, boolean isLong, Map<String, FlexTAValue> taValues) {
+	private void createTradeLog(Instrument instrument, Period period, IBar bar, OfferSide side, String orderLabel, boolean isLong, Map<String, FlexLogEntry> taValues) {
 		tradeLog = new TradeLog(orderLabel, isLong, currentSetup.getName(), bar.getTime(), 0, 0, 0);
 
 		//Trend.TREND_STATE entryTrendID = trend.getTrendState(instrument, period, side, IIndicators.AppliedPrice.CLOSE, bar.getTime());
@@ -620,7 +621,7 @@ public class FlatCascTest implements IStrategy {
 			*/
 	}
 
-	protected void addLatestTAValues(Map<String, FlexTAValue> taValues, boolean isLong) {
+	protected void addLatestTAValues(Map<String, FlexLogEntry> taValues, boolean isLong) {
 		tradeLog.addLogEntry(new FlexLogEntry("Regime", FXUtils.getRegimeString((Trend.TREND_STATE)taValues.get(FlexTASource.TREND_ID).getTrendStateValue(), 
 				taValues.get(FlexTASource.MAs_DISTANCE_PERC).getDoubleValue(),
 				(Trend.FLAT_REGIME_CAUSE)taValues.get(FlexTASource.FLAT_REGIME).getValue(), 
@@ -628,14 +629,14 @@ public class FlatCascTest implements IStrategy {
 		if (currentSetup != null && currentSetup.getName().equals("Flat")) {
 			if (isLong) {
 				if (taValues.get(FlexTASource.BULLISH_CANDLES) != null)
-					taValues.replace(FlexTASource.BULLISH_CANDLES, new FlexTAValue(FlexTASource.BULLISH_CANDLES, ((FlatTradeSetup) currentSetup).getLastLongSignal()));
+					taValues.replace(FlexTASource.BULLISH_CANDLES, new FlexLogEntry(FlexTASource.BULLISH_CANDLES, ((FlatTradeSetup) currentSetup).getLastLongSignal()));
 				else
-					taValues.put(FlexTASource.BULLISH_CANDLES, new FlexTAValue(FlexTASource.BULLISH_CANDLES, ((FlatTradeSetup) currentSetup).getLastLongSignal()));
+					taValues.put(FlexTASource.BULLISH_CANDLES, new FlexLogEntry(FlexTASource.BULLISH_CANDLES, ((FlatTradeSetup) currentSetup).getLastLongSignal()));
 			} else {
 				if (taValues.get(FlexTASource.BEARISH_CANDLES) != null)
-					taValues.replace(FlexTASource.BEARISH_CANDLES, new FlexTAValue(FlexTASource.BEARISH_CANDLES, ((FlatTradeSetup) currentSetup).getLastShortSignal()));
+					taValues.replace(FlexTASource.BEARISH_CANDLES, new FlexLogEntry(FlexTASource.BEARISH_CANDLES, ((FlatTradeSetup) currentSetup).getLastShortSignal()));
 				else 
-					taValues.put(FlexTASource.BEARISH_CANDLES, new FlexTAValue(FlexTASource.BEARISH_CANDLES, ((FlatTradeSetup) currentSetup).getLastShortSignal()));
+					taValues.put(FlexTASource.BEARISH_CANDLES, new FlexLogEntry(FlexTASource.BEARISH_CANDLES, ((FlatTradeSetup) currentSetup).getLastShortSignal()));
 			}
 		}
 		tradeLog.addTAData(taValues);
@@ -658,7 +659,7 @@ public class FlatCascTest implements IStrategy {
 		}
 	}
 
-	private List<TAEventDesc> checkMarketEvents(Instrument instrument,	Period period, IBar askBar, IBar bidBar, Filter filter, Map<String, FlexTAValue> taValues) throws JFException {
+	private List<TAEventDesc> checkMarketEvents(Instrument instrument,	Period period, IBar askBar, IBar bidBar, Filter filter, Map<String, FlexLogEntry> taValues) throws JFException {
 		List<TAEventDesc> result = new ArrayList<TAEventDesc>();
 		for (ITradeSetup setup : tradeSetups) {
 			TAEventDesc signal = setup.checkEntry(instrument, period, askBar, bidBar, filter, taValues);

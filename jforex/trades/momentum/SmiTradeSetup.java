@@ -7,11 +7,11 @@ import jforex.events.TAEventDesc;
 import jforex.events.TAEventDesc.TAEventType;
 import jforex.techanalysis.Trend.FLAT_REGIME_CAUSE;
 import jforex.techanalysis.source.FlexTASource;
-import jforex.techanalysis.source.FlexTAValue;
 import jforex.trades.ITradeSetup;
 import jforex.trades.TradeSetup;
 import jforex.trades.ITradeSetup.EntryDirection;
 import jforex.utils.FXUtils;
+import jforex.utils.log.FlexLogEntry;
 
 import com.dukascopy.api.Filter;
 import com.dukascopy.api.IBar;
@@ -43,7 +43,7 @@ public class SmiTradeSetup extends TradeSetup {
 	}
 
 	@Override
-	public void inTradeProcessing(Instrument instrument, Period period,	IBar askBar, IBar bidBar, Filter filter, IOrder order, Map<String, FlexTAValue> taValues, List<TAEventDesc> marketEvents)	throws JFException {
+	public void inTradeProcessing(Instrument instrument, Period period,	IBar askBar, IBar bidBar, Filter filter, IOrder order, Map<String, FlexLogEntry> taValues, List<TAEventDesc> marketEvents)	throws JFException {
 		// put on break even if opposite signal occurs
 		if (!mktEntry && order.getState().equals(IOrder.State.OPENED)) {
 			boolean 
@@ -147,7 +147,7 @@ public class SmiTradeSetup extends TradeSetup {
 	}
 
 	@Override
-	public TAEventDesc checkEntry(Instrument instrument, Period period,	IBar askBar, IBar bidBar, Filter filter, Map<String, FlexTAValue> taValues) throws JFException {
+	public TAEventDesc checkEntry(Instrument instrument, Period period,	IBar askBar, IBar bidBar, Filter filter, Map<String, FlexLogEntry> taValues) throws JFException {
 		double[][] 
 			mas = taValues.get(FlexTASource.MAs).getDa2DimValue(),
 			smis = taValues.get(FlexTASource.SMI).getDa2DimValue();	
@@ -182,7 +182,7 @@ public class SmiTradeSetup extends TradeSetup {
 	}
 
 	@Override
-	public EntryDirection checkExit(Instrument instrument, Period period, IBar askBar, IBar bidBar, Filter filter, IOrder order, Map<String, FlexTAValue> taValues) throws JFException {
+	public EntryDirection checkExit(Instrument instrument, Period period, IBar askBar, IBar bidBar, Filter filter, IOrder order, Map<String, FlexLogEntry> taValues) throws JFException {
 		double[][] 
 			mas = taValues.get(FlexTASource.MAs).getDa2DimValue(),
 			smis = taValues.get(FlexTASource.SMI).getDa2DimValue();	
@@ -282,7 +282,7 @@ public class SmiTradeSetup extends TradeSetup {
 	}
 
 	@Override
-	public EntryDirection checkCancel(Instrument instrument, Period period,	IBar askBar, IBar bidBar, Filter filter, Map<String, FlexTAValue> taValues) throws JFException {
+	public EntryDirection checkCancel(Instrument instrument, Period period,	IBar askBar, IBar bidBar, Filter filter, Map<String, FlexLogEntry> taValues) throws JFException {
 		ITradeSetup.EntryDirection result = ITradeSetup.EntryDirection.NONE;
 		double[][] 
 				mas = taValues.get(FlexTASource.MAs).getDa2DimValue(),

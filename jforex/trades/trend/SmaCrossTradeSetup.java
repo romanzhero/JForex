@@ -18,7 +18,7 @@ import jforex.techanalysis.Trend;
 import jforex.techanalysis.Trend.FLAT_REGIME_CAUSE;
 import jforex.techanalysis.Trend.TREND_STATE;
 import jforex.techanalysis.source.FlexTASource;
-import jforex.techanalysis.source.FlexTAValue;
+import jforex.utils.log.FlexLogEntry;
 
 public class SmaCrossTradeSetup extends AbstractSmaTradeSetup {
 	protected boolean 
@@ -31,7 +31,7 @@ public class SmaCrossTradeSetup extends AbstractSmaTradeSetup {
 	}
 
 	@Override
-	protected boolean sellSignal(Instrument instrument, Period period, Filter filter, double[] ma20, double[] ma50,	double[] ma100, double[] ma200, IBar bidBar, boolean strict, Map<String, FlexTAValue> taValues)	throws JFException {
+	protected boolean sellSignal(Instrument instrument, Period period, Filter filter, double[] ma20, double[] ma50,	double[] ma100, double[] ma200, IBar bidBar, boolean strict, Map<String, FlexLogEntry> taValues)	throws JFException {
 		double currMA20 = ma20[1], currMA50 = ma50[1], currMA100 = ma100[1], prevMA20 = ma20[0], prevMA50 = ma50[0], prevMA100 = ma100[0];
 
 		if (!shortCrossHappened)
@@ -50,7 +50,7 @@ public class SmaCrossTradeSetup extends AbstractSmaTradeSetup {
 	}
 
 	@Override
-	protected boolean buySignal(Instrument instrument, Period period, Filter filter, double[] ma20, double[] ma50,	double[] ma100, double[] ma200, IBar bidBar, boolean strict, Map<String, FlexTAValue> taValues)	throws JFException {
+	protected boolean buySignal(Instrument instrument, Period period, Filter filter, double[] ma20, double[] ma50,	double[] ma100, double[] ma200, IBar bidBar, boolean strict, Map<String, FlexLogEntry> taValues)	throws JFException {
 		double currMA20 = ma20[1], currMA50 = ma50[1], currMA100 = ma100[1], prevMA20 = ma20[0], prevMA50 = ma50[0], prevMA100 = ma100[0];
 
 		if (!longCrossHappened)
@@ -74,7 +74,7 @@ public class SmaCrossTradeSetup extends AbstractSmaTradeSetup {
 	}
 
 	@Override
-	public void inTradeProcessing(Instrument instrument, Period period, IBar askBar, IBar bidBar, Filter filter, IOrder order, Map<String, FlexTAValue> taValues, List<TAEventDesc> marketEvents) throws JFException {
+	public void inTradeProcessing(Instrument instrument, Period period, IBar askBar, IBar bidBar, Filter filter, IOrder order, Map<String, FlexLogEntry> taValues, List<TAEventDesc> marketEvents) throws JFException {
 		Trend.TREND_STATE trendID = taValues.get(FlexTASource.TREND_ID).getTrendStateValue();
 		if (longCrossHappened && !trendID.equals(TREND_STATE.UP_STRONG))
 			longCrossHappened = false;

@@ -24,13 +24,13 @@ import com.dukascopy.api.Period;
 
 import jforex.logging.TradeLog;
 import jforex.techanalysis.source.FlexTASource;
-import jforex.techanalysis.source.FlexTAValue;
 import jforex.techanalysis.source.TechnicalSituation;
 import jforex.techanalysis.source.TechnicalSituation.OverallTASituation;
 import jforex.techanalysis.source.TechnicalSituation.TASituationReason;
 import jforex.utils.FXUtils;
 import jforex.utils.JForexChart;
 import jforex.utils.TradingHours;
+import jforex.utils.log.FlexLogEntry;
 import jforex.utils.log.Logger;
 import jforex.utils.props.ClimberProperties;
 
@@ -81,7 +81,7 @@ public class TASituationExplorer implements IStrategy {
 	private IDataService dataService;
 		
 	private FlexTASource taSource = null;
-	private Map<String, FlexTAValue> 
+	private Map<String, FlexLogEntry> 
 		lastTaValues = null;
 	private OverallTASituation taSituation = OverallTASituation.DUMMY;
 	private TASituationReason taReason = TASituationReason.NONE;

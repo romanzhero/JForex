@@ -7,8 +7,8 @@ import jforex.events.TAEventDesc;
 import jforex.events.TAEventDesc.TAEventType;
 import jforex.techanalysis.TradeTrigger.TriggerDesc;
 import jforex.techanalysis.source.FlexTASource;
-import jforex.techanalysis.source.FlexTAValue;
 import jforex.utils.FXUtils;
+import jforex.utils.log.FlexLogEntry;
 
 import com.dukascopy.api.Filter;
 import com.dukascopy.api.IBar;
@@ -50,12 +50,12 @@ public abstract class TradeSetup implements ITradeSetup {
 
 
 	@Override
-	public EntryDirection checkCancel(Instrument instrument, Period period,	IBar askBar, IBar bidBar, Filter filter, Map<String, FlexTAValue> taValues) throws JFException {
+	public EntryDirection checkCancel(Instrument instrument, Period period,	IBar askBar, IBar bidBar, Filter filter, Map<String, FlexLogEntry> taValues) throws JFException {
 		return ITradeSetup.EntryDirection.NONE;
 	}
 
 	@Override
-	public void inTradeProcessing(Instrument instrument, Period period,	IBar askBar, IBar bidBar, Filter filter, IOrder order, Map<String, FlexTAValue> taValues, List<TAEventDesc> marketEvents) throws JFException {
+	public void inTradeProcessing(Instrument instrument, Period period,	IBar askBar, IBar bidBar, Filter filter, IOrder order, Map<String, FlexLogEntry> taValues, List<TAEventDesc> marketEvents) throws JFException {
 	}
 
 	@Override
@@ -73,17 +73,17 @@ public abstract class TradeSetup implements ITradeSetup {
 	}
 
 	@Override
-	public EntryDirection checkExit(Instrument instrument, Period period, IBar askBar, IBar bidBar, Filter filter, IOrder order, Map<String, FlexTAValue> taValues) throws JFException {
+	public EntryDirection checkExit(Instrument instrument, Period period, IBar askBar, IBar bidBar, Filter filter, IOrder order, Map<String, FlexLogEntry> taValues) throws JFException {
 		return ITradeSetup.EntryDirection.NONE;
 	}
 
 	@Override
-	public EntryDirection checkTakeOver(Instrument instrument, Period period, IBar askBar, IBar bidBar, Filter filter, Map<String, FlexTAValue> taValues) throws JFException {
+	public EntryDirection checkTakeOver(Instrument instrument, Period period, IBar askBar, IBar bidBar, Filter filter, Map<String, FlexLogEntry> taValues) throws JFException {
 		return ITradeSetup.EntryDirection.NONE;
 	}
 
 	@Override
-	public boolean isTradeLocked(Instrument instrument, Period period, IBar askBar, IBar bidBar, Filter filter, IOrder order, Map<String, FlexTAValue> taValues) throws JFException {
+	public boolean isTradeLocked(Instrument instrument, Period period, IBar askBar, IBar bidBar, Filter filter, IOrder order, Map<String, FlexLogEntry> taValues) throws JFException {
 		return locked;
 	}
 	
@@ -124,7 +124,7 @@ public abstract class TradeSetup implements ITradeSetup {
 		return lastTradingEvent ;
 	}
 
-	protected void shortSetBreakEvenOnProfit(Instrument instrument, IBar bidBar, IOrder order, Map<String, FlexTAValue> taValues, double howManyATRs) {
+	protected void shortSetBreakEvenOnProfit(Instrument instrument, IBar bidBar, IOrder order, Map<String, FlexLogEntry> taValues, double howManyATRs) {
 				// move SL to break even after position is profitable for more then 2.5 ATRs 
 				if (order.getProfitLossInPips() > howManyATRs * taValues.get(FlexTASource.ATR).getDoubleValue() * Math.pow(10, instrument.getPipScale()) 
 					&& order.getOpenPrice() < order.getStopLossPrice()) {
@@ -133,7 +133,7 @@ public abstract class TradeSetup implements ITradeSetup {
 				}
 			}
 
-	protected void shortProtectProfitOnATRCount(Instrument instrument, IBar bidBar, IOrder order, Map<String, FlexTAValue> taValues, double howManyATRs) {
+	protected void shortProtectProfitOnATRCount(Instrument instrument, IBar bidBar, IOrder order, Map<String, FlexLogEntry> taValues, double howManyATRs) {
 		// move SL to break even after position is profitable for more then 2.5 ATRs 
 		if (order.getProfitLossInPips() > howManyATRs * taValues.get(FlexTASource.ATR).getDoubleValue() * Math.pow(10, instrument.getPipScale()) 
 			&& bidBar.getHigh() < order.getStopLossPrice()) {
@@ -142,7 +142,7 @@ public abstract class TradeSetup implements ITradeSetup {
 		}
 	}
 	
-	protected void longSetBreakEvenOnProfit(Instrument instrument, IBar bidBar,	IOrder order, Map<String, FlexTAValue> taValues, double howManyATRs) {
+	protected void longSetBreakEvenOnProfit(Instrument instrument, IBar bidBar,	IOrder order, Map<String, FlexLogEntry> taValues, double howManyATRs) {
 				// move SL to break even after position is profitable for more then 2.5 ATRs 
 				if (order.getProfitLossInPips() > howManyATRs * taValues.get(FlexTASource.ATR).getDoubleValue() * Math.pow(10, instrument.getPipScale()) 
 					&& order.getOpenPrice() > order.getStopLossPrice()) {
@@ -151,7 +151,7 @@ public abstract class TradeSetup implements ITradeSetup {
 				}
 			}
 
-	protected void longProtectProfitOnATRCount(Instrument instrument, IBar bidBar,	IOrder order, Map<String, FlexTAValue> taValues, double howManyATRs) {
+	protected void longProtectProfitOnATRCount(Instrument instrument, IBar bidBar,	IOrder order, Map<String, FlexLogEntry> taValues, double howManyATRs) {
 		if (order.getProfitLossInPips() > howManyATRs * taValues.get(FlexTASource.ATR).getDoubleValue() * Math.pow(10, instrument.getPipScale()) 
 			&& bidBar.getLow() > order.getStopLossPrice()) {
 			lastTradingEvent = "(Long) Moved SL to protect profit = " + FXUtils.df1.format(howManyATRs) + " ATR";
@@ -221,7 +221,7 @@ public abstract class TradeSetup implements ITradeSetup {
 	}	
 
 	protected void shortMoveSLDueToBigBullishCandle(IBar bidBar,
-			IOrder order, Map<String, FlexTAValue> taValues) {
+			IOrder order, Map<String, FlexLogEntry> taValues) {
 				TriggerDesc candles = taValues.get(FlexTASource.BULLISH_CANDLES).getCandleValue();
 				if (candles != null && candles.sizePercentile > 70 && candles.reversalSize > 70) {
 					double newSL = bidBar.getClose() > order.getOpenPrice() ? bidBar.getHigh() : order.getOpenPrice();
@@ -233,7 +233,7 @@ public abstract class TradeSetup implements ITradeSetup {
 				}
 			}
 
-	protected void longMoveSLDueToBigBearishCandle(IBar bidBar, IOrder order, Map<String, FlexTAValue> taValues) {
+	protected void longMoveSLDueToBigBearishCandle(IBar bidBar, IOrder order, Map<String, FlexLogEntry> taValues) {
 		TriggerDesc candles = taValues.get(FlexTASource.BEARISH_CANDLES).getCandleValue();
 		if (candles != null && candles.sizePercentile > 70 && candles.reversalSize > 70) {
 				double newSL = bidBar.getClose() < order.getOpenPrice() ? bidBar.getLow() : order.getOpenPrice();
@@ -245,7 +245,7 @@ public abstract class TradeSetup implements ITradeSetup {
 		}
 	}
 	
-	protected void longProtectProfitDueToBigBearishCandle(IBar bidBar, IOrder order, double howManyATRs, Map<String, FlexTAValue> taValues) {
+	protected void longProtectProfitDueToBigBearishCandle(IBar bidBar, IOrder order, double howManyATRs, Map<String, FlexLogEntry> taValues) {
 		TriggerDesc candles = taValues.get(FlexTASource.BEARISH_CANDLES).getCandleValue();
 		if (candles != null && candles.sizePercentile > 70 && candles.reversalSize > 70
 			&& order.getProfitLossInPips() > howManyATRs * taValues.get(FlexTASource.ATR).getDoubleValue() * Math.pow(10, order.getInstrument().getPipScale())) {
@@ -258,7 +258,7 @@ public abstract class TradeSetup implements ITradeSetup {
 		}
 	}
 	
-	protected void shortProtectProfitDueToBigBullishCandle(IBar bidBar, IOrder order, double howManyATRs, Map<String, FlexTAValue> taValues) {
+	protected void shortProtectProfitDueToBigBullishCandle(IBar bidBar, IOrder order, double howManyATRs, Map<String, FlexLogEntry> taValues) {
 		TriggerDesc candles = taValues.get(FlexTASource.BULLISH_CANDLES).getCandleValue();
 		if (candles != null && candles.sizePercentile > 70 && candles.reversalSize > 70
 			&& order.getProfitLossInPips() > howManyATRs * taValues.get(FlexTASource.ATR).getDoubleValue() * Math.pow(10, order.getInstrument().getPipScale())) {
@@ -272,7 +272,7 @@ public abstract class TradeSetup implements ITradeSetup {
 	}
 
 
-	protected void longMoveSLDueToExtremeRSI3(IBar bidBar, IOrder order, Map<String, FlexTAValue> taValues) {
+	protected void longMoveSLDueToExtremeRSI3(IBar bidBar, IOrder order, Map<String, FlexLogEntry> taValues) {
 				double RSI3 = taValues.get(FlexTASource.RSI3).getDoubleValue();
 				if (RSI3 < 30) {
 						double newSL = bidBar.getClose() < order.getOpenPrice() ? bidBar.getLow() : order.getOpenPrice();
@@ -283,7 +283,7 @@ public abstract class TradeSetup implements ITradeSetup {
 				}
 			}
 	
-	protected void shortMoveSLDueToExtremeRSI3(IBar bidBar, IOrder order, Map<String, FlexTAValue> taValues) {
+	protected void shortMoveSLDueToExtremeRSI3(IBar bidBar, IOrder order, Map<String, FlexLogEntry> taValues) {
 		double RSI3 = taValues.get(FlexTASource.RSI3).getDoubleValue();
 		if (RSI3 > 70) {
 				double newSL = bidBar.getClose() > order.getOpenPrice() ? bidBar.getHigh() : order.getOpenPrice();

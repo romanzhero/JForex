@@ -21,7 +21,6 @@ import jforex.events.TAEventDesc.TAEventType;
 import jforex.logging.TradeLog;
 import jforex.techanalysis.Trend;
 import jforex.techanalysis.source.FlexTASource;
-import jforex.techanalysis.source.FlexTAValue;
 import jforex.trades.*;
 import jforex.trades.flat.FlatStrongTradeSetup;
 import jforex.trades.flat.FlatTradeSetup;
@@ -55,7 +54,7 @@ public class MultiPairCasc implements IStrategy {
 	private ITakeOverRules takeOverRules = new SmiSmaTakeOverRules();
 
 	private FlexTASource taSource = null;
-	private Map<String, FlexTAValue> lastTaValues = null;
+	private Map<String, FlexLogEntry> lastTaValues = null;
 	
 	private Map<Instrument, InstrumentRangeStats> dayRanges = null;
 	private DailyPnL dailyPnL = null;	
@@ -342,7 +341,7 @@ public class MultiPairCasc implements IStrategy {
 		return order;
 	}
 
-	private void createTradeLog(Instrument instrument, Period period, IBar bar, OfferSide side, String orderLabel, boolean isLong, Map<String, FlexTAValue> taValues) {
+	private void createTradeLog(Instrument instrument, Period period, IBar bar, OfferSide side, String orderLabel, boolean isLong, Map<String, FlexLogEntry> taValues) {
 		PairTradeData currPairData = pairsTradeData.get(instrument.toString());
 		currPairData.tradeLog = new TradeLog(orderLabel, isLong, currPairData.currentSetup.getName(), bar.getTime(), 0, 0, 0);
 
@@ -350,7 +349,7 @@ public class MultiPairCasc implements IStrategy {
 		addLatestTAValues(instrument, taValues, isLong);
 	}
 
-	protected void addLatestTAValues(Instrument instrument, Map<String, FlexTAValue> taValues, boolean isLong) {
+	protected void addLatestTAValues(Instrument instrument, Map<String, FlexLogEntry> taValues, boolean isLong) {
 		PairTradeData currPairData = pairsTradeData.get(instrument.toString());
 	
 		currPairData.tradeLog.addLogEntry(new FlexLogEntry("Regime", FXUtils.getRegimeString((Trend.TREND_STATE)taValues.get(FlexTASource.TREND_ID).getTrendStateValue(), 
@@ -360,18 +359,18 @@ public class MultiPairCasc implements IStrategy {
 		if (currPairData.currentSetup != null && currPairData.currentSetup.getName().equals("Flat")) {
 			if (isLong) {
 				if (taValues.get(FlexTASource.BULLISH_CANDLES) != null)
-					taValues.replace(FlexTASource.BULLISH_CANDLES, new FlexTAValue(FlexTASource.BULLISH_CANDLES, ((FlatTradeSetup)currPairData.currentSetup).getLastLongSignal()));
+					taValues.replace(FlexTASource.BULLISH_CANDLES, new FlexLogEntry(FlexTASource.BULLISH_CANDLES, ((FlatTradeSetup)currPairData.currentSetup).getLastLongSignal()));
 				else
-					taValues.put(FlexTASource.BULLISH_CANDLES, new FlexTAValue(FlexTASource.BULLISH_CANDLES, ((FlatTradeSetup)currPairData.currentSetup).getLastLongSignal()));
+					taValues.put(FlexTASource.BULLISH_CANDLES, new FlexLogEntry(FlexTASource.BULLISH_CANDLES, ((FlatTradeSetup)currPairData.currentSetup).getLastLongSignal()));
 			} else {
 				if (taValues.get(FlexTASource.BEARISH_CANDLES) != null)
-					taValues.replace(FlexTASource.BEARISH_CANDLES, new FlexTAValue(FlexTASource.BEARISH_CANDLES, ((FlatTradeSetup)currPairData.currentSetup).getLastShortSignal()));
+					taValues.replace(FlexTASource.BEARISH_CANDLES, new FlexLogEntry(FlexTASource.BEARISH_CANDLES, ((FlatTradeSetup)currPairData.currentSetup).getLastShortSignal()));
 				else 
-					taValues.put(FlexTASource.BEARISH_CANDLES, new FlexTAValue(FlexTASource.BEARISH_CANDLES, ((FlatTradeSetup)currPairData.currentSetup).getLastShortSignal()));
+					taValues.put(FlexTASource.BEARISH_CANDLES, new FlexLogEntry(FlexTASource.BEARISH_CANDLES, ((FlatTradeSetup)currPairData.currentSetup).getLastShortSignal()));
 			}
 		}
-		for (Map.Entry<String, FlexTAValue> curr : taValues.entrySet()) {
-			FlexTAValue taValue = curr.getValue();
+		for (Map.Entry<String, FlexLogEntry> curr : taValues.entrySet()) {
+			FlexLogEntry taValue = curr.getValue();
 			currPairData.tradeLog.addLogEntry(taValue);
 		}
 	}
@@ -394,7 +393,7 @@ public class MultiPairCasc implements IStrategy {
 		}
 	}
 
-	private List<TAEventDesc> checkMarketEvents(Instrument instrument,	Period period, IBar askBar, IBar bidBar, Filter filter, Map<String, FlexTAValue> taValues) throws JFException {
+	private List<TAEventDesc> checkMarketEvents(Instrument instrument,	Period period, IBar askBar, IBar bidBar, Filter filter, Map<String, FlexLogEntry> taValues) throws JFException {
 		List<TAEventDesc> result = new ArrayList<TAEventDesc>();
 		for (ITradeSetup setup : tradeSetups) {
 			TAEventDesc signal = setup.checkEntry(instrument, period, askBar, bidBar, filter, taValues);

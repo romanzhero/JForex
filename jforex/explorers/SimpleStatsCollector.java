@@ -10,7 +10,6 @@ import jforex.utils.log.Logger;
 import jforex.logging.TradeLog;
 import jforex.techanalysis.Trend;
 import jforex.techanalysis.source.FlexTASource;
-import jforex.techanalysis.source.FlexTAValue;
 
 public class SimpleStatsCollector implements IStrategy {
 	@Configurable(value = "Period", description = "Choose the time frame")
@@ -25,7 +24,7 @@ public class SimpleStatsCollector implements IStrategy {
 	private IHistory history;
 	private IIndicators indicators;
 	private FlexTASource taSource = null;
-	private Map<String, FlexTAValue> lastTaValues = null;
+	private Map<String, FlexLogEntry> lastTaValues = null;
 	
 	private Logger 
 		log = null,
@@ -68,19 +67,19 @@ public class SimpleStatsCollector implements IStrategy {
 		statsLog.print(logLine);
 	}
 
-	private void createTradeLog(Instrument instrument, Period period, IBar bar, OfferSide side, String orderLabel, boolean isLong, Map<String, FlexTAValue> taValues) {
+	private void createTradeLog(Instrument instrument, Period period, IBar bar, OfferSide side, String orderLabel, boolean isLong, Map<String, FlexLogEntry> taValues) {
 		tradeLog = new TradeLog(orderLabel, isLong, "SimpleStats", bar.getTime(), 0, 0, 0);
 
 		addLatestTAValues(taValues, isLong);
 	}
 
-	protected void addLatestTAValues(Map<String, FlexTAValue> taValues, boolean isLong) {
+	protected void addLatestTAValues(Map<String, FlexLogEntry> taValues, boolean isLong) {
 		tradeLog.addLogEntry(new FlexLogEntry("Regime", FXUtils.getRegimeString((Trend.TREND_STATE)taValues.get(FlexTASource.TREND_ID).getTrendStateValue(),
 				taValues.get(FlexTASource.MAs_DISTANCE_PERC).getDoubleValue(),
 				(Trend.FLAT_REGIME_CAUSE)taValues.get(FlexTASource.FLAT_REGIME).getValue(), 
 				taValues.get(FlexTASource.MA200_HIGHEST).getBooleanValue(), taValues.get(FlexTASource.MA200_LOWEST).getBooleanValue())));
-		for (Map.Entry<String, FlexTAValue> curr : taValues.entrySet()) {
-			FlexTAValue taValue = curr.getValue();
+		for (Map.Entry<String, FlexLogEntry> curr : taValues.entrySet()) {
+			FlexLogEntry taValue = curr.getValue();
 			tradeLog.addLogEntry(taValue);
 		}
 	}

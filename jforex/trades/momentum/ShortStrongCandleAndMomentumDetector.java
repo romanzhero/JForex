@@ -11,14 +11,14 @@ import com.dukascopy.api.Period;
 
 import jforex.techanalysis.TradeTrigger;
 import jforex.techanalysis.source.FlexTASource;
-import jforex.techanalysis.source.FlexTAValue;
+import jforex.utils.log.FlexLogEntry;
 
 public class ShortStrongCandleAndMomentumDetector extends AbstractCandleAndMomentumDetector {
 	public ShortStrongCandleAndMomentumDetector(double thresholdLevel, boolean pStyleAggressive) {
 		super(thresholdLevel, pStyleAggressive);
 	}
 
-	public TradeTrigger.TriggerDesc checkEntry(Instrument instrument, Period pPeriod, OfferSide side, Filter filter, IBar bidBar, IBar askBar, Map<String, FlexTAValue> taValues) throws JFException {
+	public TradeTrigger.TriggerDesc checkEntry(Instrument instrument, Period pPeriod, OfferSide side, Filter filter, IBar bidBar, IBar askBar, Map<String, FlexLogEntry> taValues) throws JFException {
 		// entry is two-step process. First a candle signal at channel extreme
 		// is checked. Once this appears we wait for Stoch momentum to be confirming
 		// Only rarely does this happen on the same bar, but need to check this situation too !
@@ -49,7 +49,7 @@ public class ShortStrongCandleAndMomentumDetector extends AbstractCandleAndMomen
 		return candleSignalAppeared && momentumConfired ? candleSignalDesc : null;
 	}
 	
-	public boolean momentumConfirms(Map<String, FlexTAValue> taValues) {
+	public boolean momentumConfirms(Map<String, FlexLogEntry> taValues) {
 		double [][] 
 			smis = taValues.get(FlexTASource.SMI).getDa2DimValue(),
 			stochs = taValues.get(FlexTASource.STOCH).getDa2DimValue();

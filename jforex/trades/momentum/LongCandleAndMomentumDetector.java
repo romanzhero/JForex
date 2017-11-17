@@ -9,9 +9,11 @@ import com.dukascopy.api.JFException;
 import com.dukascopy.api.OfferSide;
 import com.dukascopy.api.Period;
 
+import jforex.techanalysis.Momentum;
 import jforex.techanalysis.TradeTrigger;
 import jforex.techanalysis.source.FlexTASource;
-import jforex.techanalysis.source.FlexTAValue;
+import jforex.techanalysis.source.TechnicalSituation;
+import jforex.utils.log.FlexLogEntry;
 
 public class LongCandleAndMomentumDetector extends AbstractCandleAndMomentumDetector {
 	
@@ -19,7 +21,7 @@ public class LongCandleAndMomentumDetector extends AbstractCandleAndMomentumDete
 		super(thresholdLevel, pStyleAggressive);
 	}
 
-	public TradeTrigger.TriggerDesc checkEntry(Instrument instrument, Period pPeriod, OfferSide side, Filter filter, IBar bidBar, IBar askBar, Map<String, FlexTAValue> taValues) throws JFException {
+	public TradeTrigger.TriggerDesc checkEntry(Instrument instrument, Period pPeriod, OfferSide side, Filter filter, IBar bidBar, IBar askBar, Map<String, FlexLogEntry> taValues) throws JFException {
 		// entry is two-step process. First a candle signal at channel extreme is checked. Once this appears we wait for Stoch momentum to be confirming
 		// Only rarely does this happen on the same bar, but need to check this situation too !
 		if (!candleSignalAppeared) {
@@ -39,42 +41,38 @@ public class LongCandleAndMomentumDetector extends AbstractCandleAndMomentumDete
 				reset();
 
 			if (candleSignalAppeared) {
-				double [][] 
-						stochs = taValues.get(FlexTASource.STOCH).getDa2DimValue(),
-						smis = taValues.get(FlexTASource.SMI).getDa2DimValue();
-				double 
-					fastStoch = stochs[0][1], 
-					slowStoch = stochs[1][1],
-					prevSlowSMI = smis[1][1], 
-					currSlowSMI = smis[1][2], 
-					prevFastSMI = smis[0][1], 
-					currFastSMI = smis[0][2];					
-				momentumConfired = styleAggressive ? fastStoch > slowStoch && currFastSMI > prevFastSMI : fastStoch > slowStoch && fastStoch > 20.0;
+				TechnicalSituation taSituation = taValues.get(FlexTASource.TA_SITUATION).getTehnicalSituationValue();
+				Momentum.STOCH_STATE stoch = taSituation.stochState;
+				Momentum.SMI_STATE smi = taSituation.smiState;
+				Momentum.SINGLE_LINE_STATE fastSMI = taSituation.fastSMIState;
+				momentumConfired = (stoch.equals(Momentum.STOCH_STATE.BULLISH_CROSS_FROM_OVERSOLD)
+									|| stoch.equals(Momentum.STOCH_STATE.BULLISH_CROSS)
+									|| stoch.equals(Momentum.STOCH_STATE.BULLISH_RAISING_IN_MIDDLE)
+									|| stoch.equals(Momentum.STOCH_STATE.BULLISH_OVERBOUGHT_FAST)
+									|| stoch.equals(Momentum.STOCH_STATE.BULLISH_OVERBOUGHT_BOTH))
+									&& (fastSMI.toString().startsWith("RAISING") 
+										|| fastSMI.toString().startsWith("TICKED_UP")
+										|| smi.equals(Momentum.SMI_STATE.BULLISH_WEAK_OVERSOLD_SLOW_BELOW_FAST)
+										|| smi.equals(Momentum.SMI_STATE.BULLISH_WEAK_RAISING_IN_MIDDLE));
 			}
 		}
 		if (candleSignalAppeared && momentumConfired) {
-			// however it might happen that S/R of candle signal was exceeded in
-			// the opposite direction
+			// however it might happen that S/R of candle signal was exceeded in the opposite direction
 			// MUST cancel the whole signal !
 			if (bidBar.getClose() < candleSignalDesc.pivotLevel)
 				reset();
 			else {
-				// signal is valid until momentum confirms it. Opposite signals
-				// are ignored for the time being, strategies / setups should
-				// take care about them
-				double [][] 
-						stochs = taValues.get(FlexTASource.STOCH).getDa2DimValue(),
-						smis = taValues.get(FlexTASource.SMI).getDa2DimValue();
-				double 
-					fastStoch = stochs[0][1], 
-					slowStoch = stochs[1][1],
-					prevSlowSMI = smis[1][1], 
-					currSlowSMI = smis[1][2], 
-					prevFastSMI = smis[0][1], 
-					currFastSMI = smis[0][2];
-				if ((!styleAggressive && !(fastStoch > slowStoch && fastStoch > 20.0)) || (fastStoch > 80 && slowStoch > 80))
-					reset();
-				if ((styleAggressive && !(fastStoch > slowStoch && currFastSMI > prevFastSMI)) || (fastStoch > 80 && slowStoch > 80))
+				// signal is valid until momentum confirms it. Opposite signals are ignored for the time being, strategies / setups should take care about them
+				TechnicalSituation taSituation = taValues.get(FlexTASource.TA_SITUATION).getTehnicalSituationValue();
+				Momentum.STOCH_STATE stoch = taSituation.stochState;
+				Momentum.SINGLE_LINE_STATE fastSMI = taSituation.fastSMIState;
+				boolean momentumStillConfired = (stoch.equals(Momentum.STOCH_STATE.BULLISH_CROSS_FROM_OVERSOLD)
+									|| stoch.equals(Momentum.STOCH_STATE.BULLISH_CROSS)
+									|| stoch.equals(Momentum.STOCH_STATE.BULLISH_OVERBOUGHT_FAST)
+									|| stoch.equals(Momentum.STOCH_STATE.BULLISH_OVERBOUGHT_BOTH))
+								&& (fastSMI.toString().startsWith("RAISING") || fastSMI.toString().startsWith("TICKED_UP"));
+
+				if (!momentumStillConfired)
 					reset();
 			}
 		}
