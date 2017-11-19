@@ -88,19 +88,19 @@ public class FlexLogEntry {
 	}
 
 	public boolean isDouble() {
-		return value.getClass().equals(Double.class);
+		return value != null ? value.getClass().equals(Double.class) : false;
 	}
 
 	public boolean isInteger() {
-		return value.getClass().equals(Integer.class);
+		return value != null ? value.getClass().equals(Integer.class) : false;
 	}
 	
 	public boolean isLong() {
-		return value.getClass().equals(Long.class);
+		return value != null ? value.getClass().equals(Long.class) : false;
 	}
 	
 	public boolean isBoolean() {
-		return value.getClass().equals(Boolean.class);
+		return value != null ? value.getClass().equals(Boolean.class) : false;
 	}
 
 	@Override

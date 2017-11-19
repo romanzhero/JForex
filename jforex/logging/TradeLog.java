@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
+import jforex.techanalysis.Trend;
 import jforex.techanalysis.source.FlexTASource;
 import jforex.utils.FXUtils;
 import jforex.utils.log.FlexLogEntry;
@@ -303,6 +304,37 @@ public class TradeLog {
 		addLogEntry(taValues.get(FlexTASource.STOCH));
 		addLogEntry(taValues.get(FlexTASource.RSI3));
 	}
+	
+	public static void addTAData(Map<String, FlexLogEntry> taValues, List<FlexLogEntry> target) {
+		target.add(new FlexLogEntry("Regime", 
+				FXUtils.getRegimeString((Trend.TREND_STATE)taValues.get(FlexTASource.TREND_ID).getTrendStateValue(), 
+										taValues.get(FlexTASource.MAs_DISTANCE_PERC).getDoubleValue(),
+										(Trend.FLAT_REGIME_CAUSE)taValues.get(FlexTASource.FLAT_REGIME).getValue(), 
+										taValues.get(FlexTASource.MA200_HIGHEST).getBooleanValue(), taValues.get(FlexTASource.MA200_LOWEST).getBooleanValue())));
+		
+		target.add(taValues.get(FlexTASource.TA_SITUATION));
+		target.add(taValues.get(FlexTASource.TREND_ID));
+		target.add(taValues.get(FlexTASource.MAs_DISTANCE_PERC));
+		target.add(taValues.get(FlexTASource.FLAT_REGIME));
+		target.add(taValues.get(FlexTASource.BBANDS_SQUEEZE_PERC));
+		target.add(taValues.get(FlexTASource.CHANNEL_WIDTH_DIRECTION));
+		target.add(taValues.get(FlexTASource.CHANNEL_POS));
+		target.add(taValues.get(FlexTASource.MA200_HIGHEST));
+		target.add(taValues.get(FlexTASource.MA200_LOWEST));
+		target.add(taValues.get(FlexTASource.MA200_IN_CHANNEL));
+		target.add(taValues.get(FlexTASource.MA200MA100_TREND_DISTANCE_PERC));
+		target.add(taValues.get(FlexTASource.MA20_SLOPE));
+		target.add(taValues.get(FlexTASource.MA50_SLOPE));
+		target.add(taValues.get(FlexTASource.MA100_SLOPE));
+		target.add(taValues.get(FlexTASource.MA200_SLOPE));
+		target.add(taValues.get(FlexTASource.MA_SLOPES_SCORE));
+		target.add(taValues.get(FlexTASource.BULLISH_CANDLES));
+		target.add(taValues.get(FlexTASource.BEARISH_CANDLES));
+		target.add(taValues.get(FlexTASource.SMI));
+		target.add(taValues.get(FlexTASource.STOCH));
+		target.add(taValues.get(FlexTASource.RSI3));
+	}
+	
 
 	public void setPnLInPips(double exitPrice, Instrument instrument) {
 		if (isLong)

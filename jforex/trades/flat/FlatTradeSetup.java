@@ -36,6 +36,7 @@ public class FlatTradeSetup extends TradeSetup implements ITradeSetup {
 		lastLongSignal = null,
 		lastShortSignal = null;
 	protected boolean aggressive = false;
+	protected static final double CHANNEL_OFFSET = 3; // how many % is tolerated vs. channel border. Long: 100 - channelOffset / Short 0 + channelOffset
 
 	public FlatTradeSetup(IEngine engine, IContext context, boolean aggressive) {
 		super(engine, context);
@@ -107,8 +108,8 @@ Grupa 4: price action / candlestick paterns
 		
 		// there is a signal, assuming favourable channel pos of the last candle !
 		boolean 
-			bulishSignal = currLongSignal != null && currLongSignal.channelPosition < 0 && channelPos < 70,
-			bearishSignal = currShortSignal != null && currShortSignal.channelPosition > 100 && channelPos > 30;
+			bulishSignal = currLongSignal != null && currLongSignal.channelPosition < 0 + CHANNEL_OFFSET && channelPos < 70,
+			bearishSignal = currShortSignal != null && currShortSignal.channelPosition > 100 - CHANNEL_OFFSET && channelPos > 30;
 		locked = bulishSignal || bearishSignal;
 		if (bulishSignal) {
 			//lastTradingEvent = "buy signal";
@@ -155,7 +156,8 @@ Grupa 4: price action / candlestick paterns
 	*/	
 
 	@Override
-	public void inTradeProcessing(Instrument instrument, Period period,	IBar askBar, IBar bidBar, Filter filter, IOrder order, Map<String, FlexLogEntry> taValues, List<TAEventDesc> marketEvents) throws JFException {
+	public void inTradeProcessing(Instrument instrument, Period period,	IBar askBar, IBar bidBar, Filter filter, IOrder order, 
+			Map<String, FlexLogEntry> taValues, List<TAEventDesc> marketEvents) throws JFException {
 		IBar barToCheck = null;
 
 		if (order.isLong())
@@ -205,8 +207,9 @@ Grupa 4: price action / candlestick paterns
 				return;
 			
 			boolean
-				longExitSignal = currShortSignal != null && currShortSignal.channelPosition > 100,
-				shortExitSignal = currLongSignal != null && currLongSignal.channelPosition < 0, 
+				//TODO: but the same could be better obtained by checking entrySignal of the whole setup, see marketEvents !!!
+				longExitSignal = currShortSignal != null && currShortSignal.channelPosition > 100 - CHANNEL_OFFSET,
+				shortExitSignal = currLongSignal != null && currLongSignal.channelPosition < 0 + CHANNEL_OFFSET, 
 				//TODO: to be defined, probably very clear momentum against the trade
 				longProtectSignal = false, //currShortSignal != null && currShortSignal.channelPosition > 50 && bidBar.getHigh() > ma20,
 				shortProtectSignal = false; //currLongSignal != null && currLongSignal.channelPosition < 50 && askBar.getLow() < ma20;				

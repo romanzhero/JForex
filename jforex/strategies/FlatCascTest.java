@@ -75,8 +75,10 @@ public class FlatCascTest implements IStrategy {
 	
 	private Logger 
 		log = null,
-		statsLog = null;
+		statsLog = null,
+		barStatsLog; // for each bar
 	private TradeLog tradeLog = null;
+	protected boolean barStatsLogHeader = false;
 
 	private boolean 
 		orderWaitinginQueue = false,
@@ -148,6 +150,7 @@ public class FlatCascTest implements IStrategy {
 		log = new Logger(reportDir + "//Casc_report_" + FXUtils.getFileTimeStamp(System.currentTimeMillis()) + ".txt");
 		statsLog = new Logger(reportDir + "//Casc_stat_report_" + FXUtils.getFileTimeStamp(System.currentTimeMillis()) + ".txt");
 		statsLog.createXLS(reportDir + "//Casc_stat_report_" + FXUtils.getFileTimeStamp(System.currentTimeMillis()) + ".xls");
+		barStatsLog = new Logger(reportDir + "//Casc_bar_report_" + FXUtils.getFileTimeStamp(System.currentTimeMillis()) + ".txt");		
 
 		Set<Instrument> pairs = context.getSubscribedInstruments();
 		for (Instrument currI : pairs) {
@@ -242,6 +245,18 @@ public class FlatCascTest implements IStrategy {
 		incCommentLevelsCount();
 		removeOldCommentLevel(15);
 		lastTaValues = taSource.calcTAValues(instrument, period, askBar, bidBar);
+		
+		List<FlexLogEntry> barReport = new ArrayList<FlexLogEntry>();
+		barReport.add(new FlexLogEntry("barTime", FXUtils.getFormatedTimeGMT(bidBar.getTime())));
+		TradeLog.addTAData(lastTaValues, barReport);
+		
+		// report this for further analysis
+		if (!barStatsLogHeader) {
+			barStatsLogHeader = true;
+			barStatsLog.printLabelsFlex(barReport);
+		}
+		barStatsLog.printValuesFlex(barReport);
+		
 		for (ITradeSetup ts : tradeSetups) {
 			ts.updateOnBar(instrument, period, askBar, bidBar);
 		}
@@ -701,6 +716,7 @@ public class FlatCascTest implements IStrategy {
 					+ ", reasons: " + reasonsStr);
 			log.close();
 			statsLog.close();
+			barStatsLog.close();
 			System.exit(2);
 		}
 		if (message.getType().equals(IMessage.Type.ORDER_CLOSE_OK)) {
@@ -784,6 +800,7 @@ public class FlatCascTest implements IStrategy {
 	public void onStop() throws JFException {
 		log.close();
 		statsLog.close();
+		barStatsLog.close();
 		File tradeTestRunningSignal = new File("strategyTestRunning.bin");
 		if (tradeTestRunningSignal.exists())
 			tradeTestRunningSignal.delete();

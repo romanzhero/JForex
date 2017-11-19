@@ -13,18 +13,8 @@ import com.dukascopy.api.IConsole;
 
 import jforex.utils.FXUtils;
 import jxl.Cell;
-import jxl.CellFormat;
 import jxl.CellView;
 import jxl.Workbook;
-import jxl.format.Alignment;
-import jxl.format.Border;
-import jxl.format.BorderLineStyle;
-import jxl.format.Colour;
-import jxl.format.Font;
-import jxl.format.Format;
-import jxl.format.Orientation;
-import jxl.format.Pattern;
-import jxl.format.VerticalAlignment;
 import jxl.write.Label;
 import jxl.write.WritableSheet;
 import jxl.write.WritableWorkbook;
@@ -146,9 +136,9 @@ public class Logger {
 		int cnt = 0;
 		for (FlexLogEntry e : line) {
 			if (cnt++ > 0)
-				output += SEPARATOR + e.getLabel();
+				output += SEPARATOR + e.getHeaderLabel();
 			else
-				output += e.getLabel();
+				output += e.getHeaderLabel();
 		}
 		print(output);
 	}
@@ -255,13 +245,10 @@ public class Logger {
 		}
 		String removedColumnsIdxs = new String("Removed columns indices: ");
 		int 
-			initialColumnsNo = xlsSh.getColumns(),
-			newColumnsNo = -1,
 			deletedColumns = 0;
 		for (Integer currCol : columnsToRemove) {
 			// koriguj vrednost indexa preostalih kolona nakon brisanja kolone !
 			xlsSh.removeColumn(currCol.intValue() - deletedColumns++);
-			newColumnsNo = xlsSh.getColumns();
 			removedColumnsIdxs += currCol.intValue() + ", ";
 		}
 		// Write removed headers to second sheet for reference
@@ -302,15 +289,9 @@ public class Logger {
     		if (logEntry.getDecimalFormat() == null)
     			cell = new Number(column, row, logEntry.getDoubleValue());
     		else {
-    			NumberFormat format = null; 
-    			if (logEntry.getDecimalFormat().equals(FXUtils.df1))
-    				format = new NumberFormat("#.#"); 
-    			else if (logEntry.getDecimalFormat().equals(FXUtils.df2))
-    				format = new NumberFormat("#.##");
-    			else
-    				format = new NumberFormat("#.#####"); 
-    			WritableCellFormat cellFormat = new WritableCellFormat(format); 
-    			cell = new Number(column, row, logEntry.getDoubleValue(), cellFormat);
+//    			WritableCellFormat cellFormat = new WritableCellFormat(calcCellFormat(logEntry)); 
+//    			cell = new Number(column, row, logEntry.getDoubleValue(), cellFormat);
+    			cell = new Number(column, row, logEntry.getDoubleValue());
     		}
     	}
     	else if (logEntry.isInteger())
@@ -318,11 +299,22 @@ public class Logger {
     	else if (logEntry.isLong())
     		cell = new Number(column, row, logEntry.getLongValue());
     	else {
+    		// one of the complex types. If double array format accordingly and use Number cell type !
+    		WritableCellFormat cellFormat = new WritableCellFormat(calcCellFormat(logEntry));
         	StringTokenizer st = new StringTokenizer(logEntry.getFormattedValue(), SEPARATOR);
         	int additionalColumns = 0;
         	while (st.hasMoreTokens()) {
             	String nextToken = st.nextToken();
-	    		cell = new Label(column + additionalColumns, row, nextToken);
+            	if (logEntry.getDecimalFormat() != null) { 
+            		try {
+                		//cell = new Number(column + additionalColumns, row, Double.parseDouble(nextToken), cellFormat);
+                		cell = new Number(column + additionalColumns, row, Double.parseDouble(nextToken));
+            		} catch (Exception e) {
+                		cell = new Label(column + additionalColumns, row, nextToken);
+					} 
+            	}
+            	else
+            		cell = new Label(column + additionalColumns, row, nextToken);
 	    		sheet.addCell(cell);
 	    		additionalColumns++;
         	}
@@ -331,6 +323,18 @@ public class Logger {
         sheet.addCell(cell);
         return 0;
     }
+
+	protected NumberFormat calcCellFormat(FlexLogEntry logEntry) {
+		if (logEntry.getDecimalFormat() == null)
+			return new NumberFormat("#.#####");
+		
+		if (logEntry.getDecimalFormat().equals(FXUtils.df1))
+			return new NumberFormat("#.#"); 
+		else if (logEntry.getDecimalFormat().equals(FXUtils.df2))
+			return new NumberFormat("#.##");
+		else
+			return new NumberFormat("#.#####");
+	}
     
     public void printXlsCSVLine(String csvLine) {
     	if (xlsWB == null)
@@ -357,7 +361,11 @@ public class Logger {
 		int column = 0;
 		for (FlexLogEntry e : line) {
 			try {
-				writeCell(xlsSheet, column++, 0, e.getLabel());
+				StringTokenizer st = new StringTokenizer(e.getHeaderLabel(), SEPARATOR);
+				while (st.hasMoreTokens()) {
+					String currHeader = st.nextToken();
+					writeCell(xlsSheet, column++, 0, currHeader);
+				}
 			} catch (RowsExceededException e1) {
 				e1.printStackTrace();
 			} catch (WriteException e1) {
@@ -392,12 +400,12 @@ public class Logger {
 			}
 		}
 		xlsRow++;
-
-		/*		try {
-			xlsWB.write();
-			xlsRow++;
-		} catch (IOException e1) {
-			e1.printStackTrace();
+/*		if (xlsRow % 100 == 0) {
+			try {
+				xlsWB.write();
+			} catch (IOException e1) {
+				e1.printStackTrace();
+			}
 		}*/
 	}
     

@@ -185,7 +185,7 @@ Grupa 2: momentum i OS/OB
 13. CHANNEL_POS (close)
 
 Grupa 3: volatilitet (uzak / sirok kanal)
-14. BBANDS_SQUEEZE_PERC						-
+14. BBANDS_SQUEEZE_PERC						nema akcije ako je uzak kanal
 
 Grupa 4: price action / candlestick paterns
 15. BULLISH_CANDLES / BEARISH_CANDLES		-
@@ -211,33 +211,16 @@ Grupa 4: price action / candlestick paterns
 			ma20 = new double[]{mas[0][0], mas[1][0]},
 			ma50 = new double[]{mas[0][1], mas[1][1]},
 			ma100 = new double[]{mas[0][2], mas[1][2]};
-		if (order.isLong()) {
-			if (bidBar.getClose() < ma20[1] && bidBar.getLow() < ma50[1]
-				&& (smiState.toString().startsWith("BEARISH") && !smiState.toString().startsWith("BEARISH_WEAK"))
-				&& (stochState.toString().startsWith("BEARISH") && !stochState.toString().startsWith("BEARISH_WEAK"))) {
-				lastTradingEvent = "Set to breakeven due to bearish momentum";
-				// this can close the order in the worst case ! If so exit the method !
-				if (!StopLoss.setBreakEvenSituative(order, bidBar))
-					return;
-			}
-		}
-		else {
-			if (askBar.getClose() > ma20[1] && askBar.getHigh() > ma50[1]
-				&& (smiState.toString().startsWith("BULLISH") && !smiState.toString().startsWith("BULLISH_WEAK"))
-				&& (stochState.toString().startsWith("BULLISH") && !stochState.toString().startsWith("BULLISH_WEAK"))) {
-				lastTradingEvent = "Set to breakeven due to bullish momentum";
-				// this can close the order in the worst case ! If so exit the method !
-				if (!StopLoss.setBreakEvenSituative(order, askBar));
-					return;
-			}
-			
-		}
 		double 
 			ma200ma100Distance = taValues.get(FlexTASource.MA200MA100_TREND_DISTANCE_PERC).getDoubleValue(),
 			ma200 = mas[1][3];
-		boolean 
+		boolean
+			narrowChannel = taValues.get(FlexTASource.BBANDS_SQUEEZE_PERC).getDoubleValue() < 30.0,
 			ma200InChannel = taValues.get(FlexTASource.MA200_IN_CHANNEL).getBooleanValue();
 		String masSlopes = taValues.get(FlexTASource.MA_SLOPES_SCORE).getFormattedValue();
+		
+		if (narrowChannel)
+			return;
 		
 		boolean stopLossSet = ma50TrailFlags.get(instrument.name()).booleanValue();
 		IBar prevBar = this.context.getHistory().getBars(instrument, period, OfferSide.BID, Filter.WEEKENDS, 2, bidBar.getTime(), 0).get(0);
@@ -245,68 +228,51 @@ Grupa 4: price action / candlestick paterns
 		if (!stopLossSet) {
 			if (order.isLong()) {
 				boolean ma200Lowest = taValues.get(FlexTASource.MA200_LOWEST).getBooleanValue();
-				// NO cross of MA100 is observed in a very strong trend (MA200 outside of channel and decent distance MA200 - MA100)
-				// AND a consolidation (MA100 in channel). In that case MA200 is SL
-				if (!ma200InChannel 
+				// no action needed as long as there are clear strong trend:
+				// MA100 below channel, MA200 lowest, MA100 not crossed
+				if (ma100[1] < bBands[Volatility.BBANDS_BOTTOM][0] 
 					&& ma200Lowest
-					&& ma200ma100Distance > 30 
-					&& ma100[1] >= bBands[Volatility.BBANDS_BOTTOM][0]) {
-					lastTradingEvent = "SL set to MA200 long";
-					FXUtils.setStopLoss(order, ma200, bidBar.getTime(), this.getClass());
-					order.setStopLossPrice(ma200);
-					order.waitForUpdate(null);				
+					&& ma50[1] > ma100[1]
+					&& bidBar.getClose() > ma100[1])
 					return;
-				}
-				// BUT what happens if in the meantime price ALREADY CROSSED MA100 / MA50 ??
-				// Either let SL at MA200 be hit or close the trade !
 				
-				// Cross of MA100 is observed in stronger trend, when MA100 is below channel or at least above MA50 
-				// (i.e. TrendID in (5, 6, but also fresh downtrend !)
-				if (ma100[1] < bBands[Volatility.BBANDS_BOTTOM][0]
-					|| ma100[1] < ma50[1]) {
-					if (prevBar.getClose() > ma100[0] && bidBar.getClose() < ma100[1]) {
-						lastTradingEvent = "SL set long";
-						ma50TrailFlags.put(instrument.name(), new Boolean(true));
-						order.setStopLossPrice(bidBar.getLow());
-						order.waitForUpdate(null);
-					}					
-				} else {
-					// Cross of MA50 is observed in a consolidation, when MA100 is in channel
-					// and MA50 is ABOVE MA100 (TrendID in 1, 2 or fresh uptrend)
-					if (prevBar.getClose() > ma50[0] && bidBar.getClose() < ma50[1]) {
-						lastTradingEvent = "SL set long";
-						ma50TrailFlags.put(instrument.name(), new Boolean(true));
-						order.setStopLossPrice(bidBar.getLow());
-						order.waitForUpdate(null);						
-					}
+				// Cross of MA50 is observed in a consolidation, when MA100 is in channel
+				// and MA50 is ABOVE MA100 (TrendID in 1, 2 or fresh uptrend)
+				if (prevBar.getClose() > ma50[0] && bidBar.getClose() < ma50[1]) {
+					lastTradingEvent = "SL set long to MA50";
+					ma50TrailFlags.put(instrument.name(), new Boolean(true));
+					order.setStopLossPrice(bidBar.getLow());
+					order.waitForUpdate(null);
+					return;
+				} 
+				// cross of MA100 is ALWAYS observed !
+				if (bidBar.getClose() < ma100[1]) {
+					lastTradingEvent = "SL set long to MA100";
+					ma50TrailFlags.put(instrument.name(), new Boolean(true));
+					order.setStopLossPrice(bidBar.getLow());
+					order.waitForUpdate(null);
 				}					
 			} else {
 				boolean ma200Highest = taValues.get(FlexTASource.MA200_HIGHEST).getBooleanValue();
-				if (!ma200InChannel 
-					&& ma200Highest
-					&& ma200ma100Distance > 30 
-					&& ma100[1] <= bBands[Volatility.BBANDS_TOP][0]) {
-					lastTradingEvent = "SL set to MA200 long";
-					FXUtils.setStopLoss(order, ma200, bidBar.getTime(), this.getClass());
-					order.setStopLossPrice(ma200);
-					order.waitForUpdate(null);					
+				if (ma100[1] > bBands[Volatility.BBANDS_TOP][0] 
+						&& ma200Highest
+						&& ma50[1] < ma100[1]
+						&& bidBar.getClose() < ma100[1])
+						return;
+				
+				if (prevBar.getClose() < ma50[0] && bidBar.getClose() > ma50[1]) {
+					lastTradingEvent = "SL set short to MA50";
+					ma50TrailFlags.put(instrument.name(), new Boolean(true));
+					order.setStopLossPrice(bidBar.getHigh());
+					order.waitForUpdate(null);
 					return;
 				}
-				if (ma100[1] > bBands[Volatility.BBANDS_TOP][0]
-					|| ma100[1] > ma50[1]) {
-					if (prevBar.getClose() < ma100[0] && bidBar.getClose() > ma100[1]) {
-						lastTradingEvent = "SL set short";
-						ma50TrailFlags.put(instrument.name(), new Boolean(true));
-						order.setStopLossPrice(bidBar.getHigh());
-						order.waitForUpdate(null);
-					}					
-				} else {
-					if (prevBar.getClose() < ma50[0] && bidBar.getClose() > ma50[1]) {
-						lastTradingEvent = "SL set short";
-						ma50TrailFlags.put(instrument.name(), new Boolean(true));
-						order.setStopLossPrice(bidBar.getHigh());
-						order.waitForUpdate(null);						
-					}
+				if (bidBar.getClose() > ma100[1]) {
+					lastTradingEvent = "SL set short to MA100";
+					ma50TrailFlags.put(instrument.name(), new Boolean(true));
+					order.setStopLossPrice(bidBar.getHigh());
+					order.waitForUpdate(null);
+					return;
 				}					
 			}
 		} else {
@@ -322,6 +288,30 @@ Grupa 4: price action / candlestick paterns
 					ma50TrailFlags.put(instrument.name(), new Boolean(false));				
 				}
 			}
+		}
+		
+		if (order.isLong()) {
+			if (bidBar.getClose() > order.getOpenPrice()
+				&& bidBar.getClose() < ma20[1] && bidBar.getLow() < ma50[1]
+				&& (smiState.toString().startsWith("BEARISH") && !smiState.toString().startsWith("BEARISH_WEAK"))
+				&& (stochState.toString().startsWith("BEARISH") && !stochState.toString().startsWith("BEARISH_WEAK"))) {
+				lastTradingEvent = "Set to breakeven due to bearish momentum";
+				// this can close the order in the worst case ! If so exit the method !
+				if (!StopLoss.setBreakEvenSituative(order, bidBar))
+					return;
+			}
+		}
+		else {
+			if (bidBar.getClose() < order.getOpenPrice()
+				&& askBar.getClose() > ma20[1] && askBar.getHigh() > ma50[1]
+				&& (smiState.toString().startsWith("BULLISH") && !smiState.toString().startsWith("BULLISH_WEAK"))
+				&& (stochState.toString().startsWith("BULLISH") && !stochState.toString().startsWith("BULLISH_WEAK"))) {
+				lastTradingEvent = "Set to breakeven due to bullish momentum";
+				// this can close the order in the worst case ! If so exit the method !
+				if (!StopLoss.setBreakEvenSituative(order, askBar));
+					return;
+			}
+			
 		}
 	}	
 	

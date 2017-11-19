@@ -65,12 +65,17 @@ public class LongCandleAndMomentumDetector extends AbstractCandleAndMomentumDete
 				// signal is valid until momentum confirms it. Opposite signals are ignored for the time being, strategies / setups should take care about them
 				TechnicalSituation taSituation = taValues.get(FlexTASource.TA_SITUATION).getTehnicalSituationValue();
 				Momentum.STOCH_STATE stoch = taSituation.stochState;
+				Momentum.SMI_STATE smi = taSituation.smiState;
 				Momentum.SINGLE_LINE_STATE fastSMI = taSituation.fastSMIState;
 				boolean momentumStillConfired = (stoch.equals(Momentum.STOCH_STATE.BULLISH_CROSS_FROM_OVERSOLD)
 									|| stoch.equals(Momentum.STOCH_STATE.BULLISH_CROSS)
+									|| stoch.equals(Momentum.STOCH_STATE.BULLISH_RAISING_IN_MIDDLE)
 									|| stoch.equals(Momentum.STOCH_STATE.BULLISH_OVERBOUGHT_FAST)
 									|| stoch.equals(Momentum.STOCH_STATE.BULLISH_OVERBOUGHT_BOTH))
-								&& (fastSMI.toString().startsWith("RAISING") || fastSMI.toString().startsWith("TICKED_UP"));
+								&& (fastSMI.toString().startsWith("RAISING") 
+									|| fastSMI.toString().startsWith("TICKED_UP")
+									|| smi.equals(Momentum.SMI_STATE.BULLISH_WEAK_OVERSOLD_SLOW_BELOW_FAST)
+									|| smi.equals(Momentum.SMI_STATE.BULLISH_WEAK_RAISING_IN_MIDDLE));
 
 				if (!momentumStillConfired)
 					reset();
