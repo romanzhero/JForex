@@ -5,6 +5,7 @@ import java.util.Map;
 
 import jforex.events.TAEventDesc;
 import jforex.utils.log.FlexLogEntry;
+import jforex.utils.stats.RangesStats.InstrumentRangeStats;
 
 import com.dukascopy.api.Filter;
 import com.dukascopy.api.IBar;
@@ -50,4 +51,6 @@ public interface ITradeSetup {
 	public void updateOnBar(Instrument instrument, Period period, IBar askBar, IBar bidBar);
 
 	public void setLastTradingEvent(String lastTradingEvent);
+
+	public void addDayRanges(Map<Instrument, InstrumentRangeStats> dayRanges);
 }

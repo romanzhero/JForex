@@ -131,7 +131,27 @@ public class FlatCascTest implements IStrategy {
 		FXUtils.setProfitLossHelper(context.getAccount().getAccountCurrency(), history);
 		dataService = context.getDataService();
 		
+		calcBarRangeAverages(context);
+
+		taSource = new FlexTASource(indicators, history, selectedFilter);
 		
+		openLoggers();		
+
+		Set<Instrument> pairs = context.getSubscribedInstruments();
+		for (Instrument currI : pairs) {
+			orderPerPair.put(currI.name(), null);
+		}
+		configureSetups(context);
+		
+		//taEvents.add(new LongCandlesEvent(indicators, history));
+		//taEvents.add(new ShortCandlesEvent(indicators, history));
+		taEvents.add(new CandleMomentumEvent(indicators, history));
+		
+		chart = new JForexChart(context, visualMode, selectedInstrument, console, showIndicators, indicators);
+		chart.showChart(context);
+	}
+
+	protected void calcBarRangeAverages(IContext context) throws JFException {
 		barRangeAverages = new HashMap<Instrument, RollingAverage>();
 		long testIntervalStart = history.getPreviousBarStart(selectedPeriod, conf.getTestIntervalStart().getMillis());
 		for (Instrument i : context.getSubscribedInstruments()) {
@@ -144,18 +164,9 @@ public class FlatCascTest implements IStrategy {
 			}
 			barRangeAverages.put(i, new RollingAverage(barRanges));
 		}
+	}
 
-		taSource = new FlexTASource(indicators, history, selectedFilter);
-
-		log = new Logger(reportDir + "//Casc_report_" + FXUtils.getFileTimeStamp(System.currentTimeMillis()) + ".txt");
-		statsLog = new Logger(reportDir + "//Casc_stat_report_" + FXUtils.getFileTimeStamp(System.currentTimeMillis()) + ".txt");
-		statsLog.createXLS(reportDir + "//Casc_stat_report_" + FXUtils.getFileTimeStamp(System.currentTimeMillis()) + ".xls");
-		barStatsLog = new Logger(reportDir + "//Casc_bar_report_" + FXUtils.getFileTimeStamp(System.currentTimeMillis()) + ".txt");		
-
-		Set<Instrument> pairs = context.getSubscribedInstruments();
-		for (Instrument currI : pairs) {
-			orderPerPair.put(currI.name(), null);
-		}
+	protected void configureSetups(IContext context) {
 		if (conf.getProperty("CandleImpulsSetup", "no").equals("yes"))
 			tradeSetups.add(new CandleImpulsSetup(engine, context, barRangeAverages));
 		if (conf.getProperty("FlatStrongSetup", "no").equals("yes"))
@@ -173,13 +184,14 @@ public class FlatCascTest implements IStrategy {
 			tradeSetups.add(new SmaSoloTradeSetup(engine, context, context.getSubscribedInstruments(), true, false, 30.0, 30.0, false, true));
 		else if (conf.getProperty("TrendSprint", "no").equals("yes"))
 			tradeSetups.add(new TrendSprint(engine, context, context.getSubscribedInstruments(), true, false, 30.0, 30.0, true));
-		
-		//taEvents.add(new LongCandlesEvent(indicators, history));
-		//taEvents.add(new ShortCandlesEvent(indicators, history));
-		taEvents.add(new CandleMomentumEvent(indicators, history));
-		
-		chart = new JForexChart(context, visualMode, selectedInstrument, console, showIndicators, indicators);
-		chart.showChart(context);
+	}
+
+	protected void openLoggers() {
+		String fileSuffix = FXUtils.getLogFileSuffix(this.conf, this.selectedInstrument, this.selectedPeriod);
+		log = new Logger(reportDir + "//Casc_report_" + FXUtils.getFileTimeStamp(System.currentTimeMillis()) + "_" + fileSuffix + ".txt");
+		statsLog = new Logger(reportDir + "//Casc_stat_report_" + FXUtils.getFileTimeStamp(System.currentTimeMillis()) + "_" + fileSuffix  + ".csv");
+		statsLog.createXLS(reportDir + "//Casc_stat_report_" + FXUtils.getFileTimeStamp(System.currentTimeMillis()) + "_" + fileSuffix + ".xls");
+		barStatsLog = new Logger(reportDir + "//Casc_bar_report_" + FXUtils.getFileTimeStamp(System.currentTimeMillis()) + "_" + fileSuffix + ".csv");
 	}
 
 
@@ -364,6 +376,10 @@ public class FlatCascTest implements IStrategy {
 		if (dayRanges == null) {
 			dayRanges = new RangesStats(context.getSubscribedInstruments(), history).init(askBar, bidBar);
 			dailyPnL = new DailyPnL(dayRanges, bidBar.getTime());
+			
+			for (ITradeSetup ts : tradeSetups)
+				ts.addDayRanges(dayRanges);
+			
 			for (Instrument currI : dayRanges.keySet()) {
 				InstrumentRangeStats currStats =  dayRanges.get(currI);
 				if (currStats == null)

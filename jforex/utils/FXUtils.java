@@ -34,6 +34,7 @@ import jforex.techanalysis.Trend.TREND_STATE;
 import jforex.techanalysis.source.TechnicalSituation.OverallTASituation;
 import jforex.utils.log.FlexLogEntry;
 import jforex.utils.log.Logger;
+import jforex.utils.props.ClimberProperties;
 
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeConstants;
@@ -1424,5 +1425,14 @@ public class FXUtils {
 			return Momentum.SINGLE_LINE_STATE.TICKED_UP_IN_MIDDLE;
 		else
 			return Momentum.SINGLE_LINE_STATE.TICKED_DOWN_IN_MIDDLE;
+	}
+
+	public static String getLogFileSuffix(ClimberProperties conf, Instrument selectedInstrument, Period selectedPeriod) {
+		String suffix = new String();
+		suffix += selectedInstrument.name();
+		suffix += "_" + selectedPeriod.toString();
+		suffix += "_" + conf.getProperty("testIntervalStart", "default_start").replace(":", "_").replace(" ", "_").replace(".", "_");
+		suffix += "_to_" + conf.getProperty("testIntervalEnd", "default_end").replace(":", "_").replace(" ", "_").replace(".", "_");
+		return suffix;
 	}
 }

@@ -8,12 +8,17 @@ import jforex.events.TAEventDesc.TAEventType;
 import jforex.techanalysis.TradeTrigger;
 import jforex.techanalysis.Trend;
 import jforex.techanalysis.source.FlexTASource;
+import jforex.techanalysis.source.TechnicalSituation;
+import jforex.techanalysis.source.TechnicalSituation.OverallTASituation;
+import jforex.techanalysis.source.TechnicalSituation.TASituationReason;
 import jforex.trades.ITradeSetup;
 import jforex.trades.TradeSetup;
 import jforex.trades.momentum.LongCandleAndMomentumDetector;
 import jforex.trades.momentum.ShortCandleAndMomentumDetector;
 import jforex.utils.FXUtils;
+import jforex.utils.StopLoss;
 import jforex.utils.log.FlexLogEntry;
+import jforex.utils.stats.RangesStats.InstrumentRangeStats;
 
 import com.dukascopy.api.Filter;
 import com.dukascopy.api.IBar;
@@ -164,11 +169,29 @@ Grupa 4: price action / candlestick paterns
 			barToCheck = bidBar;
 		else
 			barToCheck = askBar;
+		TechnicalSituation taSituation = taValues.get(FlexTASource.TA_SITUATION).getTehnicalSituationValue();
 		if (order.getState().equals(IOrder.State.OPENED)) {
 			// still waiting. Cancel if price already exceeded SL level without triggering entry stop
-			if ((order.isLong() && barToCheck.getClose() < order.getStopLossPrice())
-				|| (!order.isLong() && barToCheck.getClose() > order.getStopLossPrice())) {
-				lastTradingEvent = "Cancel entry, SL exceeded";
+			// or if an opposite trend developed
+			boolean 
+				exitLongSL = false,
+				exitLongTrend = false,
+				exitShortSL = false,
+				exitShortTrend = false;
+			if (order.isLong()) {
+				exitLongSL = barToCheck.getClose() < order.getStopLossPrice();
+				exitLongTrend = taSituation.taSituation.equals(OverallTASituation.BEARISH)
+								&& taSituation.taReason.equals(TASituationReason.TREND);
+				lastTradingEvent = exitLongSL ? "Cancel entry, SL exceeded" : "Cancel entry, down trend";
+
+			} else {
+				exitShortSL = barToCheck.getClose() > order.getStopLossPrice();
+				exitShortTrend = taSituation.taSituation.equals(OverallTASituation.BULLISH)
+								&& taSituation.taReason.equals(TASituationReason.TREND);
+				lastTradingEvent = exitLongSL ? "Cancel entry, SL exceeded" : "Cancel entry, up trend";
+			}
+			if ((order.isLong() && (exitLongSL || exitLongTrend))
+				|| (!order.isLong() && (exitShortSL || exitShortTrend))) {
 				order.close();
 				order.waitForUpdate(null);
 				return;
@@ -206,23 +229,31 @@ Grupa 4: price action / candlestick paterns
 			if (!isMA200InChannel || currBarFlat.equals(Trend.FLAT_REGIME_CAUSE.NONE))
 				return;
 			
+			InstrumentRangeStats dayRangeAvg = this.dayRanges.get(instrument);
 			boolean
 				//TODO: but the same could be better obtained by checking entrySignal of the whole setup, see marketEvents !!!
-				longExitSignal = currShortSignal != null && currShortSignal.channelPosition > 100 - CHANNEL_OFFSET,
-				shortExitSignal = currLongSignal != null && currLongSignal.channelPosition < 0 + CHANNEL_OFFSET, 
+				longExitSignal = currShortSignal != null 
+									&& currShortSignal.channelPosition > 100 - CHANNEL_OFFSET
+									&& (bidBar.getClose() - order.getOpenPrice()) / order.getOpenPrice() > dayRangeAvg.avgRange,						
+				shortExitSignal = currLongSignal != null 
+									&& currLongSignal.channelPosition < 0 + CHANNEL_OFFSET
+									&& (order.getOpenPrice() - askBar.getClose()) / askBar.getClose() > dayRangeAvg.avgRange,
 				//TODO: to be defined, probably very clear momentum against the trade
-				longProtectSignal = false, //currShortSignal != null && currShortSignal.channelPosition > 50 && bidBar.getHigh() > ma20,
-				shortProtectSignal = false; //currLongSignal != null && currLongSignal.channelPosition < 50 && askBar.getLow() < ma20;				
-
+				longProtectSignal = currShortSignal != null && currShortSignal.channelPosition > 100 - CHANNEL_OFFSET, 
+				shortProtectSignal = currLongSignal != null && currLongSignal.channelPosition < 0 + CHANNEL_OFFSET;
+				
 			if (order.isLong() && longProtectSignal) {
-				lastTradingEvent = "long move SL signal";				
-				FXUtils.setStopLoss(order, bidBar.getLow(), bidBar.getTime(), this.getClass());
+				lastTradingEvent = "long breakeven signal";				
+				if (!StopLoss.setBreakEvenSituative(order, bidBar))
+					// order was closed !
+					return;
 			} else if (!order.isLong() && shortProtectSignal) {
-				lastTradingEvent = "short move SL signal";				
-				FXUtils.setStopLoss(order, askBar.getHigh(), bidBar.getTime(), this.getClass());
-			}
-			// check for opposite signal. Depending on the configuration either set break even or close the trade
-			else {
+				lastTradingEvent = "short breakeven signal";	
+				if (!StopLoss.setBreakEvenSituative(order, askBar))
+					// order was closed !
+					return;
+			} else {
+				// check for opposite signal. Depending on the configuration either set break even or close the trade
 				if ((order.isLong() && longExitSignal)
 					|| (!order.isLong() && shortExitSignal)) {
 					lastTradingEvent = "exit due to opposite flat signal";				
@@ -230,28 +261,7 @@ Grupa 4: price action / candlestick paterns
 					order.waitForUpdate(null);
 					//afterTradeReset(instrument);
 				}
-			} /*else {
-				// set to break even. However check if current price allows it !
-				// If not set SL on extreme of the last bar (if it not already
-				// exceeded the SL !)
-				if ((order.isLong() && longExitSignal)
-					|| (!order.isLong() && shortExitSignal)) {
-					lastTradingEvent = "move SL due to opposite flat signal";				
-					if (order.isLong()) {
-						if (bidBar.getClose() > order.getOpenPrice()) {
-							FXUtils.setStopLoss(order, order.getOpenPrice(), bidBar.getTime(), getClass());
-						} else if (bidBar.getLow() > order.getStopLossPrice()) {
-							FXUtils.setStopLoss(order, bidBar.getLow(), bidBar.getTime(), getClass());
-						}
-					} else {
-						if (askBar.getClose() < order.getOpenPrice()) {
-							FXUtils.setStopLoss(order, order.getOpenPrice(), bidBar.getTime(), getClass());
-						} else if (askBar.getHigh() < order.getStopLossPrice()) {
-							FXUtils.setStopLoss(order, askBar.getHigh(), bidBar.getTime(), getClass());
-						}
-					}
-				}
-			}*/
+			} 
 		}
 	}
 

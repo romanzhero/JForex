@@ -9,6 +9,7 @@ import jforex.techanalysis.TradeTrigger.TriggerDesc;
 import jforex.techanalysis.source.FlexTASource;
 import jforex.utils.FXUtils;
 import jforex.utils.log.FlexLogEntry;
+import jforex.utils.stats.RangesStats.InstrumentRangeStats;
 
 import com.dukascopy.api.Filter;
 import com.dukascopy.api.IBar;
@@ -24,6 +25,7 @@ public abstract class TradeSetup implements ITradeSetup {
 	protected IEngine engine = null;
 	protected IContext context = null;
 	protected IOrder order = null;
+	protected Map<Instrument, InstrumentRangeStats> dayRanges = null;
 
 	protected boolean 
 		locked = false,
@@ -297,5 +299,10 @@ public abstract class TradeSetup implements ITradeSetup {
 	@Override
 	public void setLastTradingEvent(String lastTradingEvent) {
 		this.lastTradingEvent = lastTradingEvent;		
+	}
+
+	@Override
+	public void addDayRanges(Map<Instrument, InstrumentRangeStats> dayRanges) {
+		this.dayRanges = dayRanges;		
 	}
 }
