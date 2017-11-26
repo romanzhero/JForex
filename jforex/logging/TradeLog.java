@@ -160,7 +160,7 @@ public class TradeLog {
 						+ FXUtils.df1.format(PnL) + ";"
 						+ FXUtils.df2.format(PnLPerc) + ";"
 						+ FXUtils.df1.format(maxProfit * Math.pow(10, instrument.getPipScale())) + ";"
-						+ FXUtils.df2.format((isLong ? maxProfitPrice - entryPrice : entryPrice - maxProfitPrice) / entryPrice * 100) + ";"
+						+ FXUtils.df2.format(calcMaxProfitInPerc()) + ";"
 						+ FXUtils.df1.format(missedProfit(instrument)) + ";"
 						+ FXUtils.df1.format(missedProfitPerc(instrument)) + ";"
 						+ (instrument.getPipScale() != 2 ? FXUtils.df5.format(maxProfitPrice) : FXUtils.df2.format(maxProfitPrice)) + ";"						
@@ -179,6 +179,12 @@ public class TradeLog {
 		return result;
 
 	}
+
+	public double calcMaxProfitInPerc() {
+		if (maxProfitPrice == 0)
+			return 0;
+		return (isLong ? maxProfitPrice - entryPrice : entryPrice - maxProfitPrice) / entryPrice * 100;
+	}
 	
 	public List<FlexLogEntry> prepareExitReportAsList(Instrument instrument) {
 		List<FlexLogEntry> exitReport = new ArrayList<FlexLogEntry>();
@@ -196,7 +202,7 @@ public class TradeLog {
 		exitReport.add(new FlexLogEntry("PnL", new Double(PnL), FXUtils.df1));
 		exitReport.add(new FlexLogEntry("PnLPerc", new Double(PnLPerc), FXUtils.df2));
 		exitReport.add(new FlexLogEntry("maxProfit", new Double(maxProfit * Math.pow(10, instrument.getPipScale())), FXUtils.df1));
-		exitReport.add(new FlexLogEntry("maxProfit2", new Double((isLong ? maxProfitPrice - entryPrice : entryPrice - maxProfitPrice) / entryPrice * 100), FXUtils.df2));
+		exitReport.add(new FlexLogEntry("maxProfit2", new Double(calcMaxProfitInPerc()), FXUtils.df2));
 		exitReport.add(new FlexLogEntry("missedProfit", new Double(missedProfit(instrument)), FXUtils.df1));
 		exitReport.add(new FlexLogEntry("missedProfitPerc", new Double(missedProfitPerc(instrument)), FXUtils.df1));
 		exitReport.add(new FlexLogEntry("maxProfitPrice", new Double(maxProfitPrice), (instrument.getPipScale() != 2 ? FXUtils.df5 : FXUtils.df2)));

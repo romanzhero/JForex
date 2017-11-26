@@ -23,11 +23,11 @@ import jforex.techanalysis.Trend.TREND_STATE;
 import jforex.techanalysis.Volatility;
 import jforex.techanalysis.source.FlexTASource;
 import jforex.techanalysis.source.TechnicalSituation;
-import jforex.utils.FXUtils;
 import jforex.utils.StopLoss;
 import jforex.utils.log.FlexLogEntry;
 
 public class TrendSprint extends AbstractSmaTradeSetup {
+	public static String SETUP_NAME = "TrendSprint";
 
 	public TrendSprint(IEngine engine, IContext context, Set<Instrument> subscribedInstruments, boolean mktEntry,
 			boolean onlyCross, double pFlatPercThreshold, double pBBandsSqueezeThreshold, boolean trailsOnMA50) {
@@ -57,6 +57,9 @@ public class TrendSprint extends AbstractSmaTradeSetup {
 			return false;
 		
 		if (bidBar.getClose() > bidBar.getOpen())
+			return false;
+		
+		if (ma200_highest && taValues.get(FlexTASource.MA200MA100_TREND_DISTANCE_PERC).getDoubleValue() > 80.0)
 			return false;
 		
 		TechnicalSituation taSituation = taValues.get(FlexTASource.TA_SITUATION).getTehnicalSituationValue();
@@ -117,6 +120,9 @@ Grupa 4: price action / candlestick paterns
 			return false;
 		
 		if (bidBar.getClose() < bidBar.getOpen())
+			return false;
+		
+		if (ma200_lowest && taValues.get(FlexTASource.MA200MA100_TREND_DISTANCE_PERC).getDoubleValue() > 80.0)
 			return false;
 
 		
@@ -228,6 +234,17 @@ Grupa 4: price action / candlestick paterns
 		if (!stopLossSet) {
 			if (order.isLong()) {
 				boolean ma200Lowest = taValues.get(FlexTASource.MA200_LOWEST).getBooleanValue();
+				// Cross of MA50 is always observed if trade profit exceeded 1 x avg. daily range ! 
+				// Profit protection ! 
+				if (maxProfitExceededAvgDayRange(marketEvents)
+					&& prevBar.getClose() > ma50[0] && bidBar.getClose() < ma50[1]) {
+					lastTradingEvent = "SL set long to MA50 to protect profit";
+					ma50TrailFlags.put(instrument.name(), new Boolean(true));
+					order.setStopLossPrice(bidBar.getLow());
+					order.waitForUpdate(null);
+					return;
+				} 				
+				
 				// no action needed as long as there are clear strong trend:
 				// MA100 below channel, MA200 lowest, MA100 not crossed
 				if (ma100[1] < bBands[Volatility.BBANDS_BOTTOM][0] 
@@ -253,6 +270,15 @@ Grupa 4: price action / candlestick paterns
 					order.waitForUpdate(null);
 				}					
 			} else {
+				if (maxProfitExceededAvgDayRange(marketEvents)
+					&& prevBar.getClose() < ma50[0] && bidBar.getClose() > ma50[1]) {
+					lastTradingEvent = "SL set short to MA50  to protect profit";
+					ma50TrailFlags.put(instrument.name(), new Boolean(true));
+					order.setStopLossPrice(bidBar.getHigh());
+					order.waitForUpdate(null);
+					return;
+				}
+				
 				boolean ma200Highest = taValues.get(FlexTASource.MA200_HIGHEST).getBooleanValue();
 				if (ma100[1] > bBands[Volatility.BBANDS_TOP][0] 
 						&& ma200Highest
@@ -317,7 +343,7 @@ Grupa 4: price action / candlestick paterns
 	
 	@Override
 	public String getName() {
-		return new String("TrendSprint");
+		return new String(SETUP_NAME);
 	}
 
 	@Override
@@ -331,6 +357,21 @@ Grupa 4: price action / candlestick paterns
 	public void afterTradeReset(Instrument instrument) {
 		// TODO Auto-generated method stub
 		super.afterTradeReset(instrument);
+	}
+
+	@Override
+	public void takeTradingOver(IOrder order) {
+		super.takeTradingOver(order);
+		// remove old SL !! TrendSprint observes price / MA crosses !
+		try {
+			order.setStopLossPrice(0);
+			order.waitForUpdate(null);
+		} catch (JFException e) {
+			e.printStackTrace();
+			System.out.println("Can not remove SL in TrendSprint for order " + order.getLabel());
+			System.out.println("Exception message: " + e.getMessage());
+			System.exit(2);
+		}
 	}
 
 }

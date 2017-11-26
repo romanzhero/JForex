@@ -28,6 +28,7 @@ import jforex.trades.*;
 import jforex.trades.flat.FlatStrongTradeSetup;
 import jforex.trades.flat.FlatTradeSetup;
 import jforex.trades.momentum.CandleImpulsSetup;
+import jforex.trades.momentum.MomentumReversalSetup;
 import jforex.trades.momentum.SmiTradeSetup;
 import jforex.trades.trend.SmaCrossTradeSetup;
 import jforex.trades.trend.SmaSoloTradeSetup;
@@ -59,7 +60,7 @@ public class FlatCascTest implements IStrategy {
 	private JForexChart chart = null;
 
 	private Map<String, IOrder> orderPerPair = new HashMap<String, IOrder>();
-	private long orderCnt = 1;
+	private long orderCnt = 0;
 
 	private List<ITradeSetup> tradeSetups = new ArrayList<ITradeSetup>();
 	private List<ITAEvent> taEvents = new ArrayList<ITAEvent>();
@@ -76,7 +77,7 @@ public class FlatCascTest implements IStrategy {
 	private Logger 
 		log = null,
 		statsLog = null,
-		barStatsLog; // for each bar
+		barStatsLog = null; // for each bar
 	private TradeLog tradeLog = null;
 	protected boolean barStatsLogHeader = false;
 
@@ -167,6 +168,8 @@ public class FlatCascTest implements IStrategy {
 	}
 
 	protected void configureSetups(IContext context) {
+		if (conf.getProperty("MomentumReversalSetup", "no").equals("yes"))
+			tradeSetups.add(new MomentumReversalSetup(engine, context));
 		if (conf.getProperty("CandleImpulsSetup", "no").equals("yes"))
 			tradeSetups.add(new CandleImpulsSetup(engine, context, barRangeAverages));
 		if (conf.getProperty("FlatStrongSetup", "no").equals("yes"))
@@ -191,7 +194,8 @@ public class FlatCascTest implements IStrategy {
 		log = new Logger(reportDir + "//Casc_report_" + FXUtils.getFileTimeStamp(System.currentTimeMillis()) + "_" + fileSuffix + ".txt");
 		statsLog = new Logger(reportDir + "//Casc_stat_report_" + FXUtils.getFileTimeStamp(System.currentTimeMillis()) + "_" + fileSuffix  + ".csv");
 		statsLog.createXLS(reportDir + "//Casc_stat_report_" + FXUtils.getFileTimeStamp(System.currentTimeMillis()) + "_" + fileSuffix + ".xls");
-		barStatsLog = new Logger(reportDir + "//Casc_bar_report_" + FXUtils.getFileTimeStamp(System.currentTimeMillis()) + "_" + fileSuffix + ".csv");
+		if (conf.getProperty("writeBarStats", "no").equals("yes"))
+			barStatsLog = new Logger(reportDir + "//Casc_bar_report_" + FXUtils.getFileTimeStamp(System.currentTimeMillis()) + "_" + fileSuffix + ".csv");
 	}
 
 
@@ -232,6 +236,10 @@ public class FlatCascTest implements IStrategy {
 			return;
 		}
 		
+		if (instrument.equals(selectedInstrument)
+			&& (period.equals(Period.WEEKLY) || dayRanges == null))
+			checkDayRanges(instrument, askBar, bidBar);
+
 		if (!instrument.equals(selectedInstrument)
 			|| !period.equals(selectedPeriod)
 			|| (bidBar.getClose() == bidBar.getOpen() && bidBar.getClose() == bidBar.getHigh() && bidBar.getClose() == bidBar.getLow()))
@@ -252,8 +260,6 @@ public class FlatCascTest implements IStrategy {
 			return;
 		}
 		
-		checkDayRanges(instrument, askBar, bidBar);
-		
 		incCommentLevelsCount();
 		removeOldCommentLevel(15);
 		lastTaValues = taSource.calcTAValues(instrument, period, askBar, bidBar);
@@ -265,9 +271,11 @@ public class FlatCascTest implements IStrategy {
 		// report this for further analysis
 		if (!barStatsLogHeader) {
 			barStatsLogHeader = true;
-			barStatsLog.printLabelsFlex(barReport);
+			if (barStatsLog != null)
+				barStatsLog.printLabelsFlex(barReport);
 		}
-		barStatsLog.printValuesFlex(barReport);
+		if (barStatsLog != null)
+			barStatsLog.printValuesFlex(barReport);
 		
 		for (ITradeSetup ts : tradeSetups) {
 			ts.updateOnBar(instrument, period, askBar, bidBar);
@@ -373,30 +381,28 @@ public class FlatCascTest implements IStrategy {
 	}
 
 	protected void checkDayRanges(Instrument instrument, IBar askBar, IBar bidBar) throws JFException {
-		if (dayRanges == null) {
-			dayRanges = new RangesStats(context.getSubscribedInstruments(), history).init(askBar, bidBar);
-			dailyPnL = new DailyPnL(dayRanges, bidBar.getTime());
+		dayRanges = new RangesStats(context.getSubscribedInstruments(), history).init(askBar, bidBar);
+		dailyPnL = new DailyPnL(dayRanges, bidBar.getTime());
+		
+		for (ITradeSetup ts : tradeSetups)
+			ts.addDayRanges(dayRanges);
+		
+		for (Instrument currI : dayRanges.keySet()) {
+			InstrumentRangeStats currStats =  dayRanges.get(currI);
+			if (currStats == null)
+				continue;
 			
-			for (ITradeSetup ts : tradeSetups)
-				ts.addDayRanges(dayRanges);
-			
-			for (Instrument currI : dayRanges.keySet()) {
-				InstrumentRangeStats currStats =  dayRanges.get(currI);
-				if (currStats == null)
-					continue;
-				
-				log.print("Day ranges data");
-				log.print(currI.name()
-						+ " - avg: " + FXUtils.df2.format(currStats.avgRange)
-						+ "% / median: " + FXUtils.df2.format(currStats.medianRange)
-						+ "% / max: " + FXUtils.df2.format(currStats.maxRange)
-						+ "% / min: " + FXUtils.df2.format(currStats.minRange)
-						+ "% / avg + 1 StDev: " + FXUtils.df2.format(currStats.avgRange + currStats.rangeStDev)
-						+ "% (StDev = " + FXUtils.df2.format(currStats.rangeStDev)
-						+ ", StDev vs. avg = " + FXUtils.df2.format(currStats.rangeStDev / currStats.avgRange) + ")",
-						true);
-			}
-		} 
+			log.print("Day ranges data");
+			log.print(currI.name()
+					+ " - avg: " + FXUtils.df2.format(currStats.avgRange)
+					+ "% / median: " + FXUtils.df2.format(currStats.medianRange)
+					+ "% / max: " + FXUtils.df2.format(currStats.maxRange)
+					+ "% / min: " + FXUtils.df2.format(currStats.minRange)
+					+ "% / avg + 1 StDev: " + FXUtils.df2.format(currStats.avgRange + currStats.rangeStDev)
+					+ "% (StDev = " + FXUtils.df2.format(currStats.rangeStDev)
+					+ ", StDev vs. avg = " + FXUtils.df2.format(currStats.rangeStDev / currStats.avgRange) + ")",
+					true);
+		}
 	}
 
 	protected IOrder openOrderProcessing(Instrument instrument, Period period, IBar askBar, IBar bidBar, IOrder order) throws JFException {
@@ -431,8 +437,20 @@ public class FlatCascTest implements IStrategy {
 			}
 		}
 		if (!takeOver) {
+			if (order.getStopLossPrice() != 0.0)
+				tradeLog.updateMaxRisk(order.getStopLossPrice());
+			tradeLog.updateMaxLoss(bidBar, lastTaValues.get(FlexTASource.ATR).getDoubleValue());
+			tradeLog.updateMaxProfit(bidBar);
+			
 			// check market situation by testing all available entry signals and TA events and send them to current setup for processing / reaction
 			List<TAEventDesc> marketEvents = checkMarketEvents(instrument, period, askBar, bidBar, selectedFilter, lastTaValues);
+			
+			TAEventDesc maxTradeProfit = new TAEventDesc(TAEventType.MAX_TRADE_PROFIT_IN_PERC, "MaxTradeProfitInPerc", instrument, false, askBar, bidBar, period);
+			maxTradeProfit.pnlDayRangeRatio = dailyPnL.ratioPnLAvgRange(instrument);
+			maxTradeProfit.avgPnLRange = dailyPnL.getInstrumentData(instrument).rangeStats.avgRange;
+			maxTradeProfit.tradeProfitInPerc = tradeLog.calcMaxProfitInPerc();
+			marketEvents.add(maxTradeProfit);
+			
 			currentSetup.inTradeProcessing(instrument, period, askBar, bidBar, selectedFilter, order, lastTaValues, marketEvents);
 			if (currentSetup != null // trade can be closed in the previous method !
 				&& !currentSetup.getLastTradingEvent().equals(lastTradingEvent)
@@ -450,10 +468,6 @@ public class FlatCascTest implements IStrategy {
 			// inTradeProcessing might CLOSE the order, onMessage will set to null !
 			order = orderPerPair.get(instrument.name());
 			if (order != null) {
-				if (order.getStopLossPrice() != 0.0)
-					tradeLog.updateMaxRisk(order.getStopLossPrice());
-				tradeLog.updateMaxLoss(bidBar, lastTaValues.get(FlexTASource.ATR).getDoubleValue());
-				tradeLog.updateMaxProfit(bidBar);
 				ITradeSetup.EntryDirection exitSignal = currentSetup.checkExit(instrument, period, askBar, bidBar, selectedFilter, order, lastTaValues);
 				if ((order.isLong() && exitSignal.equals(ITradeSetup.EntryDirection.LONG))
 					|| (!order.isLong() && exitSignal.equals(ITradeSetup.EntryDirection.SHORT))) {
@@ -704,7 +718,7 @@ public class FlatCascTest implements IStrategy {
 				result.add(event);
 			}
 		}
-		TAEventDesc pnlRangeRatio = new TAEventDesc(TAEventType.PNL_INFO, "PnLDayRangeRatio", instrument, false, askBar, bidBar, null);
+		TAEventDesc pnlRangeRatio = new TAEventDesc(TAEventType.DAILY_PNL_INFO, "PnLDayRangeRatio", instrument, false, askBar, bidBar, null);
 		pnlRangeRatio.pnlDayRangeRatio = dailyPnL.ratioPnLAvgRange(instrument);
 		pnlRangeRatio.avgPnLRange = dailyPnL.getInstrumentData(instrument).rangeStats.avgRange;
 		result.add(pnlRangeRatio);
@@ -732,7 +746,8 @@ public class FlatCascTest implements IStrategy {
 					+ ", reasons: " + reasonsStr);
 			log.close();
 			statsLog.close();
-			barStatsLog.close();
+			if (barStatsLog != null)
+				barStatsLog.close();
 			System.exit(2);
 		}
 		if (message.getType().equals(IMessage.Type.ORDER_CLOSE_OK)) {
@@ -816,7 +831,8 @@ public class FlatCascTest implements IStrategy {
 	public void onStop() throws JFException {
 		log.close();
 		statsLog.close();
-		barStatsLog.close();
+		if (barStatsLog != null)
+			barStatsLog.close();
 		File tradeTestRunningSignal = new File("strategyTestRunning.bin");
 		if (tradeTestRunningSignal.exists())
 			tradeTestRunningSignal.delete();
@@ -830,7 +846,7 @@ public class FlatCascTest implements IStrategy {
 
 	String getOrderLabel(Instrument instrument, long time, String direction) {
 		return new String("FlatCascTest_" + instrument.name() + "_"
-				+ FXUtils.getFormatedTimeGMTforID(time) + "_" + orderCnt++
+				+ FXUtils.getFormatedTimeGMTforID(time) + "_" + ++orderCnt
 				+ "_" + direction);
 	}
 

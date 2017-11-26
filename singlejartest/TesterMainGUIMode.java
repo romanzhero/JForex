@@ -1,32 +1,3 @@
-/*
- * Copyright (c) 2009 Dukascopy (Suisse) SA. All Rights Reserved.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are met:
- *
- * -Redistribution of source code must retain the above copyright notice, this
- *  list of conditions and the following disclaimer.
- *
- * -Redistribution in binary form must reproduce the above copyright notice,
- *  this list of conditions and the following disclaimer in the documentation
- *  and/or other materials provided with the distribution.
- * 
- * Neither the name of Dukascopy (Suisse) SA or the names of contributors may
- * be used to endorse or promote products derived from this software without
- * specific prior written permission.
- *
- * This software is provided "AS IS," without a warranty of any kind. ALL
- * EXPRESS OR IMPLIED CONDITIONS, REPRESENTATIONS AND WARRANTIES, INCLUDING
- * ANY IMPLIED WARRANTY OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE
- * OR NON-INFRINGEMENT, ARE HEREBY EXCLUDED. DUKASCOPY (SUISSE) SA ("DUKASCOPY")
- * AND ITS LICENSORS SHALL NOT BE LIABLE FOR ANY DAMAGES SUFFERED BY LICENSEE
- * AS A RESULT OF USING, MODIFYING OR DISTRIBUTING THIS SOFTWARE OR ITS
- * DERIVATIVES. IN NO EVENT WILL DUKASCOPY OR ITS LICENSORS BE LIABLE FOR ANY LOST
- * REVENUE, PROFIT OR DATA, OR FOR DIRECT, INDIRECT, SPECIAL, CONSEQUENTIAL,
- * INCIDENTAL OR PUNITIVE DAMAGES, HOWEVER CAUSED AND REGARDLESS OF THE THEORY
- * OF LIABILITY, ARISING OUT OF THE USE OF OR INABILITY TO USE THIS SOFTWARE,
- * EVEN IF DUKASCOPY HAS BEEN ADVISED OF THE POSSIBILITY OF SUCH DAMAGES.
- */
 package singlejartest;
 
 import java.awt.Dimension;
@@ -50,6 +21,7 @@ import javax.swing.SwingUtilities;
 
 import jforex.strategies.FlatCascTest;
 import jforex.utils.FXUtils;
+import jforex.utils.log.Duration;
 import jforex.utils.props.ClimberProperties;
 
 import org.slf4j.Logger;
@@ -79,6 +51,7 @@ import com.dukascopy.api.system.tester.ITesterUserInterface;
 @SuppressWarnings("serial")
 public class TesterMainGUIMode extends JFrame implements ITesterUserInterface, ITesterExecution {
 	private static final Logger LOGGER = LoggerFactory.getLogger(TesterMainGUIMode.class);
+	private Duration durationStats = null;
 	final static ClimberProperties properties = new ClimberProperties();
 
 	private final int frameWidth = 1000;
@@ -98,7 +71,7 @@ public class TesterMainGUIMode extends JFrame implements ITesterUserInterface, I
 	private static String jnlpUrl = "http://platform.dukascopy.com/demo/jforex.jnlp";
 
 	private Instrument instrument = null;
-
+	
 	public TesterMainGUIMode() {
 		setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		getContentPane().setLayout(new BoxLayout(getContentPane(), BoxLayout.Y_AXIS));
@@ -139,6 +112,7 @@ public class TesterMainGUIMode extends JFrame implements ITesterUserInterface, I
 			public void onStart(long processId) {
 				LOGGER.info("Strategy started: " + processId);
 				updateButtons();
+				durationStats.addStep("Strategy start", System.currentTimeMillis());
 			}
 
 			@Override
@@ -156,6 +130,10 @@ public class TesterMainGUIMode extends JFrame implements ITesterUserInterface, I
 				} catch (Exception e) {
 					LOGGER.error(e.getMessage(), e);
 				}
+				durationStats.addLastStep("Strategy start", System.currentTimeMillis());
+				for (String currLine : durationStats.getFullReport()) 
+					LOGGER.info(currLine);
+
 				if (client.getStartedStrategies().size() == 0) {
 					// Do nothing
 				}
@@ -171,7 +149,11 @@ public class TesterMainGUIMode extends JFrame implements ITesterUserInterface, I
 				// tester doesn't disconnect
 			}
 		});
-
+		durationStats = new Duration(System.currentTimeMillis(), "Strategy execution length for instruments " 
+				+ properties.getProperty("pairsToCheck", "Pairs to check not found")
+				+ ", time frame " + properties.getProperty("timeFrame", "Time frame to check not found")
+				+ ", for period from " + properties.getProperty("testIntervalStart", "Start time not found")
+				+ " to " + properties.getProperty("testIntervalEnd", "End time not found"));
 		LOGGER.info("Connecting...");
 		// connect to the server using jnlp, user name and password
 		// connection is needed for data downloading
@@ -187,7 +169,7 @@ public class TesterMainGUIMode extends JFrame implements ITesterUserInterface, I
 			LOGGER.error("Failed to connect Dukascopy servers");
 			System.exit(1);
 		}
-
+		durationStats.addStep("Connection to Dukascopy servers", System.currentTimeMillis());
 		// set instruments that will be used in testing
 		final Set<Instrument> instruments = new HashSet<Instrument>();
 		String pair = properties.getProperty("pairsToCheck");
@@ -209,6 +191,8 @@ public class TesterMainGUIMode extends JFrame implements ITesterUserInterface, I
 		// wait for downloading to complete
 		future.get();
 		// start the strategy
+		durationStats.addStep("Pairs historical data download", System.currentTimeMillis());
+
 		LOGGER.info("Starting strategy");
 
 		client.startStrategy(

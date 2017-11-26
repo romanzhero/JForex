@@ -407,7 +407,7 @@ public class MultiPairCasc implements IStrategy {
 				result.add(event);
 			}
 		}
-		TAEventDesc pnlRangeRatio = new TAEventDesc(TAEventType.PNL_INFO, "PnLDayRangeRatio", instrument, false, askBar, bidBar, null);
+		TAEventDesc pnlRangeRatio = new TAEventDesc(TAEventType.DAILY_PNL_INFO, "PnLDayRangeRatio", instrument, false, askBar, bidBar, null);
 		pnlRangeRatio.pnlDayRangeRatio = dailyPnL.ratioPnLAvgRange(instrument);
 		pnlRangeRatio.avgPnLRange = dailyPnL.getInstrumentData(instrument).rangeStats.avgRange;
 		result.add(pnlRangeRatio);

@@ -305,4 +305,22 @@ public abstract class TradeSetup implements ITradeSetup {
 	public void addDayRanges(Map<Instrument, InstrumentRangeStats> dayRanges) {
 		this.dayRanges = dayRanges;		
 	}
+
+	protected boolean maxProfitExceededAvgDayRange(List<TAEventDesc> marketEvents) {
+		for (TAEventDesc currEvent : marketEvents) {
+			if (currEvent.eventType.equals(TAEventDesc.TAEventType.MAX_TRADE_PROFIT_IN_PERC)) {
+				return currEvent.tradeProfitInPerc > currEvent.avgPnLRange;
+			}
+		}
+		return false;
+	}
+	
+	protected double ratioMaxProfitToAvgDayRange(List<TAEventDesc> marketEvents) {
+		for (TAEventDesc currEvent : marketEvents) {
+			if (currEvent.eventType.equals(TAEventDesc.TAEventType.MAX_TRADE_PROFIT_IN_PERC)) {
+				return currEvent.tradeProfitInPerc / currEvent.avgPnLRange;
+			}
+		}
+		return 0.0;
+	}
 }

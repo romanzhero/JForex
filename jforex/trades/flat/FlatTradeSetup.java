@@ -15,11 +15,8 @@ import jforex.trades.ITradeSetup;
 import jforex.trades.TradeSetup;
 import jforex.trades.momentum.LongCandleAndMomentumDetector;
 import jforex.trades.momentum.ShortCandleAndMomentumDetector;
-import jforex.utils.FXUtils;
 import jforex.utils.StopLoss;
 import jforex.utils.log.FlexLogEntry;
-import jforex.utils.stats.RangesStats.InstrumentRangeStats;
-
 import com.dukascopy.api.Filter;
 import com.dukascopy.api.IBar;
 import com.dukascopy.api.IContext;
@@ -31,6 +28,7 @@ import com.dukascopy.api.OfferSide;
 import com.dukascopy.api.Period;
 
 public class FlatTradeSetup extends TradeSetup implements ITradeSetup {
+	public static String SETUP_NAME = "Flat";
 	// Trade simply generates all long and short canlde-momentum signals. The newest one wins
 	// therefore it must be ensured that their check methods are called for each bar while strategy is running !
 	// Should be OK with successive calls to checkEntry and inTradeProcessing
@@ -54,7 +52,7 @@ public class FlatTradeSetup extends TradeSetup implements ITradeSetup {
 
 	@Override
 	public String getName() {
-		return new String("Flat");
+		return new String(SETUP_NAME);
 	}
 
 /* 
@@ -111,6 +109,16 @@ Grupa 4: price action / candlestick paterns
 		if (!isMA200InChannel)
 			return null;
 		
+		String maSlopes = taValues.get(FlexTASource.MA_SLOPES_SCORE).getFormattedValue();
+		if (currLongSignal != null 
+			&& (maSlopes.equals("0:4") || maSlopes.equals("1:3"))
+			&& bBandsSquezeePerc < 90)
+			return null;
+		if (currShortSignal != null 
+			&& (maSlopes.equals("4:0") || maSlopes.equals("3:1"))
+			&& bBandsSquezeePerc < 90)
+			return null;
+		
 		// there is a signal, assuming favourable channel pos of the last candle !
 		boolean 
 			bulishSignal = currLongSignal != null && currLongSignal.channelPosition < 0 + CHANNEL_OFFSET && channelPos < 70,
@@ -132,7 +140,14 @@ Grupa 4: price action / candlestick paterns
 			return null;
 	}
 	
-	/* 
+	/*
+	 Dogadjaji i reakcije:
+	- suprotni signal istog setup-a: 
+		- ako je profit veci od prosecnog dnevnog opsega: zatvara se trejd
+		- inace samo breakeven
+	- suprotni signal MomentumReversal: zatvara se trejd
+	- suprotni signal TrendSprint: zatvara se trejd
+
 	Kriterijumi za zatvaranje LONG trejda ili stavljanje SL na brake even:
 	Grupa 1: trend ili flat
 	1. TREND_ID							
@@ -208,6 +223,7 @@ Grupa 4: price action / candlestick paterns
 				// do not reset trade completely ! Keep control over order until
 				// other setups take over !
 			}
+			
 			// Trade simply generates all long and short canlde-momentum signals.
 			// The newest one wins therefore it must be ensured that their check methods are called for each bar while strategy is running !
 			// Should be OK with successive calls to checkEntry and inTradeProcessing
@@ -229,38 +245,36 @@ Grupa 4: price action / candlestick paterns
 			if (!isMA200InChannel || currBarFlat.equals(Trend.FLAT_REGIME_CAUSE.NONE))
 				return;
 			
-			InstrumentRangeStats dayRangeAvg = this.dayRanges.get(instrument);
 			boolean
 				//TODO: but the same could be better obtained by checking entrySignal of the whole setup, see marketEvents !!!
 				longExitSignal = currShortSignal != null 
 									&& currShortSignal.channelPosition > 100 - CHANNEL_OFFSET
-									&& (bidBar.getClose() - order.getOpenPrice()) / order.getOpenPrice() > dayRangeAvg.avgRange,						
+									&& ratioMaxProfitToAvgDayRange(marketEvents) > 0.6,						
 				shortExitSignal = currLongSignal != null 
 									&& currLongSignal.channelPosition < 0 + CHANNEL_OFFSET
-									&& (order.getOpenPrice() - askBar.getClose()) / askBar.getClose() > dayRangeAvg.avgRange,
+									&& ratioMaxProfitToAvgDayRange(marketEvents) > 0.6,
 				//TODO: to be defined, probably very clear momentum against the trade
 				longProtectSignal = currShortSignal != null && currShortSignal.channelPosition > 100 - CHANNEL_OFFSET, 
 				shortProtectSignal = currLongSignal != null && currLongSignal.channelPosition < 0 + CHANNEL_OFFSET;
 				
-			if (order.isLong() && longProtectSignal) {
-				lastTradingEvent = "long breakeven signal";				
-				if (!StopLoss.setBreakEvenSituative(order, bidBar))
-					// order was closed !
-					return;
-			} else if (!order.isLong() && shortProtectSignal) {
-				lastTradingEvent = "short breakeven signal";	
-				if (!StopLoss.setBreakEvenSituative(order, askBar))
-					// order was closed !
-					return;
-			} else {
-				// check for opposite signal. Depending on the configuration either set break even or close the trade
+				// check for opposite signal with good profit
 				if ((order.isLong() && longExitSignal)
 					|| (!order.isLong() && shortExitSignal)) {
 					lastTradingEvent = "exit due to opposite flat signal";				
 					order.close();
 					order.waitForUpdate(null);
+					return;
 					//afterTradeReset(instrument);
-				}
+				} else if (order.isLong() && longProtectSignal) {
+					lastTradingEvent = "long breakeven signal";				
+					if (!StopLoss.setBreakEvenSituative(order, bidBar))
+						// order was closed !
+						return;
+				} else if (!order.isLong() && shortProtectSignal) {
+					lastTradingEvent = "short breakeven signal";	
+					if (!StopLoss.setBreakEvenSituative(order, askBar))
+						// order was closed !
+						return;
 			} 
 		}
 	}

@@ -40,7 +40,8 @@ public class RangesStats {
 
 	private InstrumentRangeStats calcInstrumentStats(Instrument instrument, IBar askBar, IBar bidBar) throws JFException {
 		long currDayTime = history.getBarStart(Period.DAILY, bidBar.getTime());
-		List<IBar> historyBars = history.getBars(instrument, Period.DAILY, OfferSide.BID, Filter.ALL_FLATS,	FXUtils.YEAR_WORTH_OF_1d_BARS, currDayTime, 0);
+		// three months
+		List<IBar> historyBars = history.getBars(instrument, Period.DAILY, OfferSide.BID, Filter.ALL_FLATS,	3 * 30, currDayTime, 0);
 		double[] ranges = new double[historyBars.size()];
 		int i = 0;
 		double maxRange = 0.0, minRange = Double.MAX_VALUE;

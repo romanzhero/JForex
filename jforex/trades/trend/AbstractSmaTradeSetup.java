@@ -148,7 +148,7 @@ public abstract class AbstractSmaTradeSetup extends TradeSetup {
 			return;
 
 		for (TAEventDesc curr : marketEvents) {
-			if (curr.eventType.equals(TAEventType.PNL_INFO)) {
+			if (curr.eventType.equals(TAEventType.DAILY_PNL_INFO)) {
 				double pnlRangeRatio = curr.pnlDayRangeRatio + FXUtils.currPercPnL(order, bidBar, askBar) / curr.avgPnLRange;
 				if (pnlRangeRatio > 1.5) {
 					startTrailingNBarsBack(context.getHistory(), instrument, period, askBar, bidBar, filter, order, 1);
