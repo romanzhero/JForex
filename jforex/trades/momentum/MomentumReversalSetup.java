@@ -16,7 +16,6 @@ import com.dukascopy.api.Period;
 
 import jforex.events.TAEventDesc;
 import jforex.events.TAEventDesc.TAEventType;
-import jforex.strategies.FlatCascTest;
 import jforex.techanalysis.Momentum;
 import jforex.techanalysis.Trend.FLAT_REGIME_CAUSE;
 import jforex.techanalysis.Trend.TREND_STATE;
@@ -234,17 +233,19 @@ Grupa 4: price action / candlestick paterns
 			momentumReversalEntry = findTAEvent(marketEvents, TAEventType.ENTRY_SIGNAL, MomentumReversalSetup.SETUP_NAME, instrument, period);
 	
 		if (order.isLong()) {
-			if (flatEntry != null & !flatEntry.isLong && order.getProfitLossInPips() > 0) {
-				lastTradingEvent = "breakeven set due to opposite flat signal";
+			if ((flatEntry != null && !flatEntry.isLong && order.getProfitLossInPips() > 0)
+				|| FlexTASource.solidBearishMomentum(taValues)) {
+				lastTradingEvent = "breakeven set due to opposite flat signal or momentum";
 				StopLoss.setBreakEvenSituative(order, bidBar);
 				return;
 			}
-			if ((flatEntry != null & !flatEntry.isLong && order.getProfitLossInPips() <= 0)
+			if ((flatEntry != null && !flatEntry.isLong && order.getProfitLossInPips() <= 0)
 				|| (trendSprintEntry != null && !trendSprintEntry.isLong)
 				|| (momentumReversalEntry != null && !momentumReversalEntry.isLong)) {
 				lastTradingEvent = "closed due to opposite signals";
 				order.close();
 				order.waitForUpdate(null);
+				return;
 			}
 			
 			double[] 
@@ -272,44 +273,22 @@ Grupa 4: price action / candlestick paterns
 					order.waitForUpdate(null);					
 				}
 			}
-			TAEventDesc eventForReaction = null;
-			for (TAEventDesc currEvent : marketEvents) {
-				if (currEvent.eventType.equals(TAEventType.ENTRY_SIGNAL)
-					&& !currEvent.isLong
-					&& (currEvent.eventName.equals(this.getName())
-						|| currEvent.eventName.equals(FlatTradeSetup.SETUP_NAME)
-						|| currEvent.eventName.equals(TrendSprint.SETUP_NAME))) {
-					eventForReaction = currEvent;
-					break;
-				}
-			}
-			if (eventForReaction == null)
-				return;
-			
-			if (eventForReaction.eventName.equals(this.getName())
-				|| eventForReaction.eventName.equals(TrendSprint.SETUP_NAME)) {
-				lastTradingEvent = "MomentumReversal closed due to " + eventForReaction.eventName; 
-				order.close();
-				order.waitForUpdate(null);
-			} else if (eventForReaction.eventName.equals(FlatTradeSetup.SETUP_NAME)) {
-				lastTradingEvent = "MomentumReversal SL set due to " + eventForReaction.eventName; 
-				if (order.getProfitLossInPips() > 0) {
-					StopLoss.setBreakEvenSituative(order, bidBar);
-				}
-			}
+
 		} else {
 			// short
-			if (flatEntry != null & flatEntry.isLong && order.getProfitLossInPips() > 0) {
-				lastTradingEvent = "breakeven set due to opposite flat signal";
+			if ((flatEntry != null && flatEntry.isLong && order.getProfitLossInPips() > 0)
+				|| FlexTASource.solidBullishMomentum(taValues)) {
+				lastTradingEvent = "breakeven set due to opposite flat signal or momentum";
 				StopLoss.setBreakEvenSituative(order, bidBar);
 				return;
 			}
-			if ((flatEntry != null & flatEntry.isLong && order.getProfitLossInPips() <= 0)
+			if ((flatEntry != null && flatEntry.isLong && order.getProfitLossInPips() <= 0)
 				|| (trendSprintEntry != null && trendSprintEntry.isLong)
 				|| (momentumReversalEntry != null && momentumReversalEntry.isLong)) {
 				lastTradingEvent = "closed due to opposite signals";
 				order.close();
 				order.waitForUpdate(null);
+				return;
 			}
 
 			double[] 
@@ -335,31 +314,6 @@ Grupa 4: price action / candlestick paterns
 					lastTradingEvent = "MomentumReversal SL set"; 					
 					order.setStopLossPrice(askBar.getHigh());
 					order.waitForUpdate(null);					
-				}
-			}
-			TAEventDesc eventForReaction = null;
-			for (TAEventDesc currEvent : marketEvents) {
-				if (currEvent.eventType.equals(TAEventType.ENTRY_SIGNAL)
-					&& currEvent.isLong
-					&& (currEvent.eventName.equals(this.getName())
-						|| currEvent.eventName.equals(FlatTradeSetup.SETUP_NAME)
-						|| currEvent.eventName.equals(TrendSprint.SETUP_NAME))) {
-					eventForReaction = currEvent;
-					break;
-				}
-			}
-			if (eventForReaction == null)
-				return;
-			
-			if (eventForReaction.eventName.equals(this.getName())
-				|| eventForReaction.eventName.equals(TrendSprint.SETUP_NAME)) {
-				lastTradingEvent = "MomentumReversal closed due to " + eventForReaction.eventName; 
-				order.close();
-				order.waitForUpdate(null);
-			} else if (eventForReaction.eventName.equals(FlatTradeSetup.SETUP_NAME)) {
-				if (order.getProfitLossInPips() > 0) {
-					lastTradingEvent = "MomentumReversal SL set due to " + eventForReaction.eventName; 
-					StopLoss.setBreakEvenSituative(order, bidBar);
 				}
 			}
 		}

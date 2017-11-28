@@ -10,6 +10,7 @@ import com.dukascopy.api.OfferSide;
 import com.dukascopy.api.Period;
 
 import jforex.techanalysis.Momentum;
+import jforex.techanalysis.Momentum.SINGLE_LINE_STATE;
 import jforex.techanalysis.TradeTrigger;
 import jforex.techanalysis.source.FlexTASource;
 import jforex.techanalysis.source.TechnicalSituation;
@@ -39,7 +40,6 @@ public class LongCandleAndMomentumDetector extends AbstractCandleAndMomentumDete
 			// MUST cancel the whole signal !
 			if (bidBar.getClose() < candleSignalDesc.pivotLevel)
 				reset();
-
 			if (candleSignalAppeared) {
 				TechnicalSituation taSituation = taValues.get(FlexTASource.TA_SITUATION).getTehnicalSituationValue();
 				Momentum.STOCH_STATE stoch = taSituation.stochState;

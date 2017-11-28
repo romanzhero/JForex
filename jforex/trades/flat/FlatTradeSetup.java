@@ -252,9 +252,6 @@ Grupa 4: price action / candlestick paterns
 				isMA200InChannel = taValues.get(FlexTASource.MA200_IN_CHANNEL).getBooleanValue(),
 				isMA200Highest = taValues.get(FlexTASource.MA200_HIGHEST).getBooleanValue(), 
 				isMA200Lowest = taValues.get(FlexTASource.MA200_LOWEST).getBooleanValue();
-			// should react to opposite signals only when there is still flat regime !
-			if (!isMA200InChannel || currBarFlat.equals(Trend.FLAT_REGIME_CAUSE.NONE))
-				return;
 			
 			boolean
 				//TODO: but the same could be better obtained by checking entrySignal of the whole setup, see marketEvents !!!

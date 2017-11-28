@@ -44,33 +44,36 @@ public class Momentum {
 	}
 
 	public enum STOCH_STATE {
-		BEARISH_OVERSOLD_BOTH, // Fast and Slow both below 20
-		BEARISH_OVERSOLD_FAST, // Fast below 20
-		BULLISH_WEAK_OVERSOLD_SLOW, // Slow below 20 but Fast not, rather bullish (raising from OS)
-		BULLISH_OVERBOUGHT_BOTH, // Fast and Slow both above 80
-		BULLISH_OVERBOUGHT_FAST, // Fast above 80
-		BEARISH_WEAK_OVERBOUGHT_SLOW, // Slow above 80 but Fast not, rather bearish (falling from OB)
-		BULLISH_RAISING_IN_MIDDLE, // Fast above slow and none OS nor OB
-		BEARISH_FALLING_IN_MIDDLE, // Fast below slow and none OS nor OB
 		BULLISH_CROSS_FROM_OVERSOLD, // at least one line below 20
+		BULLISH_WEAK_OVERSOLD_SLOW, // Slow below 20 but Fast not, rather bullish (raising from OS)
+		BULLISH_RAISING_IN_MIDDLE, // Fast above slow and none OS nor OB
 		BULLISH_CROSS, 
+		BULLISH_OVERBOUGHT_FAST, // Fast above 80
+		BULLISH_OVERBOUGHT_BOTH, // Fast and Slow both above 80
+
 		BEARISH_CROSS_FROM_OVERBOUGTH, // at least one line above 80
+		BEARISH_WEAK_OVERBOUGHT_SLOW, // Slow above 80 but Fast not, rather bearish (falling from OB)
+		BEARISH_FALLING_IN_MIDDLE, // Fast below slow and none OS nor OB
 		BEARISH_CROSS, 
+		BEARISH_OVERSOLD_FAST, // Fast below 20
+		BEARISH_OVERSOLD_BOTH, // Fast and Slow both below 20
+
 		NONE, OTHER
 	}
 	
 	public enum SMI_STATE {
-		BEARISH_OVERSOLD_BOTH, // Fast and Slow both below -60
-		BEARISH_OVERSOLD_FAST_BELOW_FALLING_SLOW, // Fast below -60
 		BULLISH_WEAK_OVERSOLD_SLOW_BELOW_RAISING_FAST, // Slow below -60 but Fast not, rather bullish (raising from OS)
 		BULLISH_WEAK_OVERSOLD_SLOW_BELOW_FAST, // Slow below -60 but Fast not, however not raising
-		BULLISH_OVERBOUGHT_BOTH, // Fast and Slow both above +60
+		BULLISH_BOTH_RAISING_IN_MIDDLE, // Fast above slow and none OS nor OB
 		BULLISH_OVERBOUGHT_FAST_ABOVE_RAISING_SLOW, // Fast above +60
+		BULLISH_OVERBOUGHT_BOTH, // Fast and Slow both above +60
+		BULLISH_WEAK_RAISING_IN_MIDDLE,
+
+		BEARISH_OVERSOLD_BOTH, // Fast and Slow both below -60
+		BEARISH_OVERSOLD_FAST_BELOW_FALLING_SLOW, // Fast below -60
 		BEARISH_WEAK_OVERBOUGHT_SLOW_ABOVE_FALLING_FAST, // Slow above 80 but Fast not, rather bearish (falling OB)
 		BEARISH_WEAK_OVERBOUGHT_SLOW_ABOVE_FAST, // Slow above 80 but Fast not, however not falling
-		BULLISH_BOTH_RAISING_IN_MIDDLE, // Fast above slow and none OS nor OB
 		BEARISH_BOTH_FALLING_IN_MIDDLE, // Fast below slow and none OS nor OB
-		BULLISH_WEAK_RAISING_IN_MIDDLE,
 		BEARISH_WEAK_FALLING_IN_MIDDLE,
 		OTHER // neither of these clear cases, when lines ticked up/down etc
 	}
