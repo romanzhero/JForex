@@ -53,7 +53,10 @@ public class TrendSprint extends AbstractSmaTradeSetup {
 		boolean 
 			ma200_highest = taValues.get(FlexTASource.MA200_HIGHEST).getBooleanValue(),
 			ma200_in_channel = taValues.get(FlexTASource.MA200_IN_CHANNEL).getBooleanValue();
-		if (ma200_in_channel && !ma200_highest)
+		if (!ma200_highest)
+			return false;
+		
+		if (ma200_in_channel && taValues.get(FlexTASource.MAs_DISTANCE_PERC).getDoubleValue() < 20)
 			return false;
 		
 		if (bidBar.getClose() > bidBar.getOpen())
@@ -63,8 +66,7 @@ public class TrendSprint extends AbstractSmaTradeSetup {
 			return false;
 		
 		TechnicalSituation taSituation = taValues.get(FlexTASource.TA_SITUATION).getTehnicalSituationValue();
-		if (taSituation.smiState.equals(SMI_STATE.BULLISH_BOTH_RAISING_IN_MIDDLE) && 
-			(taSituation.stochState.equals(STOCH_STATE.BULLISH_RAISING_IN_MIDDLE) || taSituation.stochState.equals(STOCH_STATE.BULLISH_CROSS)))
+		if (!favourableBearishMomentum(taSituation))
 			return false;
 		
 		TREND_STATE trend = taValues.get(FlexTASource.TREND_ID).getTrendStateValue();
@@ -72,7 +74,8 @@ public class TrendSprint extends AbstractSmaTradeSetup {
 			&& bidBar.getClose() < ma20[1] && bidBar.getClose() < ma50[1] && bidBar.getClose() < ma100[1] && bidBar.getClose() < ma200[1])
 			return true;
 		
-		return false;	}
+		return false;	
+	}
 	
 	/* 
  Kriterijumi za POCETAK long perioda (isto kao kasnije za ulazak u trejd):
@@ -104,10 +107,8 @@ Grupa 4: price action / candlestick paterns
 	 */
 	@Override
 	protected boolean buySignal(Instrument instrument, Period period, Filter filter, 
-			double[] ma20, double[] ma50, double[] ma100, double[] ma200, 
-			IBar bidBar, 
-			boolean strict, 
-			Map<String, FlexLogEntry> taValues)
+			double[] ma20, double[] ma50, double[] ma100, double[] ma200, IBar bidBar, 
+			boolean strict, Map<String, FlexLogEntry> taValues)
 			throws JFException {
 		if(taValues.get(FlexTASource.MA200_HIGHEST).getBooleanValue()
 			|| taValues.get(FlexTASource.BBANDS_SQUEEZE_PERC).getDoubleValue() < 30.0)
@@ -116,7 +117,10 @@ Grupa 4: price action / candlestick paterns
 		boolean 
 			ma200_lowest = taValues.get(FlexTASource.MA200_LOWEST).getBooleanValue(),
 			ma200_in_channel = taValues.get(FlexTASource.MA200_IN_CHANNEL).getBooleanValue();
-		if (ma200_in_channel && !ma200_lowest)
+		if (!ma200_lowest)
+			return false;
+		
+		if (ma200_in_channel && taValues.get(FlexTASource.MAs_DISTANCE_PERC).getDoubleValue() < 20)
 			return false;
 		
 		if (bidBar.getClose() < bidBar.getOpen())
@@ -159,8 +163,7 @@ Grupa 4: price action / candlestick paterns
 		}
 */		
 		TechnicalSituation taSituation = taValues.get(FlexTASource.TA_SITUATION).getTehnicalSituationValue();
-		if (taSituation.smiState.equals(SMI_STATE.BEARISH_BOTH_FALLING_IN_MIDDLE) && 
-			(taSituation.stochState.equals(STOCH_STATE.BEARISH_FALLING_IN_MIDDLE) || taSituation.stochState.equals(STOCH_STATE.BEARISH_CROSS)))
+		if (!favourableBullishMomentum(taSituation))
 			return false;
 		
 		TREND_STATE trend = taValues.get(FlexTASource.TREND_ID).getTrendStateValue();
@@ -204,6 +207,24 @@ Grupa 4: price action / candlestick paterns
 											 
 	 */
 
+	private boolean favourableBullishMomentum(TechnicalSituation taSituation) {
+		return (taSituation.stochState.equals(Momentum.STOCH_STATE.BULLISH_CROSS)
+				|| taSituation.stochState.equals(Momentum.STOCH_STATE.BULLISH_CROSS_FROM_OVERSOLD)
+				|| taSituation.stochState.equals(Momentum.STOCH_STATE.BULLISH_OVERBOUGHT_BOTH)
+				|| taSituation.stochState.equals(Momentum.STOCH_STATE.BULLISH_OVERBOUGHT_FAST)
+				|| taSituation.stochState.equals(Momentum.STOCH_STATE.BULLISH_RAISING_IN_MIDDLE))
+				&& taSituation.fastSMIState.equals(Momentum.SINGLE_LINE_STATE.RAISING_IN_MIDDLE);
+	}
+
+	private boolean favourableBearishMomentum(TechnicalSituation taSituation) {
+		return (taSituation.stochState.equals(Momentum.STOCH_STATE.BEARISH_CROSS)
+				|| taSituation.stochState.equals(Momentum.STOCH_STATE.BEARISH_CROSS_FROM_OVERBOUGTH)
+				|| taSituation.stochState.equals(Momentum.STOCH_STATE.BEARISH_OVERSOLD_BOTH)
+				|| taSituation.stochState.equals(Momentum.STOCH_STATE.BEARISH_OVERSOLD_FAST)
+				|| taSituation.stochState.equals(Momentum.STOCH_STATE.BEARISH_FALLING_IN_MIDDLE))
+				&& taSituation.fastSMIState.equals(Momentum.SINGLE_LINE_STATE.FALLING_IN_MIDDLE);
+	}
+
 	@Override
 	public void inTradeProcessing(Instrument instrument, Period period, IBar askBar, IBar bidBar, Filter filter, IOrder order, Map<String, FlexLogEntry> taValues, List<TAEventDesc> marketEvents) throws JFException {
 		// set SL to breakeven in case of clear opposite momentum
@@ -227,6 +248,57 @@ Grupa 4: price action / candlestick paterns
 		
 		if (narrowChannel)
 			return;
+
+/*		public enum STOCH_STATE {
+			BEARISH_OVERSOLD_BOTH, // Fast and Slow both below 20
+			BEARISH_OVERSOLD_FAST, // Fast below 20
+			BEARISH_FALLING_IN_MIDDLE, // Fast below slow and none OS nor OB
+			BEARISH_CROSS, 
+			BEARISH_CROSS_FROM_OVERBOUGTH, // at least one line above 80
+			BEARISH_WEAK_OVERBOUGHT_SLOW, // Slow above 80 but Fast not, rather bearish (falling from OB)
+			BULLISH_WEAK_OVERSOLD_SLOW, // Slow below 20 but Fast not, rather bullish (raising from OS)
+			BULLISH_OVERBOUGHT_BOTH, // Fast and Slow both above 80
+			BULLISH_OVERBOUGHT_FAST, // Fast above 80
+			BULLISH_RAISING_IN_MIDDLE, // Fast above slow and none OS nor OB
+			BULLISH_CROSS_FROM_OVERSOLD, // at least one line below 20
+			BULLISH_CROSS, 
+			NONE, OTHER
+		}
+		
+		public enum SMI_STATE {
+			BEARISH_OVERSOLD_BOTH, // Fast and Slow both below -60
+			BEARISH_OVERSOLD_FAST_BELOW_FALLING_SLOW, // Fast below -60
+			BEARISH_BOTH_FALLING_IN_MIDDLE, // Fast below slow and none OS nor OB
+			BEARISH_WEAK_FALLING_IN_MIDDLE,
+			BEARISH_WEAK_OVERBOUGHT_SLOW_ABOVE_FALLING_FAST, // Slow above 80 but Fast not, rather bearish (falling OB)
+			BEARISH_WEAK_OVERBOUGHT_SLOW_ABOVE_FAST, // Slow above 80 but Fast not, however not falling
+
+			BULLISH_WEAK_OVERSOLD_SLOW_BELOW_RAISING_FAST, // Slow below -60 but Fast not, rather bullish (raising from OS)
+			BULLISH_WEAK_OVERSOLD_SLOW_BELOW_FAST, // Slow below -60 but Fast not, however not raising
+			BULLISH_OVERBOUGHT_BOTH, // Fast and Slow both above +60
+			BULLISH_OVERBOUGHT_FAST_ABOVE_RAISING_SLOW, // Fast above +60
+			BULLISH_BOTH_RAISING_IN_MIDDLE, // Fast above slow and none OS nor OB
+			BULLISH_WEAK_RAISING_IN_MIDDLE,
+			OTHER // neither of these clear cases, when lines ticked up/down etc
+		}
+*/		// aggressively set break even in the case of solid opposite momentum (but not at very first / earliest bearish states...) !!!
+		if (order.isLong()) {
+			if (FlexTASource.solidBearishMomentum(taValues)) {
+				lastTradingEvent = "Set to breakeven due to bearish momentum";
+				// this can close the order in the worst case ! If so exit the method !
+				if (!StopLoss.setBreakEvenSituative(order, bidBar))
+					return;
+			}
+		}
+		else {
+			// short
+			if (FlexTASource.solidBullishMomentum(taValues)) {
+				lastTradingEvent = "Set to breakeven due to bullish momentum";
+				// this can close the order in the worst case ! If so exit the method !
+				if (!StopLoss.setBreakEvenSituative(order, askBar));
+					return;
+			}			
+		}	
 		
 		boolean stopLossSet = ma50TrailFlags.get(instrument.name()).booleanValue();
 		IBar prevBar = this.context.getHistory().getBars(instrument, period, OfferSide.BID, Filter.WEEKENDS, 2, bidBar.getTime(), 0).get(0);
@@ -235,8 +307,9 @@ Grupa 4: price action / candlestick paterns
 			if (order.isLong()) {
 				boolean ma200Lowest = taValues.get(FlexTASource.MA200_LOWEST).getBooleanValue();
 				// Cross of MA50 is always observed if trade profit exceeded 1 x avg. daily range ! 
-				// Profit protection ! 
-				if (maxProfitExceededAvgDayRange(marketEvents)
+				// Profit protection ! Only exception: extremely strong trend (MA200MA100 distance > 80)
+				if (!extremeUpTrend(taValues)
+					&& maxProfitExceededAvgDayRange(marketEvents)
 					&& prevBar.getClose() > ma50[0] && bidBar.getClose() < ma50[1]) {
 					lastTradingEvent = "SL set long to MA50 to protect profit";
 					ma50TrailFlags.put(instrument.name(), new Boolean(true));
@@ -270,7 +343,9 @@ Grupa 4: price action / candlestick paterns
 					order.waitForUpdate(null);
 				}					
 			} else {
-				if (maxProfitExceededAvgDayRange(marketEvents)
+				// short
+				if (!extremeDownTrend(taValues)
+					&& maxProfitExceededAvgDayRange(marketEvents)
 					&& prevBar.getClose() < ma50[0] && bidBar.getClose() > ma50[1]) {
 					lastTradingEvent = "SL set short to MA50  to protect profit";
 					ma50TrailFlags.put(instrument.name(), new Boolean(true));
@@ -316,31 +391,20 @@ Grupa 4: price action / candlestick paterns
 			}
 		}
 		
-		if (order.isLong()) {
-			if (bidBar.getClose() > order.getOpenPrice()
-				&& bidBar.getClose() < ma20[1] && bidBar.getLow() < ma50[1]
-				&& (smiState.toString().startsWith("BEARISH") && !smiState.toString().startsWith("BEARISH_WEAK"))
-				&& (stochState.toString().startsWith("BEARISH") && !stochState.toString().startsWith("BEARISH_WEAK"))) {
-				lastTradingEvent = "Set to breakeven due to bearish momentum";
-				// this can close the order in the worst case ! If so exit the method !
-				if (!StopLoss.setBreakEvenSituative(order, bidBar))
-					return;
-			}
-		}
-		else {
-			if (bidBar.getClose() < order.getOpenPrice()
-				&& askBar.getClose() > ma20[1] && askBar.getHigh() > ma50[1]
-				&& (smiState.toString().startsWith("BULLISH") && !smiState.toString().startsWith("BULLISH_WEAK"))
-				&& (stochState.toString().startsWith("BULLISH") && !stochState.toString().startsWith("BULLISH_WEAK"))) {
-				lastTradingEvent = "Set to breakeven due to bullish momentum";
-				// this can close the order in the worst case ! If so exit the method !
-				if (!StopLoss.setBreakEvenSituative(order, askBar));
-					return;
-			}
-			
-		}
 	}	
 	
+	private boolean extremeUpTrend(Map<String, FlexLogEntry> taValues) {
+		double ma200ma100Distance = taValues.get(FlexTASource.MA200MA100_TREND_DISTANCE_PERC).getDoubleValue();
+		boolean ma200Lowest = taValues.get(FlexTASource.MA200_LOWEST).getBooleanValue();
+		return ma200Lowest && ma200ma100Distance > 80.0;
+	}
+	
+	private boolean extremeDownTrend(Map<String, FlexLogEntry> taValues) {
+		double ma200ma100Distance = taValues.get(FlexTASource.MA200MA100_TREND_DISTANCE_PERC).getDoubleValue();
+		boolean ma200Highest = taValues.get(FlexTASource.MA200_HIGHEST).getBooleanValue();
+		return ma200Highest && ma200ma100Distance > 80.0;
+	}
+
 	@Override
 	public String getName() {
 		return new String(SETUP_NAME);

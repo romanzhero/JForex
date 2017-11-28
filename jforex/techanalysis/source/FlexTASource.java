@@ -8,6 +8,7 @@ import jforex.techanalysis.Momentum;
 import jforex.techanalysis.TradeTrigger;
 import jforex.techanalysis.Trend;
 import jforex.techanalysis.Volatility;
+import jforex.techanalysis.Momentum.STOCH_STATE;
 import jforex.techanalysis.source.TechnicalSituation.OverallTASituation;
 import jforex.techanalysis.source.TechnicalSituation.TASituationReason;
 import jforex.techanalysis.Trend.FLAT_REGIME_CAUSE;
@@ -632,5 +633,38 @@ public class FlexTASource {
 			bearishCnt++;
 		result.put(MA_SLOPES_SCORE, new FlexLogEntry(MA_SLOPES_SCORE, FXUtils.if1.format(bullishCnt) + ":" + FXUtils.if1.format(bearishCnt)));
 	}
+	
+	public static boolean solidBearishMomentum(Map<String, FlexLogEntry> taValues)
+	{
+		TechnicalSituation taSituation = taValues.get(FlexTASource.TA_SITUATION).getTehnicalSituationValue();
+		Momentum.SMI_STATE smiState = taSituation.smiState;
+		Momentum.STOCH_STATE stochState = taSituation.stochState;
+	
+		return (stochState.equals(STOCH_STATE.BEARISH_CROSS)
+				|| stochState.equals(STOCH_STATE.BEARISH_FALLING_IN_MIDDLE)
+				|| stochState.equals(STOCH_STATE.BEARISH_OVERSOLD_BOTH)
+				|| stochState.equals(STOCH_STATE.BEARISH_OVERSOLD_FAST))
+				&& (taSituation.fastSMIState.equals(Momentum.SINGLE_LINE_STATE.FALLING_IN_MIDDLE)
+					&& (smiState.equals(Momentum.SMI_STATE.BEARISH_BOTH_FALLING_IN_MIDDLE)
+						|| smiState.equals(Momentum.SMI_STATE.BEARISH_OVERSOLD_BOTH)
+						|| smiState.equals(Momentum.SMI_STATE.BEARISH_OVERSOLD_FAST_BELOW_FALLING_SLOW)
+						|| smiState.equals(Momentum.SMI_STATE.BEARISH_WEAK_FALLING_IN_MIDDLE)));
+	}
 
+	public static boolean solidBullishMomentum(Map<String, FlexLogEntry> taValues)
+	{
+		TechnicalSituation taSituation = taValues.get(FlexTASource.TA_SITUATION).getTehnicalSituationValue();
+		Momentum.SMI_STATE smiState = taSituation.smiState;
+		Momentum.STOCH_STATE stochState = taSituation.stochState;
+	
+		return (stochState.equals(STOCH_STATE.BULLISH_CROSS)
+				|| stochState.equals(STOCH_STATE.BULLISH_RAISING_IN_MIDDLE)
+				|| stochState.equals(STOCH_STATE.BULLISH_OVERBOUGHT_BOTH)
+				|| stochState.equals(STOCH_STATE.BULLISH_OVERBOUGHT_FAST))
+				&& (taSituation.fastSMIState.equals(Momentum.SINGLE_LINE_STATE.RAISING_IN_MIDDLE)
+					&& (smiState.equals(Momentum.SMI_STATE.BULLISH_BOTH_RAISING_IN_MIDDLE)
+						|| smiState.equals(Momentum.SMI_STATE.BULLISH_OVERBOUGHT_BOTH)
+						|| smiState.equals(Momentum.SMI_STATE.BULLISH_OVERBOUGHT_FAST_ABOVE_RAISING_SLOW)
+						|| smiState.equals(Momentum.SMI_STATE.BULLISH_WEAK_RAISING_IN_MIDDLE)));
+	}
 }

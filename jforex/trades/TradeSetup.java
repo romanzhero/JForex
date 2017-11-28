@@ -323,4 +323,15 @@ public abstract class TradeSetup implements ITradeSetup {
 		}
 		return 0.0;
 	}
+	
+	protected TAEventDesc findTAEvent(List<TAEventDesc> taEvents, TAEventDesc.TAEventType eventType, String eventName, Instrument instrument, Period timeFrame) {
+		for (TAEventDesc currEvent : taEvents) {
+			if (currEvent.eventType.equals(eventType)
+				&& currEvent.eventName.equals(eventName)
+				&& currEvent.instrument.equals(instrument)
+				&& currEvent.timeFrame.equals(timeFrame))
+				return currEvent;
+		}
+		return null;
+	}
 }

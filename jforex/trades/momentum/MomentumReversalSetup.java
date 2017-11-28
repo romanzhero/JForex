@@ -195,7 +195,7 @@ Grupa 4: price action / candlestick paterns
 	/* 
 	Dogadjaji i reakcije:
 	- suprotni signal istog setup-a: zatvara se trejd
-	- suprotni signal FlatTrade: SL na breakeven ako je trejd profitabilan, inace nista !
+	- suprotni signal FlatTrade: SL na breakeven ako je trejd profitabilan, inace zatvarati !
 	- suprotni signal TrendSprint: zatvara se trejd
 
 	Reakcije na ostale dogadjaje:
@@ -228,7 +228,25 @@ Grupa 4: price action / candlestick paterns
 	public void inTradeProcessing(Instrument instrument, Period period, IBar askBar, IBar bidBar, Filter filter,
 			IOrder order, Map<String, FlexLogEntry> taValues, List<TAEventDesc> marketEvents) throws JFException {
 		TREND_STATE entryTrendID = taValues.get(FlexTASource.TREND_ID).getTrendStateValue();
+		TAEventDesc
+			flatEntry = findTAEvent(marketEvents, TAEventType.ENTRY_SIGNAL, FlatTradeSetup.SETUP_NAME, instrument, period),
+			trendSprintEntry = findTAEvent(marketEvents, TAEventType.ENTRY_SIGNAL, TrendSprint.SETUP_NAME, instrument, period),
+			momentumReversalEntry = findTAEvent(marketEvents, TAEventType.ENTRY_SIGNAL, MomentumReversalSetup.SETUP_NAME, instrument, period);
+	
 		if (order.isLong()) {
+			if (flatEntry != null & !flatEntry.isLong && order.getProfitLossInPips() > 0) {
+				lastTradingEvent = "breakeven set due to opposite flat signal";
+				StopLoss.setBreakEvenSituative(order, bidBar);
+				return;
+			}
+			if ((flatEntry != null & !flatEntry.isLong && order.getProfitLossInPips() <= 0)
+				|| (trendSprintEntry != null && !trendSprintEntry.isLong)
+				|| (momentumReversalEntry != null && !momentumReversalEntry.isLong)) {
+				lastTradingEvent = "closed due to opposite signals";
+				order.close();
+				order.waitForUpdate(null);
+			}
+			
 			double[] 
 					mas20 = context.getIndicators().sma(instrument, period, OfferSide.BID, IIndicators.AppliedPrice.CLOSE, 20, filter, 
 							1, bidBar.getTime(), 0),
@@ -281,6 +299,19 @@ Grupa 4: price action / candlestick paterns
 			}
 		} else {
 			// short
+			if (flatEntry != null & flatEntry.isLong && order.getProfitLossInPips() > 0) {
+				lastTradingEvent = "breakeven set due to opposite flat signal";
+				StopLoss.setBreakEvenSituative(order, bidBar);
+				return;
+			}
+			if ((flatEntry != null & flatEntry.isLong && order.getProfitLossInPips() <= 0)
+				|| (trendSprintEntry != null && trendSprintEntry.isLong)
+				|| (momentumReversalEntry != null && momentumReversalEntry.isLong)) {
+				lastTradingEvent = "closed due to opposite signals";
+				order.close();
+				order.waitForUpdate(null);
+			}
+
 			double[] 
 					mas20 = context.getIndicators().sma(instrument, period, OfferSide.ASK, IIndicators.AppliedPrice.CLOSE, 20, filter, 
 							1, bidBar.getTime(), 0),
