@@ -216,6 +216,7 @@ public class FlexLogEntry {
 						else
 							res += ";" + df.format(da2dim_values[i][j]);
 				res += ";" + (da2dim_values[0][2] > da2dim_values[1][2] ? "fast" : "slow");
+				res += ";" + (da2dim_values[0][2] > da2dim_values[1][2] ? df.format(da2dim_values[0][2] - da2dim_values[1][2]) : df.format(da2dim_values[1][2] - da2dim_values[0][2]));
 				return res;			
 			} else if (getLabel().equals(FlexTASource.STOCH)) {
 				String res = new String();
@@ -299,6 +300,7 @@ public class FlexLogEntry {
 			res += ";slowSMIPrev";
 			res += ";slowSMI";
 			res += ";higherSMI";
+			res += ";SMIsDifference";
 			return res;			
 		} else if (getLabel().equals(FlexTASource.STOCH)) {
 			String res = new String();

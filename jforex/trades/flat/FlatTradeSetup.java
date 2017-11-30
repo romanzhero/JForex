@@ -188,6 +188,7 @@ Grupa 4: price action / candlestick paterns
 			barToCheck = askBar;
 		TechnicalSituation taSituation = taValues.get(FlexTASource.TA_SITUATION).getTehnicalSituationValue();
 		TAEventDesc
+			flatEntry = findTAEvent(marketEvents, TAEventType.ENTRY_SIGNAL, this.SETUP_NAME, instrument, period),
 			trendSprintEntry = findTAEvent(marketEvents, TAEventType.ENTRY_SIGNAL, TrendSprint.SETUP_NAME, instrument, period),
 			momentumReversalEntry = findTAEvent(marketEvents, TAEventType.ENTRY_SIGNAL, MomentumReversalSetup.SETUP_NAME, instrument, period);
 		if (order.getState().equals(IOrder.State.OPENED)) {
@@ -238,9 +239,6 @@ Grupa 4: price action / candlestick paterns
 			// Trade simply generates all long and short canlde-momentum signals.
 			// The newest one wins therefore it must be ensured that their check methods are called for each bar while strategy is running !
 			// Should be OK with successive calls to checkEntry and inTradeProcessing
-			TradeTrigger.TriggerDesc 
-				currLongSignal = longCmd.checkEntry(instrument, period, OfferSide.BID, filter, bidBar, askBar, taValues), 
-				currShortSignal = shortCmd.checkEntry(instrument, period, OfferSide.BID, filter, bidBar, askBar, taValues);
 
 			double 
 				bBandsSquezeePerc = taValues.get(FlexTASource.BBANDS_SQUEEZE_PERC).getDoubleValue();
@@ -254,20 +252,17 @@ Grupa 4: price action / candlestick paterns
 				isMA200Lowest = taValues.get(FlexTASource.MA200_LOWEST).getBooleanValue();
 			
 			boolean
-				//TODO: but the same could be better obtained by checking entrySignal of the whole setup, see marketEvents !!!
-				longExitSignal = currShortSignal != null 
-									&& currShortSignal.channelPosition > 100 - CHANNEL_OFFSET
+				longExitSignal = flatEntry!= null && !flatEntry.isLong
 									&& ratioMaxProfitToAvgDayRange(marketEvents) > 0.6,						
-				shortExitSignal = currLongSignal != null 
-									&& currLongSignal.channelPosition < 0 + CHANNEL_OFFSET
+				shortExitSignal = flatEntry != null && flatEntry.isLong
 									&& ratioMaxProfitToAvgDayRange(marketEvents) > 0.6,
-				longProtectSignal = (currShortSignal != null && currShortSignal.channelPosition > 100 - CHANNEL_OFFSET)
+				longProtectSignal = (flatEntry!= null && !flatEntry.isLong)
 									|| (taSituation.taSituation.equals(OverallTASituation.BEARISH)
 										&& taSituation.taReason.equals(TASituationReason.TREND))
 									|| (trendSprintEntry != null && !trendSprintEntry.isLong)
 									|| (momentumReversalEntry != null && !momentumReversalEntry.isLong)	 
 									|| (FlexTASource.solidBearishMomentum(taValues) && taValues.get(FlexTASource.CHANNEL_POS).getDoubleValue() < 50),
-				shortProtectSignal = (currLongSignal != null && currLongSignal.channelPosition < 0 + CHANNEL_OFFSET)
+				shortProtectSignal = (flatEntry != null && flatEntry.isLong)
 									|| (taSituation.taSituation.equals(OverallTASituation.BULLISH)
 										&& taSituation.taReason.equals(TASituationReason.TREND))
 									|| (trendSprintEntry != null && trendSprintEntry.isLong)

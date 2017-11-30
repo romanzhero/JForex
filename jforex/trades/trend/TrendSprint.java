@@ -15,6 +15,7 @@ import com.dukascopy.api.OfferSide;
 import com.dukascopy.api.Period;
 
 import jforex.events.TAEventDesc;
+import jforex.events.TAEventDesc.TAEventType;
 import jforex.techanalysis.Momentum;
 import jforex.techanalysis.Momentum.SMI_STATE;
 import jforex.techanalysis.Momentum.STOCH_STATE;
@@ -23,6 +24,7 @@ import jforex.techanalysis.Trend.TREND_STATE;
 import jforex.techanalysis.Volatility;
 import jforex.techanalysis.source.FlexTASource;
 import jforex.techanalysis.source.TechnicalSituation;
+import jforex.trades.flat.FlatTradeSetup;
 import jforex.utils.StopLoss;
 import jforex.utils.log.FlexLogEntry;
 
@@ -32,14 +34,12 @@ public class TrendSprint extends AbstractSmaTradeSetup {
 	public TrendSprint(IEngine engine, IContext context, Set<Instrument> subscribedInstruments, boolean mktEntry,
 			boolean onlyCross, double pFlatPercThreshold, double pBBandsSqueezeThreshold, boolean trailsOnMA50) {
 		super(engine, context, subscribedInstruments, mktEntry, onlyCross, pFlatPercThreshold, pBBandsSqueezeThreshold,	trailsOnMA50);
-		// TODO Auto-generated constructor stub
 	}
 
 	public TrendSprint(IEngine engine, IContext context, Set<Instrument> subscribedInstruments, boolean mktEntry,
 			boolean onlyCross, double pFlatPercThreshold, double pBBandsSqueezeThreshold, boolean trailsOnMA50,
 			boolean takeOverOnly) {
 		super(engine, context, subscribedInstruments, mktEntry, onlyCross, pFlatPercThreshold, pBBandsSqueezeThreshold,	trailsOnMA50, takeOverOnly);
-		// TODO Auto-generated constructor stub
 	}
 
 	@Override
@@ -245,7 +245,40 @@ Grupa 4: price action / candlestick paterns
 			narrowChannel = taValues.get(FlexTASource.BBANDS_SQUEEZE_PERC).getDoubleValue() < 30.0,
 			ma200InChannel = taValues.get(FlexTASource.MA200_IN_CHANNEL).getBooleanValue();
 		String masSlopes = taValues.get(FlexTASource.MA_SLOPES_SCORE).getFormattedValue();
+		TAEventDesc flatSignal = findTAEvent(marketEvents, TAEventType.ENTRY_SIGNAL, FlatTradeSetup.SETUP_NAME, instrument, period);
 		
+		// aggressively set break even in the case of solid opposite momentum (but not at very first / earliest bearish states...) !!!
+		// EVEN in narrow channel !
+		if (order.isLong()) {
+			if (flatSignal != null && !flatSignal.isLong) {
+				lastTradingEvent = "Closed due to short flat signal";
+				order.close();
+				order.waitForUpdate(null);
+				return;
+			}
+			if (FlexTASource.solidBearishMomentum(taValues)) {
+				lastTradingEvent = "Set to breakeven due to bearish momentum";
+				// this can close the order in the worst case ! If so exit the method !
+				if (!StopLoss.setBreakEvenSituative(order, bidBar))
+					return;
+			}
+		}
+		else {
+			// short
+			if (flatSignal != null && flatSignal.isLong) {
+				lastTradingEvent = "Closed due to long flat signal";
+				order.close();
+				order.waitForUpdate(null);
+				return;
+			}
+			if (FlexTASource.solidBullishMomentum(taValues)) {
+				lastTradingEvent = "Set to breakeven due to bullish momentum";
+				// this can close the order in the worst case ! If so exit the method !
+				if (!StopLoss.setBreakEvenSituative(order, askBar));
+					return;
+			}			
+		}	
+
 		if (narrowChannel)
 			return;
 
@@ -281,25 +314,7 @@ Grupa 4: price action / candlestick paterns
 			BULLISH_WEAK_RAISING_IN_MIDDLE,
 			OTHER // neither of these clear cases, when lines ticked up/down etc
 		}
-*/		// aggressively set break even in the case of solid opposite momentum (but not at very first / earliest bearish states...) !!!
-		if (order.isLong()) {
-			if (FlexTASource.solidBearishMomentum(taValues)) {
-				lastTradingEvent = "Set to breakeven due to bearish momentum";
-				// this can close the order in the worst case ! If so exit the method !
-				if (!StopLoss.setBreakEvenSituative(order, bidBar))
-					return;
-			}
-		}
-		else {
-			// short
-			if (FlexTASource.solidBullishMomentum(taValues)) {
-				lastTradingEvent = "Set to breakeven due to bullish momentum";
-				// this can close the order in the worst case ! If so exit the method !
-				if (!StopLoss.setBreakEvenSituative(order, askBar));
-					return;
-			}			
-		}	
-		
+*/				
 		boolean stopLossSet = ma50TrailFlags.get(instrument.name()).booleanValue();
 		IBar prevBar = this.context.getHistory().getBars(instrument, period, OfferSide.BID, Filter.WEEKENDS, 2, bidBar.getTime(), 0).get(0);
 		
@@ -408,13 +423,6 @@ Grupa 4: price action / candlestick paterns
 	@Override
 	public String getName() {
 		return new String(SETUP_NAME);
-	}
-
-	@Override
-	public TAEventDesc checkEntry(Instrument instrument, Period period, IBar askBar, IBar bidBar, Filter filter, Map<String, FlexLogEntry> taValues) throws JFException {
-		TAEventDesc eventDesc = super.checkEntry(instrument, period, askBar, bidBar, filter, taValues);
-		lastSL = -1.0; // no SL set at open
-		return eventDesc ;
 	}
 
 	@Override

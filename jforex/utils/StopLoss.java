@@ -1,9 +1,17 @@
 package jforex.utils;
 
+import java.util.Map;
+
 import com.dukascopy.api.IBar;
 import com.dukascopy.api.IOrder;
+import com.dukascopy.api.Instrument;
 import com.dukascopy.api.JFException;
 import com.dukascopy.api.OfferSide;
+
+import jforex.events.TAEventDesc;
+import jforex.events.TAEventDesc.TAEventType;
+import jforex.techanalysis.source.FlexTASource;
+import jforex.utils.log.FlexLogEntry;
 
 public class StopLoss {
 
@@ -48,4 +56,17 @@ public class StopLoss {
 		else
 			return true;
 	}
+	
+	public static double calcATRBasedStopLossDistance(Instrument instrument, Map<String, FlexLogEntry> taValues, double multiple) {
+		return FXUtils.roundToPip(multiple * taValues.get(FlexTASource.ATR).getDoubleValue() / Math.pow(10, instrument.getPipValue()), instrument);		
+	}
+	
+	public static double calcATRBasedStopLoss(Instrument instrument, boolean isLong, Map<String, FlexLogEntry> taValues, double multiple, IBar bidBar, IBar askBar) {
+		double distance = calcATRBasedStopLossDistance(instrument, taValues, multiple);	
+		if (isLong) {
+			return bidBar.getClose() - distance;
+		} else {
+			return askBar.getClose() + distance;			
+		}
+ 	}
 }

@@ -12,6 +12,7 @@ import jforex.techanalysis.Trend.FLAT_REGIME_CAUSE;
 import jforex.techanalysis.source.FlexTASource;
 import jforex.trades.TradeSetup;
 import jforex.utils.FXUtils;
+import jforex.utils.StopLoss;
 import jforex.utils.log.FlexLogEntry;
 
 import com.dukascopy.api.Filter;
@@ -93,14 +94,12 @@ public abstract class AbstractSmaTradeSetup extends TradeSetup {
 			
 				if (buySignal(instrument, period, filter, ma20, ma50, ma100, ma200, bidBar, onlyCross, taValues)) {
 					//lastTradingEvent = "buy signal";
-					double twoAtrAbs = FXUtils.roundToPip(2	* taValues.get(FlexTASource.ATR).getDoubleValue() / Math.pow(10, instrument.getPipValue()), instrument);
-					lastSL = bidBar.getClose() - twoAtrAbs;
+					lastSL = StopLoss.calcATRBasedStopLoss(instrument, true, taValues, 2.0, bidBar, askBar);
 					TAEventDesc result = new TAEventDesc(TAEventType.ENTRY_SIGNAL, getName(), instrument, true, askBar, bidBar, period);
 					return result;
 				} else if (sellSignal(instrument, period, filter, ma20, ma50, ma100, ma200, askBar, onlyCross, taValues)) {
 					//lastTradingEvent = "sell signal";
-					double twoAtrAbs = FXUtils.roundToPip(2	* taValues.get(FlexTASource.ATR).getDoubleValue() / Math.pow(10, instrument.getPipValue()), instrument);
-					lastSL = askBar.getClose() + twoAtrAbs;
+					lastSL = StopLoss.calcATRBasedStopLoss(instrument, false, taValues, 2.0, bidBar, askBar);
 					TAEventDesc result = new TAEventDesc(TAEventType.ENTRY_SIGNAL, getName(), instrument, false, askBar, bidBar, period);
 					return result;
 				}
