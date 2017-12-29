@@ -233,6 +233,26 @@ Grupa 4: price action / candlestick paterns
 			momentumReversalEntry = findTAEvent(marketEvents, TAEventType.ENTRY_SIGNAL, MomentumReversalSetup.SETUP_NAME, instrument, period);
 	
 		if (order.isLong()) {
+			double[] 
+					mas20 = context.getIndicators().sma(instrument, period, OfferSide.BID, IIndicators.AppliedPrice.CLOSE, 20, filter, 
+							1, bidBar.getTime(), 0),
+					mas50 = context.getIndicators().sma(instrument, period, OfferSide.BID, IIndicators.AppliedPrice.CLOSE, 50, filter, 
+							1, bidBar.getTime(), 0),
+					mas100 = context.getIndicators().sma(instrument, period, OfferSide.BID, IIndicators.AppliedPrice.CLOSE, 100, filter, 
+							1, bidBar.getTime(), 0);
+			
+			if (FlexTASource.solidBearishMomentum(taValues) && bidBar.getClose() < mas20[0]) {
+				if (order.getStopLossPrice() <= 0) {
+					order.setStopLossPrice(bidBar.getLow());
+					order.waitForUpdate(null);
+					return;
+				} else if (bidBar.getLow() > order.getStopLossPrice()) {
+					order.setStopLossPrice(bidBar.getLow());
+					order.waitForUpdate(null);
+					return;
+				}
+			}
+
 			if ((flatEntry != null && !flatEntry.isLong && order.getProfitLossInPips() > 0)
 				|| FlexTASource.solidBearishMomentum(taValues)) {
 				lastTradingEvent = "breakeven set due to opposite flat signal or momentum";
@@ -248,13 +268,6 @@ Grupa 4: price action / candlestick paterns
 				return;
 			}
 			
-			double[] 
-					mas20 = context.getIndicators().sma(instrument, period, OfferSide.BID, IIndicators.AppliedPrice.CLOSE, 20, filter, 
-							1, bidBar.getTime(), 0),
-					mas50 = context.getIndicators().sma(instrument, period, OfferSide.BID, IIndicators.AppliedPrice.CLOSE, 50, filter, 
-							1, bidBar.getTime(), 0),
-					mas100 = context.getIndicators().sma(instrument, period, OfferSide.BID, IIndicators.AppliedPrice.CLOSE, 100, filter, 
-							1, bidBar.getTime(), 0);
 			double lowestMAValue = -1;
 			if (entryTrendID.equals(TREND_STATE.UP_STRONG) || entryTrendID.equals(TREND_STATE.UP_MILD))
 				lowestMAValue = mas100[0];
@@ -276,6 +289,26 @@ Grupa 4: price action / candlestick paterns
 
 		} else {
 			// short
+			double[] 
+					mas20 = context.getIndicators().sma(instrument, period, OfferSide.ASK, IIndicators.AppliedPrice.CLOSE, 20, filter, 
+							1, bidBar.getTime(), 0),
+					mas50 = context.getIndicators().sma(instrument, period, OfferSide.ASK, IIndicators.AppliedPrice.CLOSE, 50, filter, 
+							1, bidBar.getTime(), 0),
+					mas100 = context.getIndicators().sma(instrument, period, OfferSide.ASK, IIndicators.AppliedPrice.CLOSE, 100, filter, 
+							1, bidBar.getTime(), 0);
+			
+			if (FlexTASource.solidBullishMomentum(taValues) && askBar.getClose() > mas20[0]) {
+				if (order.getStopLossPrice() <= 0) {
+					order.setStopLossPrice(askBar.getHigh());
+					order.waitForUpdate(null);
+					return;
+				} else if (askBar.getHigh() < order.getStopLossPrice()) {
+					order.setStopLossPrice(askBar.getHigh());
+					order.waitForUpdate(null);
+					return;
+				}
+			}
+			
 			if ((flatEntry != null && flatEntry.isLong && order.getProfitLossInPips() > 0)
 				|| FlexTASource.solidBullishMomentum(taValues)) {
 				lastTradingEvent = "breakeven set due to opposite flat signal or momentum";
@@ -291,13 +324,6 @@ Grupa 4: price action / candlestick paterns
 				return;
 			}
 
-			double[] 
-					mas20 = context.getIndicators().sma(instrument, period, OfferSide.ASK, IIndicators.AppliedPrice.CLOSE, 20, filter, 
-							1, bidBar.getTime(), 0),
-					mas50 = context.getIndicators().sma(instrument, period, OfferSide.ASK, IIndicators.AppliedPrice.CLOSE, 50, filter, 
-							1, bidBar.getTime(), 0),
-					mas100 = context.getIndicators().sma(instrument, period, OfferSide.ASK, IIndicators.AppliedPrice.CLOSE, 100, filter, 
-							1, bidBar.getTime(), 0);
 			double highestMAValue = -1;
 			if (entryTrendID.equals(TREND_STATE.DOWN_STRONG) || entryTrendID.equals(TREND_STATE.DOWN_MILD))
 				highestMAValue = mas100[0];

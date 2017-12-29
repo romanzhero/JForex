@@ -25,6 +25,7 @@ import jforex.techanalysis.Volatility;
 import jforex.techanalysis.source.FlexTASource;
 import jforex.techanalysis.source.TechnicalSituation;
 import jforex.trades.flat.FlatTradeSetup;
+import jforex.trades.momentum.MomentumReversalSetup;
 import jforex.utils.StopLoss;
 import jforex.utils.log.FlexLogEntry;
 
@@ -245,13 +246,16 @@ Grupa 4: price action / candlestick paterns
 			narrowChannel = taValues.get(FlexTASource.BBANDS_SQUEEZE_PERC).getDoubleValue() < 30.0,
 			ma200InChannel = taValues.get(FlexTASource.MA200_IN_CHANNEL).getBooleanValue();
 		String masSlopes = taValues.get(FlexTASource.MA_SLOPES_SCORE).getFormattedValue();
-		TAEventDesc flatSignal = findTAEvent(marketEvents, TAEventType.ENTRY_SIGNAL, FlatTradeSetup.SETUP_NAME, instrument, period);
+		TAEventDesc 
+			flatSignal = findTAEvent(marketEvents, TAEventType.ENTRY_SIGNAL, FlatTradeSetup.SETUP_NAME, instrument, period),
+			momentumReversal = findTAEvent(marketEvents, TAEventType.ENTRY_SIGNAL, MomentumReversalSetup.SETUP_NAME, instrument, period);
 		
 		// aggressively set break even in the case of solid opposite momentum (but not at very first / earliest bearish states...) !!!
 		// EVEN in narrow channel !
 		if (order.isLong()) {
-			if (flatSignal != null && !flatSignal.isLong) {
-				lastTradingEvent = "Closed due to short flat signal";
+			if ((flatSignal != null && !flatSignal.isLong)
+				|| (momentumReversal != null && !momentumReversal.isLong)) {
+				lastTradingEvent = "Closed due to short signal";
 				order.close();
 				order.waitForUpdate(null);
 				return;
@@ -265,8 +269,9 @@ Grupa 4: price action / candlestick paterns
 		}
 		else {
 			// short
-			if (flatSignal != null && flatSignal.isLong) {
-				lastTradingEvent = "Closed due to long flat signal";
+			if ((flatSignal != null && flatSignal.isLong)
+				|| (momentumReversal != null && momentumReversal.isLong)) {
+				lastTradingEvent = "Closed due to long signal";
 				order.close();
 				order.waitForUpdate(null);
 				return;
