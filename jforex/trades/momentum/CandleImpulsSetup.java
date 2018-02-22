@@ -67,8 +67,8 @@ public class CandleImpulsSetup extends TradeSetup implements ITradeSetup {
 	
 	protected enum BodyDirection {UP, DOWN, NONE};
 
-	public CandleImpulsSetup(IEngine engine, IContext context, Map<Instrument, RollingAverage> averages) {
-		super(engine, context);
+	public CandleImpulsSetup(boolean useEntryFilters, IEngine engine, IContext context, Map<Instrument, RollingAverage> averages) {
+		super(useEntryFilters, engine, context);
 		barRangeAverages = averages;
 	}
 

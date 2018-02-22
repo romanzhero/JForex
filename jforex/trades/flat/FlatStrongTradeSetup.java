@@ -42,8 +42,8 @@ public class FlatStrongTradeSetup extends TradeSetup implements ITradeSetup {
 		lastShortSignal = null;
 	protected boolean aggressive = false;
 
-	public FlatStrongTradeSetup(IEngine engine, IContext context, IHistory history, boolean aggressive) {
-		super(engine, context);
+	public FlatStrongTradeSetup(IEngine engine, IContext context, IHistory history, boolean aggressive, boolean useEntryFilters) {
+		super(useEntryFilters, engine, context);
 		this.history = history;
 		// this way signals will be generated regardless of the channel position so they can be used both for entry and all exit checks
 		// entry and exit checks must explicitly test channel position !

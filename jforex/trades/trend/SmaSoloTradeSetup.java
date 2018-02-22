@@ -16,8 +16,10 @@ import com.dukascopy.api.Period;
 
 public class SmaSoloTradeSetup extends AbstractSmaTradeSetup {
 
-	public SmaSoloTradeSetup(IEngine engine, IContext context, Set<Instrument> subscribedInstruments, boolean mktEntry, boolean onlyCross, double pFlatPercThreshold, double pBBandsSqueezeThreshold, boolean trailsOnMA50) {
-		super(engine, context, subscribedInstruments, mktEntry, onlyCross, pFlatPercThreshold, pBBandsSqueezeThreshold, trailsOnMA50);
+	public SmaSoloTradeSetup(IEngine engine, IContext context, Set<Instrument> subscribedInstruments, 
+			boolean mktEntry, boolean onlyCross, boolean useEntryFilters,
+			double pFlatPercThreshold, double pBBandsSqueezeThreshold, boolean trailsOnMA50) {
+		super(engine, context, subscribedInstruments, mktEntry, onlyCross, useEntryFilters, pFlatPercThreshold, pBBandsSqueezeThreshold, trailsOnMA50);
 	}
 
 	public SmaSoloTradeSetup(IEngine engine, IContext context, Set<Instrument> subscribedInstruments, 

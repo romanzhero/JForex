@@ -40,10 +40,11 @@ public abstract class AbstractSmaTradeSetup extends TradeSetup {
 	public AbstractSmaTradeSetup(IEngine engine, IContext context, Set<Instrument> subscribedInstruments, 
 			boolean mktEntry, 
 			boolean onlyCross, 
+			boolean useEntryFilters,
 			double pFlatPercThreshold, 
 			double pBBandsSqueezeThreshold, 
 			boolean trailsOnMA50) {
-		super(engine, context);
+		super(useEntryFilters, engine, context);
 		this.mktEntry = mktEntry;
 		this.onlyCross = onlyCross;
 		this.flatPercThreshold = pFlatPercThreshold;

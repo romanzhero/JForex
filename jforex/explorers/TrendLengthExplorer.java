@@ -160,7 +160,8 @@ public class TrendLengthExplorer implements IStrategy {
 		log = new Logger(reportDir + "//Trend_Length_report_" + FXUtils.getFileTimeStamp(System.currentTimeMillis()) + ".txt");
 		statsLog = new Logger(reportDir + "//Trend_Length_stat_report_" + FXUtils.getFileTimeStamp(System.currentTimeMillis()) + ".txt");
 		
-		setup = new SmaCrossAdvancedTradeSetup(engine, context, context.getSubscribedInstruments(), true, true, 20, 20, false);
+		setup = new SmaCrossAdvancedTradeSetup(engine, context, context.getSubscribedInstruments(), true, true, conf.getProperty("useEntryFilters", "no").equals("yes"), 
+				20, 20, false);
 		chart = new JForexChart(context, visualMode, selectedInstrument, console, showIndicators, indicators);
 		chart.showChart(context);
 	}

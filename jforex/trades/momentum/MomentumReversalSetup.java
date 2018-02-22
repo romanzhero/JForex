@@ -17,6 +17,7 @@ import com.dukascopy.api.Period;
 import jforex.events.TAEventDesc;
 import jforex.events.TAEventDesc.TAEventType;
 import jforex.techanalysis.Momentum;
+import jforex.techanalysis.Trend;
 import jforex.techanalysis.Trend.FLAT_REGIME_CAUSE;
 import jforex.techanalysis.Trend.TREND_STATE;
 import jforex.techanalysis.source.FlexTASource;
@@ -31,8 +32,8 @@ import jforex.utils.log.FlexLogEntry;
 public class MomentumReversalSetup extends TradeSetup implements ITradeSetup {
 	public static String SETUP_NAME = "MomentumReversal";
 
-	public MomentumReversalSetup(IEngine engine, IContext context) {
-		super(engine, context);
+	public MomentumReversalSetup(boolean useEntryFilters, IEngine engine, IContext context) {
+		super(useEntryFilters, engine, context);
 	}
 
 	public MomentumReversalSetup(IEngine engine, IContext context, boolean pTakeOverOnly) {
@@ -101,7 +102,7 @@ Grupa 4: price action / candlestick paterns
 			ma200Slope = (Momentum.SINGLE_LINE_STATE)taValues.get(FlexTASource.MA200_SLOPE).getValue(),
 			channelWidthDirection = (Momentum.SINGLE_LINE_STATE)taValues.get(FlexTASource.CHANNEL_WIDTH_DIRECTION).getValue();
 		String maSlopesScore = taValues.get(FlexTASource.MA_SLOPES_SCORE).getFormattedValue();
-		
+				
 		if (bBandsSqueeze < 30)
 			return null;
 		
@@ -152,6 +153,16 @@ Grupa 4: price action / candlestick paterns
 													&& last3AskBars.get(0).getClose() > mas200[0]); 
 				if (closeAboveAllMAs 
 					&& (previousBarCloseNotAboveAllMAs || prePreviousBarCloseNotAboveAllMAs)) {
+					if (useEntryFilters) {
+						if (ma200Highest)
+							return null;
+						if (entryTrendID.equals(TREND_STATE.UP_MILD)
+							|| entryTrendID.equals(TREND_STATE.UP_STRONG)
+							|| entryTrendID.equals(TREND_STATE.FRESH_UP))
+							return null;
+					}
+
+					
 					return new TAEventDesc(TAEventType.ENTRY_SIGNAL, getName(), instrument, true, askBar, bidBar, period);
 				} else 
 					return null;				
@@ -177,6 +188,15 @@ Grupa 4: price action / candlestick paterns
 													&& last3BidBars.get(0).getClose() < mas200[0]); 
 				if (closeBelowAllMAs 
 					&& (previousBarCloseNotBelowAllMAs || prePreviousBarCloseNotBelowAllMAs)) {
+					if (useEntryFilters) {
+						if (ma200Lowest)
+							return null;
+						if (entryTrendID.equals(TREND_STATE.DOWN_MILD)
+							|| entryTrendID.equals(TREND_STATE.DOWN_STRONG)
+							|| entryTrendID.equals(TREND_STATE.FRESH_DOWN))
+							return null;
+					}
+					
 					return new TAEventDesc(TAEventType.ENTRY_SIGNAL, getName(), instrument, false, askBar, bidBar, period);
 				} else 
 					return null;				

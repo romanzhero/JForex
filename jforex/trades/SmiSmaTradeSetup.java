@@ -27,8 +27,8 @@ public class SmiSmaTradeSetup extends TradeSetup {
 	protected boolean mktEntry = true;
 	protected Map<String, Boolean> ma50TrailFlags = new HashMap<String, Boolean>();
 
-	public SmiSmaTradeSetup(IEngine engine, IContext context, IConsole console, Set<Instrument> subscribedInstruments, boolean mktEntry) {
-		super(engine, context);
+	public SmiSmaTradeSetup(IEngine engine, IContext context, IConsole console, Set<Instrument> subscribedInstruments, boolean mktEntry, boolean useEntryFilters) {
+		super(useEntryFilters, engine, context);
 		this.console = console;
 		this.mktEntry = mktEntry;
 

@@ -32,9 +32,10 @@ import jforex.utils.log.FlexLogEntry;
 public class TrendSprint extends AbstractSmaTradeSetup {
 	public static String SETUP_NAME = "TrendSprint";
 
-	public TrendSprint(IEngine engine, IContext context, Set<Instrument> subscribedInstruments, boolean mktEntry,
-			boolean onlyCross, double pFlatPercThreshold, double pBBandsSqueezeThreshold, boolean trailsOnMA50) {
-		super(engine, context, subscribedInstruments, mktEntry, onlyCross, pFlatPercThreshold, pBBandsSqueezeThreshold,	trailsOnMA50);
+	public TrendSprint(IEngine engine, IContext context, Set<Instrument> subscribedInstruments, 
+			boolean mktEntry, boolean onlyCross, boolean useEntryFilters,
+			double pFlatPercThreshold, double pBBandsSqueezeThreshold, boolean trailsOnMA50) {
+		super(engine, context, subscribedInstruments, mktEntry, onlyCross, useEntryFilters, pFlatPercThreshold, pBBandsSqueezeThreshold,	trailsOnMA50);
 	}
 
 	public TrendSprint(IEngine engine, IContext context, Set<Instrument> subscribedInstruments, boolean mktEntry,
@@ -47,6 +48,11 @@ public class TrendSprint extends AbstractSmaTradeSetup {
 	protected boolean sellSignal(Instrument instrument, Period period, Filter filter, double[] ma20, double[] ma50, double[] ma100, double[] ma200, 
 			IBar bidBar, boolean strict, Map<String, FlexLogEntry> taValues)
 			throws JFException {
+		if (useEntryFilters) {
+			if (taValues.get(FlexTASource.BBANDS_SQUEEZE_PERC).getDoubleValue() > 80.0)
+				return false;
+		}
+		
 		if(taValues.get(FlexTASource.MA200_LOWEST).getBooleanValue()
 			|| taValues.get(FlexTASource.BBANDS_SQUEEZE_PERC).getDoubleValue() < 30.0)
 			return false;
@@ -111,7 +117,12 @@ Grupa 4: price action / candlestick paterns
 			double[] ma20, double[] ma50, double[] ma100, double[] ma200, IBar bidBar, 
 			boolean strict, Map<String, FlexLogEntry> taValues)
 			throws JFException {
-		if(taValues.get(FlexTASource.MA200_HIGHEST).getBooleanValue()
+		if (useEntryFilters) {
+			if (taValues.get(FlexTASource.BBANDS_SQUEEZE_PERC).getDoubleValue() > 80.0)
+				return false;
+		}
+
+		if (taValues.get(FlexTASource.MA200_HIGHEST).getBooleanValue()
 			|| taValues.get(FlexTASource.BBANDS_SQUEEZE_PERC).getDoubleValue() < 30.0)
 			return false;
 		

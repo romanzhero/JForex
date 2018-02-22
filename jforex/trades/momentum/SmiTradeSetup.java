@@ -30,8 +30,8 @@ public class SmiTradeSetup extends TradeSetup {
 		bBandsSqueezeThreshold;
 	private double lastSL = 0.0;
 
-	public SmiTradeSetup(IEngine engine, IContext context, boolean mktEntry, double pFlatPercThreshold, double pBBandsSqueezeThreshold) {
-		super(engine, context);
+	public SmiTradeSetup(IEngine engine, IContext context, boolean mktEntry, double pFlatPercThreshold, double pBBandsSqueezeThreshold, boolean useEntryFilters) {
+		super(useEntryFilters, engine, context);
 		this.mktEntry = mktEntry;
 		flatPercThreshold = pFlatPercThreshold;
 		bBandsSqueezeThreshold = pBBandsSqueezeThreshold;

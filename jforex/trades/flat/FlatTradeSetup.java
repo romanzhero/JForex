@@ -43,8 +43,8 @@ public class FlatTradeSetup extends TradeSetup implements ITradeSetup {
 	protected boolean aggressive = false;
 	protected static final double CHANNEL_OFFSET = 3; // how many % is tolerated vs. channel border. Long: 100 - channelOffset / Short 0 + channelOffset
 
-	public FlatTradeSetup(IEngine engine, IContext context, boolean aggressive) {
-		super(engine, context);
+	public FlatTradeSetup(IEngine engine, IContext context, boolean aggressive, boolean useEntryFilters) {
+		super(useEntryFilters, engine, context);
 		// this way signals will be generated regardless of the channel position so they can be used both for entry and all exit checks
 		// entry and exit checks must explicitly test channel position !
 		longCmd = new LongCandleAndMomentumDetector(100, false);
@@ -96,13 +96,34 @@ Grupa 4: price action / candlestick paterns
 		Trend.FLAT_REGIME_CAUSE currBarFlat = (Trend.FLAT_REGIME_CAUSE)taValues.get(FlexTASource.FLAT_REGIME).getValue();
 		if (currBarFlat.equals(Trend.FLAT_REGIME_CAUSE.NONE))
 			return null;
-
+		
 		double 
 			trendStrengthPerc = taValues.get(FlexTASource.MAs_DISTANCE_PERC).getDoubleValue(), 
 			bBandsSquezeePerc = taValues.get(FlexTASource.BBANDS_SQUEEZE_PERC).getDoubleValue(),
 			channelPos = taValues.get(FlexTASource.CHANNEL_POS).getDoubleValue();
-		if (bBandsSquezeePerc < 30.0)
-			return null;
+		if (useEntryFilters) {
+			if (bBandsSquezeePerc < 77.0)
+				return null;
+
+			double[][] smis = taValues.get(FlexTASource.SMI).getDa2DimValue();
+			double ma100ma200Distance = taValues.get(FlexTASource.MA200MA100_TREND_DISTANCE_PERC).getDoubleValue();
+			// first fast SMIs in chronological order, then slow ones
+			// smis[0][2] = fastSMI[0][2];			
+			// smis[1][2] = slowSMI[0][2];
+			if (currLongSignal != null) {
+				if (smis[1][2] > smis[0][2] && smis[1][2] - smis[0][2] > 48)
+					return null;
+				
+				if (taValues.get(FlexTASource.MA200_HIGHEST).getBooleanValue() && ma100ma200Distance < 68)
+					return null;
+			} else if (currShortSignal != null) {
+				if (smis[0][2] > smis[1][2]  && smis[0][2] - smis[1][2] > 48)
+					return null;
+				
+				if (taValues.get(FlexTASource.MA200_LOWEST).getBooleanValue() && ma100ma200Distance < 68)
+					return null;				
+			}
+		}
 		
 		boolean 
 			isMA200InChannel = taValues.get(FlexTASource.MA200_IN_CHANNEL).getBooleanValue(),

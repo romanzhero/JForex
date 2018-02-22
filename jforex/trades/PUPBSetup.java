@@ -25,8 +25,8 @@ import com.dukascopy.api.Period;
 
 public class PUPBSetup extends FlatTradeSetup implements ITradeSetup {
 
-	public PUPBSetup(IIndicators indicators, IContext context, IHistory history, IEngine engine) {
-		super(engine, context, true);
+	public PUPBSetup(IIndicators indicators, IContext context, IHistory history, IEngine engine, boolean useEntryFilters) {
+		super(engine, context, true, useEntryFilters);
 		// TODO Auto-generated constructor stub
 	}
 

@@ -169,24 +169,26 @@ public class FlatCascTest implements IStrategy {
 
 	protected void configureSetups(IContext context) {
 		if (conf.getProperty("MomentumReversalSetup", "no").equals("yes"))
-			tradeSetups.add(new MomentumReversalSetup(engine, context));
+			tradeSetups.add(new MomentumReversalSetup(conf.getProperty("useEntryFilters", "no").equals("yes"), engine, context));
 		if (conf.getProperty("CandleImpulsSetup", "no").equals("yes"))
-			tradeSetups.add(new CandleImpulsSetup(engine, context, barRangeAverages));
+			tradeSetups.add(new CandleImpulsSetup(conf.getProperty("useEntryFilters", "no").equals("yes"), engine, context, barRangeAverages));
 		if (conf.getProperty("FlatStrongSetup", "no").equals("yes"))
-			tradeSetups.add(new FlatStrongTradeSetup(engine, context, history, true));
+			tradeSetups.add(new FlatStrongTradeSetup(engine, context, history, true, conf.getProperty("useEntryFilters", "no").equals("yes")));
 		if (conf.getProperty("FlatSetup", "no").equals("yes"))
-			tradeSetups.add(new FlatTradeSetup(engine, context, true));
+			tradeSetups.add(new FlatTradeSetup(engine, context, true, conf.getProperty("useEntryFilters", "no").equals("yes")));
 		//tradeSetups.add(new PUPBSetup(indicators, history, engine));
 		if (conf.getProperty("SMISetup", "no").equals("yes"))
-			tradeSetups.add(new SmiTradeSetup(engine, context, false, 30.0, 30.0));
+			tradeSetups.add(new SmiTradeSetup(engine, context, false, 30.0, 30.0, conf.getProperty("useEntryFilters", "no").equals("yes")));
 		if (conf.getProperty("TrendIDFollowCrossSetup", "no").equals("yes"))
-			tradeSetups.add(new SmaCrossTradeSetup(engine, context, context.getSubscribedInstruments(), true, false, 30.0, 25.0, false));
+			tradeSetups.add(new SmaCrossTradeSetup(engine, context, context.getSubscribedInstruments(), true, false, conf.getProperty("useEntryFilters", "no").equals("yes"), 30.0, 25.0, false));
 		if (conf.getProperty("TrendIDFollowSetup", "no").equals("yes"))
-			tradeSetups.add(new SmaTradeSetup(indicators, context, history, engine, context.getSubscribedInstruments(), true, false, 30.0, 30.0, false));
+			tradeSetups.add(new SmaTradeSetup(indicators, context, history, engine, context.getSubscribedInstruments(), true, false, 
+					conf.getProperty("useEntryFilters", "no").equals("yes"), 30.0, 30.0, false));
 		else if (conf.getProperty("TrendIDFollowSoloSetup", "no").equals("yes"))
 			tradeSetups.add(new SmaSoloTradeSetup(engine, context, context.getSubscribedInstruments(), true, false, 30.0, 30.0, false, true));
 		else if (conf.getProperty("TrendSprint", "no").equals("yes"))
-			tradeSetups.add(new TrendSprint(engine, context, context.getSubscribedInstruments(), true, false, 30.0, 30.0, true));
+			tradeSetups.add(new TrendSprint(engine, context, context.getSubscribedInstruments(), true, false, conf.getProperty("useEntryFilters", "no").equals("yes"), 
+					30.0, 30.0, true));
 	}
 
 	protected void openLoggers() {

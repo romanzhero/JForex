@@ -141,18 +141,21 @@ public class MultiPairCasc implements IStrategy {
 		statsLog = new Logger(reportDir + "//Casc_stat_report_" + FXUtils.getFileTimeStamp(System.currentTimeMillis()) + ".txt");
 
 		if (conf.getProperty("FlatStrongSetup", "no").equals("yes"))
-			tradeSetups.add(new FlatStrongTradeSetup(engine, context, history, true));
+			tradeSetups.add(new FlatStrongTradeSetup(engine, context, history, true, conf.getProperty("useEntryFilters", "no").equals("yes")));
 		if (conf.getProperty("FlatSetup", "no").equals("yes"))
-			tradeSetups.add(new FlatTradeSetup(engine, context, true));
+			tradeSetups.add(new FlatTradeSetup(engine, context, true, conf.getProperty("useEntryFilters", "no").equals("yes")));
 		//tradeSetups.add(new PUPBSetup(indicators, history, engine));
 		if (conf.getProperty("SMISetup", "no").equals("yes"))
-			tradeSetups.add(new SmiTradeSetup(engine, context, false, 30.0, 30.0));
+			tradeSetups.add(new SmiTradeSetup(engine, context, false, 30.0, 30.0, conf.getProperty("useEntryFilters", "no").equals("yes")));
 		if (conf.getProperty("TrendIDFollowCrossSetup", "no").equals("yes"))
-			tradeSetups.add(new SmaCrossTradeSetup(engine, context, instrumentsToTrade, true, false, 30.0, 25.0, false));
+			tradeSetups.add(new SmaCrossTradeSetup(engine, context, instrumentsToTrade, true, false, conf.getProperty("useEntryFilters", "no").equals("yes"), 
+					30.0, 25.0, false));
 		if (conf.getProperty("TrendIDFollowSetup", "no").equals("yes"))
-			tradeSetups.add(new SmaTradeSetup(indicators, context, history, engine, instrumentsToTrade, true, false, 30.0, 30.0, false));
+			tradeSetups.add(new SmaTradeSetup(indicators, context, history, engine, instrumentsToTrade, true, false, conf.getProperty("useEntryFilters", "no").equals("yes"), 
+					30.0, 30.0, false));
 		else if (conf.getProperty("TrendIDFollowSoloSetup", "no").equals("yes"))
-			tradeSetups.add(new SmaSoloTradeSetup(engine, context, instrumentsToTrade, true, false, 30.0, 30.0, false));
+			tradeSetups.add(new SmaSoloTradeSetup(engine, context, instrumentsToTrade, true, false, conf.getProperty("useEntryFilters", "no").equals("yes"), 
+					30.0, 30.0, false));
 		
 		//taEvents.add(new LongCandlesEvent(indicators, history));
 		//taEvents.add(new ShortCandlesEvent(indicators, history));

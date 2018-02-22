@@ -26,8 +26,9 @@ public class SmaCrossTradeSetup extends AbstractSmaTradeSetup {
 		shortCrossHappened = false;
 
 	public SmaCrossTradeSetup(IEngine engine, IContext context, Set<Instrument> subscribedInstruments, boolean mktEntry,
-			boolean onlyCross, double pFlatPercThreshold, double pBBandsSqueezeThreshold, boolean trailsOnMA50) {
-		super(engine, context, subscribedInstruments, mktEntry, onlyCross, pFlatPercThreshold, pBBandsSqueezeThreshold,	trailsOnMA50);
+			boolean onlyCross, boolean useEntryFilters, 
+			double pFlatPercThreshold, double pBBandsSqueezeThreshold, boolean trailsOnMA50) {
+		super(engine, context, subscribedInstruments, mktEntry, onlyCross, useEntryFilters, pFlatPercThreshold, pBBandsSqueezeThreshold,	trailsOnMA50);
 	}
 
 	@Override

@@ -29,13 +29,15 @@ public abstract class TradeSetup implements ITradeSetup {
 
 	protected boolean 
 		locked = false,
-		takeOverOnly = false;
+		takeOverOnly = false,
+		useEntryFilters = false; // shall numerical filters be checked before logical entry criteria
 	protected String lastTradingEvent = "none";
 
-	public TradeSetup(IEngine engine, IContext context) {
+	public TradeSetup(boolean pUseEntryFilters, IEngine engine, IContext context) {
 		super();
 		this.engine = engine;
 		this.context = context;
+		this.useEntryFilters = pUseEntryFilters;
 	}
 	
 	public TradeSetup(IEngine engine, IContext context, boolean pTakeOverOnly) {

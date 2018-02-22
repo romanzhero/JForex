@@ -38,8 +38,8 @@ public class FlatTradeSetupOld extends TradeSetup implements ITradeSetup {
 		lastShortSignal = null;
 	protected boolean aggressive = false;
 
-	public FlatTradeSetupOld(IEngine engine, IContext context, boolean aggressive) {
-		super(engine, context);
+	public FlatTradeSetupOld(IEngine engine, IContext context, boolean aggressive, boolean useEntryFilters) {
+		super(useEntryFilters, engine, context);
 		// this way signals will be generated regardless of the channel position so they can be used both for entry and all exit checks
 		// entry and exit checks must explicitly test channel position !
 		longCmd = new LongCandleAndMomentumDetector(100, false);
