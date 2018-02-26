@@ -12,6 +12,7 @@ import jforex.techanalysis.Trend;
 import jforex.techanalysis.Trend.FLAT_REGIME_CAUSE;
 import jforex.techanalysis.Volatility;
 import jforex.utils.FXUtils;
+import jforex.utils.StopLoss;
 
 import com.dukascopy.api.Filter;
 import com.dukascopy.api.IBar;
@@ -253,7 +254,7 @@ public class SmaTradeSetup extends TradeSetup {
 			// put SL on low of the bar which crossed MA50. No real trailing, do
 			// it only once
 			ma50TrailFlags.put(order.getInstrument().name(), new Boolean(true));
-			FXUtils.setStopLoss(order, FXUtils.roundToPip(bidBar.getLow(), order.getInstrument()), bidBar.getTime(), this.getClass());
+			StopLoss.setStopLoss(order, FXUtils.roundToPip(bidBar.getLow(), order.getInstrument()), bidBar.getTime(), this.getClass());
 			lastTradingEvent = "start trailing long, ma50 broken";			
 			result = true;
 		} else if (!ma50Trailing.booleanValue() && bidBar.getHigh() < ma20) {
@@ -267,7 +268,7 @@ public class SmaTradeSetup extends TradeSetup {
 			// losses !!! Total 500+ pips missed !!!!
 			if (order.getStopLossPrice() == 0.0	|| ma50 > order.getStopLossPrice()) {
 				lastTradingEvent = "start trailing long, below ma50";			
-				FXUtils.setStopLoss(order, FXUtils.roundToPip(ma50,	order.getInstrument()), bidBar.getTime(), this.getClass());
+				StopLoss.setStopLoss(order, FXUtils.roundToPip(ma50,	order.getInstrument()), bidBar.getTime(), this.getClass());
 				result = true;
 			}
 		}
@@ -290,7 +291,7 @@ public class SmaTradeSetup extends TradeSetup {
 			// put SL on low of the bar which crossed MA50. No real trailing, do
 			// it only once
 			ma50TrailFlags.put(order.getInstrument().name(), new Boolean(true));
-			FXUtils.setStopLoss(order, FXUtils.roundToPip(askBar.getHigh(),	order.getInstrument()), askBar.getTime(), this.getClass());
+			StopLoss.setStopLoss(order, FXUtils.roundToPip(askBar.getHigh(),	order.getInstrument()), askBar.getTime(), this.getClass());
 			result = true;
 			lastTradingEvent = "start trailing short, ma50 broken";			
 
@@ -298,7 +299,7 @@ public class SmaTradeSetup extends TradeSetup {
 			// start trailing on MA50
 			if (order.getStopLossPrice() == 0.0
 					|| ma50 < order.getStopLossPrice()) {
-				FXUtils.setStopLoss(order, FXUtils.roundToPip(ma50, order.getInstrument()), askBar.getTime(), this.getClass());
+				StopLoss.setStopLoss(order, FXUtils.roundToPip(ma50, order.getInstrument()), askBar.getTime(), this.getClass());
 				result = true;
 				lastTradingEvent = "start trailing short, below ma50";
 			}

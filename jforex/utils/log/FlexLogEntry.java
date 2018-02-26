@@ -2,6 +2,7 @@ package jforex.utils.log;
 
 import java.text.DecimalFormat;
 
+import jforex.techanalysis.Momentum;
 import jforex.techanalysis.TradeTrigger;
 import jforex.techanalysis.Trend;
 import jforex.techanalysis.source.FlexTASource;
@@ -232,6 +233,12 @@ public class FlexLogEntry {
 				res += ";" + df.format(da2dim_values[1][0]);
 				res += ";" + df.format(da2dim_values[2][0]);
 				return res;						
+			} else if (getLabel().equals(FlexTASource.MACD)) {
+				String res = new String();
+				res += df.format(da1dim_values[Momentum.MACD_LINE]);
+				res += ";" + df.format(da1dim_values[Momentum.MACD_Signal]);
+				res += ";" + df.format(da1dim_values[Momentum.MACD_H]);
+				return res;
 			} else if (getLabel().equals(FlexTASource.ICHI)) {
 				Trend.IchiDesc ichi = (Trend.IchiDesc)getValue();
 				String res = new String();
@@ -251,6 +258,7 @@ public class FlexLogEntry {
 				res += ";" + taSituation.slowSMIState.toString();
 				res += ";" + taSituation.fastSMIState.toString();
 				res += ";" + taSituation.stochState.toString();
+				res += ";" + taSituation.macdHistoState.toString();
 				return res;				
 			} else {
 				String res = new String();
@@ -318,6 +326,12 @@ public class FlexLogEntry {
 			res += ";slowStoch";
 			res += ";higherStoch";
 			return res;						
+		} else if (getLabel().equals(FlexTASource.MACD)) {
+			String res = new String();
+			res += "MACDLine"; 
+			res += "MACDSignal";
+			res += "MACD_H";			
+			return res;
 		} else if (getLabel().equals(FlexTASource.ICHI)) {
 			String res = new String();
 			res += "fastLine"; 
@@ -343,6 +357,7 @@ public class FlexLogEntry {
 			res += ";" + "Slow SMI";
 			res += ";" + "Fast SMI";
 			res += ";" + "Stoch";
+			res += ";" + "MACD-H";
 			return res;
 		} else
 			return getLabel();

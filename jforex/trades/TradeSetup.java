@@ -8,6 +8,7 @@ import jforex.events.TAEventDesc.TAEventType;
 import jforex.techanalysis.TradeTrigger.TriggerDesc;
 import jforex.techanalysis.source.FlexTASource;
 import jforex.utils.FXUtils;
+import jforex.utils.StopLoss;
 import jforex.utils.log.FlexLogEntry;
 import jforex.utils.stats.RangesStats.InstrumentRangeStats;
 
@@ -133,7 +134,7 @@ public abstract class TradeSetup implements ITradeSetup {
 				if (order.getProfitLossInPips() > howManyATRs * taValues.get(FlexTASource.ATR).getDoubleValue() * Math.pow(10, instrument.getPipScale()) 
 					&& order.getOpenPrice() < order.getStopLossPrice()) {
 					lastTradingEvent = "(Short) Moved SL to breakeven (profit = " + FXUtils.df1.format(howManyATRs) + " ATR)";
-					FXUtils.setStopLoss(order, order.getOpenPrice(), bidBar.getTime(), getClass());
+					StopLoss.setStopLoss(order, order.getOpenPrice(), bidBar.getTime(), getClass());
 				}
 			}
 
@@ -142,7 +143,7 @@ public abstract class TradeSetup implements ITradeSetup {
 		if (order.getProfitLossInPips() > howManyATRs * taValues.get(FlexTASource.ATR).getDoubleValue() * Math.pow(10, instrument.getPipScale()) 
 			&& bidBar.getHigh() < order.getStopLossPrice()) {
 			lastTradingEvent = "(Short) Moved SL to protect profit = " + FXUtils.df1.format(howManyATRs) + " ATR";
-			FXUtils.setStopLoss(order, bidBar.getHigh(), bidBar.getTime(), getClass());
+			StopLoss.setStopLoss(order, bidBar.getHigh(), bidBar.getTime(), getClass());
 		}
 	}
 	
@@ -151,7 +152,7 @@ public abstract class TradeSetup implements ITradeSetup {
 				if (order.getProfitLossInPips() > howManyATRs * taValues.get(FlexTASource.ATR).getDoubleValue() * Math.pow(10, instrument.getPipScale()) 
 					&& order.getOpenPrice() > order.getStopLossPrice()) {
 					lastTradingEvent = "(Long) Moved SL to breakeven (profit = " + FXUtils.df1.format(howManyATRs) + " ATR)";
-					FXUtils.setStopLoss(order, order.getOpenPrice(), bidBar.getTime(), getClass());
+					StopLoss.setStopLoss(order, order.getOpenPrice(), bidBar.getTime(), getClass());
 				}
 			}
 
@@ -159,7 +160,7 @@ public abstract class TradeSetup implements ITradeSetup {
 		if (order.getProfitLossInPips() > howManyATRs * taValues.get(FlexTASource.ATR).getDoubleValue() * Math.pow(10, instrument.getPipScale()) 
 			&& bidBar.getLow() > order.getStopLossPrice()) {
 			lastTradingEvent = "(Long) Moved SL to protect profit = " + FXUtils.df1.format(howManyATRs) + " ATR";
-			FXUtils.setStopLoss(order, bidBar.getLow(), bidBar.getTime(), getClass());
+			StopLoss.setStopLoss(order, bidBar.getLow(), bidBar.getTime(), getClass());
 		}
 	}
 	protected void longMoveSLDueToShortFlatSignal(IBar bidBar, IOrder order, List<TAEventDesc> marketEvents) {
@@ -168,7 +169,7 @@ public abstract class TradeSetup implements ITradeSetup {
 				double newSL = bidBar.getClose() < order.getOpenPrice() ? bidBar.getLow() : order.getOpenPrice();
 				if (newSL > order.getStopLossPrice()) {
 					lastTradingEvent = "(Long) Moved SL due to bearish flat signal";
-					FXUtils.setStopLoss(order, newSL, bidBar.getTime(), getClass());
+					StopLoss.setStopLoss(order, newSL, bidBar.getTime(), getClass());
 				}
 			}
 		}
@@ -180,7 +181,7 @@ public abstract class TradeSetup implements ITradeSetup {
 				double newSL = bidBar.getClose() > order.getOpenPrice() ? bidBar.getHigh() : order.getOpenPrice();
 				if (newSL < order.getStopLossPrice()) {
 					lastTradingEvent = "(Short) Moved SL due to bullish flat signal";
-					FXUtils.setStopLoss(order, newSL, bidBar.getTime(), getClass());
+					StopLoss.setStopLoss(order, newSL, bidBar.getTime(), getClass());
 				}
 			}
 		}
@@ -191,7 +192,7 @@ public abstract class TradeSetup implements ITradeSetup {
 			if (taEvent.eventType.equals(TAEventType.ENTRY_SIGNAL) && taEvent.eventName.equals("FlatStrong") && !taEvent.isLong) {
 				if (bidBar.getLow() > order.getStopLossPrice()) {
 					lastTradingEvent = "(Long) Moved SL due to bearish flat signal";
-					FXUtils.setStopLoss(order, bidBar.getLow(), bidBar.getTime(), getClass());
+					StopLoss.setStopLoss(order, bidBar.getLow(), bidBar.getTime(), getClass());
 				}
 			}
 		}
@@ -202,7 +203,7 @@ public abstract class TradeSetup implements ITradeSetup {
 			if (taEvent.eventType.equals(TAEventType.ENTRY_SIGNAL) && taEvent.eventName.equals("FlatStrong") && taEvent.isLong) {
 				if (bidBar.getHigh() < order.getStopLossPrice()) {
 					lastTradingEvent = "(Short) Moved SL due to bullish flat signal";
-					FXUtils.setStopLoss(order, bidBar.getHigh(), bidBar.getTime(), getClass());
+					StopLoss.setStopLoss(order, bidBar.getHigh(), bidBar.getTime(), getClass());
 				}
 			}
 		}
@@ -232,7 +233,7 @@ public abstract class TradeSetup implements ITradeSetup {
 					if (newSL < order.getStopLossPrice()) {
 						lastTradingEvent = "(Short) Moved SL due to big bullish candle (size perc: " 
 									+ FXUtils.df1.format(candles.sizePercentile) + ", reversal size: " + FXUtils.df1.format(candles.reversalSize) + "%)";
-						FXUtils.setStopLoss(order, newSL, bidBar.getTime(), getClass());
+						StopLoss.setStopLoss(order, newSL, bidBar.getTime(), getClass());
 					}
 				}
 			}
@@ -244,7 +245,7 @@ public abstract class TradeSetup implements ITradeSetup {
 				if (newSL > order.getStopLossPrice()) {
 					lastTradingEvent = "(Long) Moved SL due to big bearish candle (size perc: " 
 							+ FXUtils.df1.format(candles.sizePercentile) + ", reversal size: " + FXUtils.df1.format(candles.reversalSize) + "%)";
-					FXUtils.setStopLoss(order, newSL, bidBar.getTime(), getClass());
+					StopLoss.setStopLoss(order, newSL, bidBar.getTime(), getClass());
 				}
 		}
 	}
@@ -257,7 +258,7 @@ public abstract class TradeSetup implements ITradeSetup {
 			if (newSL > order.getStopLossPrice()) {
 				lastTradingEvent = "(Long) Protect profit (" + FXUtils.df1.format(howManyATRs) + ") due to big bearish candle (size perc: " 
 						+ FXUtils.df1.format(candles.sizePercentile + ", reversal size: " + FXUtils.df1.format(candles.reversalSize) + "%)") ;
-				FXUtils.setStopLoss(order, newSL, bidBar.getTime(), getClass());
+				StopLoss.setStopLoss(order, newSL, bidBar.getTime(), getClass());
 			}
 		}
 	}
@@ -270,7 +271,7 @@ public abstract class TradeSetup implements ITradeSetup {
 			if (newSL < order.getStopLossPrice()) {
 				lastTradingEvent = "(Short) Protect profit (" + FXUtils.df1.format(howManyATRs) + ") due to big bullish candle (size perc: " 
 						+ FXUtils.df1.format(candles.sizePercentile) + ", reversal size: " + FXUtils.df1.format(candles.reversalSize) + "%)" ;
-				FXUtils.setStopLoss(order, newSL, bidBar.getTime(), getClass());
+				StopLoss.setStopLoss(order, newSL, bidBar.getTime(), getClass());
 			}
 		}
 	}
@@ -282,7 +283,7 @@ public abstract class TradeSetup implements ITradeSetup {
 						double newSL = bidBar.getClose() < order.getOpenPrice() ? bidBar.getLow() : order.getOpenPrice();
 						if (newSL > order.getStopLossPrice()) {
 							lastTradingEvent = "(Long) Moved SL due to extreme RSI3 (" + FXUtils.df1.format(RSI3) + ")";
-							FXUtils.setStopLoss(order, newSL, bidBar.getTime(), getClass());
+							StopLoss.setStopLoss(order, newSL, bidBar.getTime(), getClass());
 						}
 				}
 			}
@@ -293,7 +294,7 @@ public abstract class TradeSetup implements ITradeSetup {
 				double newSL = bidBar.getClose() > order.getOpenPrice() ? bidBar.getHigh() : order.getOpenPrice();
 				if (newSL < order.getStopLossPrice()) {
 					lastTradingEvent = "(Short) Moved SL due to extreme RSI3 (" + FXUtils.df1.format(RSI3) + ")";
-					FXUtils.setStopLoss(order, newSL, bidBar.getTime(), getClass());
+					StopLoss.setStopLoss(order, newSL, bidBar.getTime(), getClass());
 				}
 		}
 	}
@@ -335,5 +336,41 @@ public abstract class TradeSetup implements ITradeSetup {
 				return currEvent;
 		}
 		return null;
+	}
+
+	protected boolean extremeUpTrend(Map<String, FlexLogEntry> taValues) {
+		double ma200ma100Distance = taValues.get(FlexTASource.MA200MA100_TREND_DISTANCE_PERC).getDoubleValue();
+		boolean ma200Lowest = taValues.get(FlexTASource.MA200_LOWEST).getBooleanValue();
+		return ma200Lowest && ma200ma100Distance > 80.0;
+	}
+
+	protected boolean extremeDownTrend(Map<String, FlexLogEntry> taValues) {
+		double ma200ma100Distance = taValues.get(FlexTASource.MA200MA100_TREND_DISTANCE_PERC).getDoubleValue();
+		boolean ma200Highest = taValues.get(FlexTASource.MA200_HIGHEST).getBooleanValue();
+		return ma200Highest && ma200ma100Distance > 80.0;
+	}
+
+	protected double getLowestMAExceptMA200(double[][] mas) {
+		double
+			ma20 = mas[1][0],
+			ma50 = mas[1][1],
+			ma100 = mas[1][2];
+		if (ma20 < ma50 && ma50 < ma100)
+			return ma20;
+		else if (ma20 >= ma50 && ma50 < ma100)
+			return ma50;
+		return ma100;
+	}
+
+	protected double getHighestMAExceptMA200(double[][] mas) {
+		double
+			ma20 = mas[1][0],
+			ma50 = mas[1][1],
+			ma100 = mas[1][2];
+		if (ma20 > ma50 && ma50 > ma100)
+			return ma20;
+		else if (ma20 <= ma50 && ma50 > ma100)
+			return ma50;
+		return ma100;
 	}
 }

@@ -1025,17 +1025,6 @@ public class FXUtils {
 		return -1;
 	}
 	
-	public static void setStopLoss(IOrder order, double price, long time, Class c) {
-		try {
-			order.setStopLossPrice(roundToPip(price, order.getInstrument()));
-			order.waitForUpdate(null);				
-		} catch (JFException e) {
-			System.out.println(FXUtils.getFormatedTimeGMT(time) + ": Exception when trying to set SL in class " + c.getCanonicalName() 
-					+ ", exception message: " + e.getMessage());
-		}
-		
-	}
-
 	public static double roundToPip(double calcPrice, Instrument i) {
 		return (Math.round(calcPrice * Math.pow(10, i.getPipScale()))) / Math.pow(10, i.getPipScale());
 	}

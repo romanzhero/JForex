@@ -34,6 +34,7 @@ import jforex.trades.trend.SmaCrossTradeSetup;
 import jforex.trades.trend.SmaSoloTradeSetup;
 import jforex.trades.trend.SmaTradeSetup;
 import jforex.trades.trend.TrendSprint;
+import jforex.trades.trend.TrendSprintEarly;
 
 public class FlatCascTest implements IStrategy {
 	@Configurable(value = "Period", description = "Choose the time frame")
@@ -186,6 +187,9 @@ public class FlatCascTest implements IStrategy {
 					conf.getProperty("useEntryFilters", "no").equals("yes"), 30.0, 30.0, false));
 		else if (conf.getProperty("TrendIDFollowSoloSetup", "no").equals("yes"))
 			tradeSetups.add(new SmaSoloTradeSetup(engine, context, context.getSubscribedInstruments(), true, false, 30.0, 30.0, false, true));
+		else if (conf.getProperty("TrendSprintEarly", "no").equals("yes"))
+			tradeSetups.add(new TrendSprintEarly(engine, context, context.getSubscribedInstruments(), true, false, conf.getProperty("useEntryFilters", "no").equals("yes"), 
+					30.0, 30.0, true));
 		else if (conf.getProperty("TrendSprint", "no").equals("yes"))
 			tradeSetups.add(new TrendSprint(engine, context, context.getSubscribedInstruments(), true, false, conf.getProperty("useEntryFilters", "no").equals("yes"), 
 					30.0, 30.0, true));

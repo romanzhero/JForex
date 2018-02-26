@@ -26,6 +26,7 @@ public class TechnicalSituation {
 	public Momentum.SINGLE_LINE_STATE
 		slowSMIState, fastSMIState;
 	public Momentum.STOCH_STATE stochState;
+	public Momentum.MACD_H_STATE macdHistoState;
 	public double
 		fastSMI = 0.0,
 		slowSMI = 0.0,
@@ -42,7 +43,8 @@ public class TechnicalSituation {
 			+ " (slow: " + slowSMIState.toString() + ", " + FXUtils.df1.format(slowSMI)
 			+ ", fast: " + fastSMIState.toString()  + ", " + FXUtils.df1.format(fastSMI)
 			+ ") Stoch state: " + stochState.toString()  
-			+ " (" + FXUtils.df1.format(fastStoch)  + "/" + FXUtils.df1.format(slowStoch) + ")";		
+			+ " (" + FXUtils.df1.format(fastStoch)  + "/" + FXUtils.df1.format(slowStoch) + ")"
+			+ " MACD-H state: " + macdHistoState.toString();		
 		return res;
 	}
 

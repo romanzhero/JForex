@@ -9,6 +9,7 @@ import jforex.events.TAEventDesc;
 import jforex.events.TAEventDesc.TAEventType;
 import jforex.techanalysis.source.FlexTASource;
 import jforex.utils.FXUtils;
+import jforex.utils.StopLoss;
 import jforex.utils.log.FlexLogEntry;
 
 import com.dukascopy.api.Filter;
@@ -180,7 +181,7 @@ public class SmiSmaTradeSetup extends TradeSetup {
 				// put SL on low of the bar which crossed MA50. No real
 				// trailing, do it only once
 				ma50TrailFlags.put(order.getInstrument().name(), new Boolean(true));
-				FXUtils.setStopLoss(order, FXUtils.roundToPip(bidBar.getLow(), order.getInstrument()), bidBar.getTime(), this.getClass());
+				StopLoss.setStopLoss(order, FXUtils.roundToPip(bidBar.getLow(), order.getInstrument()), bidBar.getTime(), this.getClass());
 			} else if (!ma50Trailing.booleanValue() && bidBar.getHigh() < ma20) {
 				// start trailing on MA50
 				// additional criteria !!! ONLY if ma50 and ma100 relatively
@@ -192,7 +193,7 @@ public class SmiSmaTradeSetup extends TradeSetup {
 				// unnecessary losses !!! Total 500+ pips missed !!!!
 				if (order.getStopLossPrice() == 0.0
 						|| ma50 > order.getStopLossPrice()) {
-					FXUtils.setStopLoss(order, FXUtils.roundToPip(ma50, order.getInstrument()), bidBar.getTime(), this.getClass());
+					StopLoss.setStopLoss(order, FXUtils.roundToPip(ma50, order.getInstrument()), bidBar.getTime(), this.getClass());
 				}
 			}
 			return true;

@@ -43,6 +43,8 @@ public class FlexTASource {
 		MA200_IN_CHANNEL = "MA200InChannel",
 		SMI = "SMI",
 		STOCH = "Stoch",
+		MACD = "MACD",
+		MACD_HISTO = "MACD_Histogram",
 		RSI3 = "RSI3",
 		CHANNEL_POS = "Channel position",
 		CLOSE_ABOVE_ALL_MAs = "Close above all MAs",
@@ -89,6 +91,7 @@ public class FlexTASource {
 		addBBands(instrument, period, bidBar, result);
 		addChannelWidthDirection(instrument, period, bidBar, result);
 		addSMI(instrument, period, bidBar, result);
+		addMACD(instrument, period, bidBar, result);
 		
 		result.put(BULLISH_CANDLES, new FlexLogEntry(BULLISH_CANDLES, candles.bullishReversalCandlePatternDesc(instrument, period, filter, OfferSide.ASK, askBar.getTime())));
 		result.put(BEARISH_CANDLES, new FlexLogEntry(BEARISH_CANDLES, candles.bearishReversalCandlePatternDesc(instrument, period, filter, OfferSide.BID, bidBar.getTime())));
@@ -110,10 +113,17 @@ public class FlexTASource {
 		result.put(ICHI, new FlexLogEntry(ICHI, trend.getIchi(history, instrument, period, OfferSide.BID, filter, bidBar.getTime())));
 		result.put(MA200MA100_TREND_DISTANCE_PERC, new FlexLogEntry(MA200MA100_TREND_DISTANCE_PERC, new Double(trend.getMA200MA100TrendDiffPercentile(instrument, period, filter, OfferSide.BID, IIndicators.AppliedPrice.CLOSE, bidBar.getTime(), FXUtils.YEAR_WORTH_OF_4H_BARS)), FXUtils.df1));
 
-		result.put(TA_SITUATION, new FlexLogEntry(TA_SITUATION, assessTASituation(result, bidBar, askBar)));
+		TechnicalSituation taSituation = assessTASituation(result, bidBar, askBar);
+		taSituation.macdHistoState = momentum.getMACDHistogramState(instrument, period, OfferSide.BID, AppliedPrice.CLOSE, bidBar.getTime());
+		result.put(TA_SITUATION, new FlexLogEntry(TA_SITUATION, taSituation));
+		
 		
 		lastResult = result;
 		return result;
+	}
+
+	private void addMACD(Instrument instrument, Period period, IBar bidBar, Map<String, FlexLogEntry> result) throws JFException {
+		result.put(MACD, new FlexLogEntry(MACD, momentum.getMACDs(instrument, period, OfferSide.BID, AppliedPrice.CLOSE, bidBar.getTime()), FXUtils.df5));
 	}
 
 	private boolean isMA200InChannel(Map<String, FlexLogEntry> taValues) {

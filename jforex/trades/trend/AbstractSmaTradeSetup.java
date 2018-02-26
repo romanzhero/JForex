@@ -178,7 +178,7 @@ public abstract class AbstractSmaTradeSetup extends TradeSetup {
 			
 			if (ma100 > order.getStopLossPrice()) {
 				// check all the posibilities of MA100 position at position opening ??!!
-				FXUtils.setStopLoss(order, ma100, bidBar.getTime(), getClass());
+				StopLoss.setStopLoss(order, ma100, bidBar.getTime(), getClass());
 			}
 			
 			boolean isMA200Lowest = taValues.get(FlexTASource.MA200_LOWEST).getBooleanValue();
@@ -191,14 +191,14 @@ public abstract class AbstractSmaTradeSetup extends TradeSetup {
 				double newSL = ma50 > order.getOpenPrice() ? ma50 : order.getOpenPrice();
 				if (newSL > order.getStopLossPrice()) {
 					lastTradingEvent = "(Long) Moved SL due to strong flat signal";
-					FXUtils.setStopLoss(order, newSL, bidBar.getTime(), getClass());
+					StopLoss.setStopLoss(order, newSL, bidBar.getTime(), getClass());
 				}
 			}
 			if (!taValues.get(FlexTASource.TREND_ID).getTrendStateValue().equals(Trend.TREND_STATE.UP_STRONG)) {
 				double newSL = ma50 > order.getOpenPrice() ? ma50 : order.getOpenPrice();
 				if (newSL > order.getStopLossPrice()) {
 					lastTradingEvent = "(Long) Moved SL due to trend ID change";
-					FXUtils.setStopLoss(order, newSL, bidBar.getTime(), getClass());
+					StopLoss.setStopLoss(order, newSL, bidBar.getTime(), getClass());
 				}
 			}
 			startTrailingLong(ma20, ma50, ma100, bidBar, order);
@@ -211,7 +211,7 @@ public abstract class AbstractSmaTradeSetup extends TradeSetup {
 //			shortMoveSLDueToExtremeRSI3(bidBar, order, taValues);
 			
 			if (ma100 < order.getStopLossPrice()) {
-				FXUtils.setStopLoss(order, ma100, bidBar.getTime(), getClass());
+				StopLoss.setStopLoss(order, ma100, bidBar.getTime(), getClass());
 			}
 			boolean isMA200Highest = taValues.get(FlexTASource.MA200_HIGHEST).getBooleanValue();
 			// no trailing if strong uptrend or narrow channel
@@ -224,14 +224,14 @@ public abstract class AbstractSmaTradeSetup extends TradeSetup {
 				double newSL = ma50 < order.getOpenPrice() ? ma50 : order.getOpenPrice();
 				if (newSL < order.getStopLossPrice()) {
 					lastTradingEvent = "(Short) Moved SL due to strong flat signal";
-					FXUtils.setStopLoss(order, newSL, bidBar.getTime(), getClass());
+					StopLoss.setStopLoss(order, newSL, bidBar.getTime(), getClass());
 				}
 			}
 			if (!taValues.get(FlexTASource.TREND_ID).getTrendStateValue().equals(Trend.TREND_STATE.DOWN_STRONG)) {
 				double newSL = ma50 < order.getOpenPrice() ? ma50 : order.getOpenPrice();
 				if (newSL < order.getStopLossPrice()) {
 					lastTradingEvent = "(Short) Moved SL due to trend ID change";
-					FXUtils.setStopLoss(order, newSL, bidBar.getTime(), getClass());
+					StopLoss.setStopLoss(order, newSL, bidBar.getTime(), getClass());
 				}
 			}
 			startTrailingShort(ma20, ma50, ma100, askBar, order);
@@ -287,7 +287,7 @@ public abstract class AbstractSmaTradeSetup extends TradeSetup {
 				&& (order.getStopLossPrice() == 0.0 || bidBar.getLow() > order.getStopLossPrice())) {
 			// put SL on low of the bar which crossed MA50. No real trailing, do it only once
 			ma50TrailFlags.put(order.getInstrument().name(), new Boolean(true));
-			FXUtils.setStopLoss(order, FXUtils.roundToPip(bidBar.getLow(), order.getInstrument()), bidBar.getTime(), this.getClass());
+			StopLoss.setStopLoss(order, FXUtils.roundToPip(bidBar.getLow(), order.getInstrument()), bidBar.getTime(), this.getClass());
 			lastTradingEvent = "start trailing long, ma50 broken";			
 			result = true;
 		} else if (!ma50Trailing.booleanValue() && bidBar.getHigh() < ma20) {
@@ -301,7 +301,7 @@ public abstract class AbstractSmaTradeSetup extends TradeSetup {
 			// losses !!! Total 500+ pips missed !!!!
 			if (order.getStopLossPrice() == 0.0	|| ma50 > order.getStopLossPrice()) {
 				lastTradingEvent = "start trailing long, below ma50";			
-				FXUtils.setStopLoss(order, FXUtils.roundToPip(ma50,	order.getInstrument()), bidBar.getTime(), this.getClass());
+				StopLoss.setStopLoss(order, FXUtils.roundToPip(ma50,	order.getInstrument()), bidBar.getTime(), this.getClass());
 				result = true;
 			}
 		}
@@ -324,14 +324,14 @@ public abstract class AbstractSmaTradeSetup extends TradeSetup {
 			// put SL on low of the bar which crossed MA50. No real trailing, do
 			// it only once
 			ma50TrailFlags.put(order.getInstrument().name(), new Boolean(true));
-			FXUtils.setStopLoss(order, FXUtils.roundToPip(askBar.getHigh(),	order.getInstrument()), askBar.getTime(), this.getClass());
+			StopLoss.setStopLoss(order, FXUtils.roundToPip(askBar.getHigh(),	order.getInstrument()), askBar.getTime(), this.getClass());
 			result = true;
 			lastTradingEvent = "start trailing short, ma50 broken";			
 	
 		} else if (!ma50Trailing.booleanValue() && askBar.getLow() > ma20) {
 			// start trailing on MA50
 			if (order.getStopLossPrice() == 0.0	|| ma50 < order.getStopLossPrice()) {
-				FXUtils.setStopLoss(order, FXUtils.roundToPip(ma50, order.getInstrument()), askBar.getTime(), this.getClass());
+				StopLoss.setStopLoss(order, FXUtils.roundToPip(ma50, order.getInstrument()), askBar.getTime(), this.getClass());
 				result = true;
 				lastTradingEvent = "start trailing short, below ma50";
 			}

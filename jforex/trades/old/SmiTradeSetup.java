@@ -9,6 +9,7 @@ import jforex.techanalysis.Trend;
 import jforex.techanalysis.Trend.FLAT_REGIME_CAUSE;
 import jforex.techanalysis.Volatility;
 import jforex.utils.FXUtils;
+import jforex.utils.StopLoss;
 
 import com.dukascopy.api.Filter;
 import com.dukascopy.api.IBar;
@@ -74,18 +75,18 @@ public class SmiTradeSetup extends TradeSetup {
 		if (order.isLong() && signal != null && !signal.isLong) {
 			lastTradingEvent = "long breakeven signal";
 			if (bidBar.getClose() > order.getOpenPrice()) {
-				FXUtils.setStopLoss(order, order.getOpenPrice(), bidBar.getTime(), getClass());
+				StopLoss.setStopLoss(order, order.getOpenPrice(), bidBar.getTime(), getClass());
 			}
 			else if (bidBar.getLow() > order.getStopLossPrice() || order.getStopLossPrice() == 0.0) {
-				FXUtils.setStopLoss(order, bidBar.getLow(), bidBar.getTime(), getClass());
+				StopLoss.setStopLoss(order, bidBar.getLow(), bidBar.getTime(), getClass());
 			}
 		} else if (!order.isLong()	&& signal != null && signal.isLong) {
 			lastTradingEvent = "short breakeven signal";
 			if (askBar.getClose() < order.getOpenPrice()) {
-				FXUtils.setStopLoss(order, order.getOpenPrice(), bidBar.getTime(), getClass());
+				StopLoss.setStopLoss(order, order.getOpenPrice(), bidBar.getTime(), getClass());
 			}
 			else if (bidBar.getHigh() < order.getStopLossPrice() || order.getStopLossPrice() == 0.0) {
-				FXUtils.setStopLoss(order, askBar.getHigh(), bidBar.getTime(), getClass());
+				StopLoss.setStopLoss(order, askBar.getHigh(), bidBar.getTime(), getClass());
 			}
 		}
 		// check market events. Get out if opposite flat signal occurs - it will take over immediately !
@@ -114,7 +115,7 @@ public class SmiTradeSetup extends TradeSetup {
 										|| (bidBar.getClose() < ma20 && bidBar.getClose() < ma50 && bidBar.getClose() < ma100);
 				if ((order.isLong() && !continueLong) || (!order.isLong() && !continueShort)) {
 					lastTradingEvent = "move SL due to opposite flat signal";
-					FXUtils.setStopLoss(order, order.isLong() ? bidBar.getLow() : askBar.getHigh(), bidBar.getTime(), getClass());
+					StopLoss.setStopLoss(order, order.isLong() ? bidBar.getLow() : askBar.getHigh(), bidBar.getTime(), getClass());
 				}
 			}
 			else if (taEvent.eventType.equals(TAEventType.ENTRY_SIGNAL) && taEvent.eventName.equals("PUPB")

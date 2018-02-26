@@ -69,4 +69,36 @@ public class StopLoss {
 			return askBar.getClose() + distance;			
 		}
  	}
+
+	public static void setStopLoss(IOrder order, double price, long time, Class c) {
+		try {
+			order.setStopLossPrice(FXUtils.roundToPip(price, order.getInstrument()));
+			order.waitForUpdate(null);				
+		} catch (JFException e) {
+			System.out.println(FXUtils.getFormatedTimeGMT(time) + ": Exception when trying to set SL in class " + c.getCanonicalName() 
+					+ ", exception message: " + e.getMessage());
+		}
+		
+	}
+	
+	public static void setCloserOnlyStopLoss(IOrder order, double price, long time, Class c) {
+		try {
+			if (order.getStopLossPrice() != 0.0) {
+				if (order.isLong()) {
+					// new value can be only higher, i.e. closer to entry price
+					if (FXUtils.roundToPip(price, order.getInstrument()) <= order.getStopLossPrice())
+						return;
+				} else {
+					if (FXUtils.roundToPip(price, order.getInstrument()) >= order.getStopLossPrice())
+						return;					
+				}				
+			}
+			order.setStopLossPrice(FXUtils.roundToPip(price, order.getInstrument()));
+			order.waitForUpdate(null);				
+		} catch (JFException e) {
+			System.out.println(FXUtils.getFormatedTimeGMT(time) + ": Exception when trying to set SL in class " + c.getCanonicalName() 
+					+ ", exception message: " + e.getMessage());
+		}
+		
+	}
 }

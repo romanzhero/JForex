@@ -424,27 +424,9 @@ Grupa 4: price action / candlestick paterns
 		
 	}	
 	
-	private boolean extremeUpTrend(Map<String, FlexLogEntry> taValues) {
-		double ma200ma100Distance = taValues.get(FlexTASource.MA200MA100_TREND_DISTANCE_PERC).getDoubleValue();
-		boolean ma200Lowest = taValues.get(FlexTASource.MA200_LOWEST).getBooleanValue();
-		return ma200Lowest && ma200ma100Distance > 80.0;
-	}
-	
-	private boolean extremeDownTrend(Map<String, FlexLogEntry> taValues) {
-		double ma200ma100Distance = taValues.get(FlexTASource.MA200MA100_TREND_DISTANCE_PERC).getDoubleValue();
-		boolean ma200Highest = taValues.get(FlexTASource.MA200_HIGHEST).getBooleanValue();
-		return ma200Highest && ma200ma100Distance > 80.0;
-	}
-
 	@Override
 	public String getName() {
 		return new String(SETUP_NAME);
-	}
-
-	@Override
-	public void afterTradeReset(Instrument instrument) {
-		// TODO Auto-generated method stub
-		super.afterTradeReset(instrument);
 	}
 
 	@Override

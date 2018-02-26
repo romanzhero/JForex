@@ -11,6 +11,7 @@ import jforex.trades.ITradeSetup;
 import jforex.trades.TradeSetup;
 import jforex.trades.ITradeSetup.EntryDirection;
 import jforex.utils.FXUtils;
+import jforex.utils.StopLoss;
 import jforex.utils.log.FlexLogEntry;
 
 import com.dukascopy.api.Filter;
@@ -72,24 +73,24 @@ public class SmiTradeSetup extends TradeSetup {
 			if (order.getProfitLossInPips() < 2.5 * taValues.get(FlexTASource.ATR).getDoubleValue() * Math.pow(10, instrument.getPipScale())) { 
 				lastTradingEvent = "SMI long breakeven signal";
 				if (bidBar.getClose() > order.getOpenPrice()) {
-					FXUtils.setStopLoss(order, order.getOpenPrice(), bidBar.getTime(), getClass());
+					StopLoss.setStopLoss(order, order.getOpenPrice(), bidBar.getTime(), getClass());
 				}
 				else if (bidBar.getLow() > order.getStopLossPrice() || order.getStopLossPrice() == 0.0) {
-					FXUtils.setStopLoss(order, bidBar.getLow(), bidBar.getTime(), getClass());
+					StopLoss.setStopLoss(order, bidBar.getLow(), bidBar.getTime(), getClass());
 				}
 			} else {
 				lastTradingEvent = "SMI long profit protect signal (profit = 2.5 ATR)";
 				if (bidBar.getLow() > order.getStopLossPrice() || order.getStopLossPrice() == 0.0) {
-					FXUtils.setStopLoss(order, bidBar.getLow(), bidBar.getTime(), getClass());
+					StopLoss.setStopLoss(order, bidBar.getLow(), bidBar.getTime(), getClass());
 				}
 			}
 		} else if (!order.isLong()	&& signal != null && signal.isLong) {
 			lastTradingEvent = "SMI short breakeven signal";
 			if (askBar.getClose() < order.getOpenPrice()) {
-				FXUtils.setStopLoss(order, order.getOpenPrice(), bidBar.getTime(), getClass());
+				StopLoss.setStopLoss(order, order.getOpenPrice(), bidBar.getTime(), getClass());
 			}
 			else if (bidBar.getHigh() < order.getStopLossPrice() || order.getStopLossPrice() == 0.0) {
-				FXUtils.setStopLoss(order, askBar.getHigh(), bidBar.getTime(), getClass());
+				StopLoss.setStopLoss(order, askBar.getHigh(), bidBar.getTime(), getClass());
 			}
 		}
 		if (order.isLong()) {
@@ -134,7 +135,7 @@ public class SmiTradeSetup extends TradeSetup {
 										|| bBandsSqueeze < 30);
 				if ((order.isLong() && !continueLong) || (!order.isLong() && !continueShort)) {
 					lastTradingEvent = "SMI move SL due to opposite flat signal";
-					FXUtils.setStopLoss(order, order.isLong() ? bidBar.getLow() : askBar.getHigh(), bidBar.getTime(), getClass());
+					StopLoss.setStopLoss(order, order.isLong() ? bidBar.getLow() : askBar.getHigh(), bidBar.getTime(), getClass());
 				}
 			}
 			else if (taEvent.eventType.equals(TAEventType.ENTRY_SIGNAL) && taEvent.eventName.equals("PUPB")

@@ -3,6 +3,7 @@ package jforex.trades.flat.archive;
 import java.util.List;
 import java.util.Map;
 
+import jforex.utils.StopLoss;
 import jforex.utils.log.FlexLogEntry;
 
 import jforex.events.TAEventDesc;
@@ -14,7 +15,6 @@ import jforex.trades.ITradeSetup;
 import jforex.trades.TradeSetup;
 import jforex.trades.momentum.LongCandleAndMomentumDetector;
 import jforex.trades.momentum.ShortCandleAndMomentumDetector;
-import jforex.utils.FXUtils;
 
 import com.dukascopy.api.Filter;
 import com.dukascopy.api.IBar;
@@ -154,10 +154,10 @@ public class FlatTradeSetupOld extends TradeSetup implements ITradeSetup {
 
 			if (order.isLong() && longProtectSignal) {
 				lastTradingEvent = "long move SL signal";				
-				FXUtils.setStopLoss(order, bidBar.getLow(), bidBar.getTime(), this.getClass());
+				StopLoss.setStopLoss(order, bidBar.getLow(), bidBar.getTime(), this.getClass());
 			} else if (!order.isLong() && shortProtectSignal) {
 				lastTradingEvent = "short move SL signal";				
-				FXUtils.setStopLoss(order, askBar.getHigh(), bidBar.getTime(), this.getClass());
+				StopLoss.setStopLoss(order, askBar.getHigh(), bidBar.getTime(), this.getClass());
 			}
 			// check for opposite signal. Depending on the configuration either set break even or close the trade
 			else if (aggressive) {
@@ -177,15 +177,15 @@ public class FlatTradeSetupOld extends TradeSetup implements ITradeSetup {
 					lastTradingEvent = "move SL due to opposite flat signal";				
 					if (order.isLong()) {
 						if (bidBar.getClose() > order.getOpenPrice()) {
-							FXUtils.setStopLoss(order, order.getOpenPrice(), bidBar.getTime(), getClass());
+							StopLoss.setStopLoss(order, order.getOpenPrice(), bidBar.getTime(), getClass());
 						} else if (bidBar.getLow() > order.getStopLossPrice()) {
-							FXUtils.setStopLoss(order, bidBar.getLow(), bidBar.getTime(), getClass());
+							StopLoss.setStopLoss(order, bidBar.getLow(), bidBar.getTime(), getClass());
 						}
 					} else {
 						if (askBar.getClose() < order.getOpenPrice()) {
-							FXUtils.setStopLoss(order, order.getOpenPrice(), bidBar.getTime(), getClass());
+							StopLoss.setStopLoss(order, order.getOpenPrice(), bidBar.getTime(), getClass());
 						} else if (askBar.getHigh() < order.getStopLossPrice()) {
-							FXUtils.setStopLoss(order, askBar.getHigh(), bidBar.getTime(), getClass());
+							StopLoss.setStopLoss(order, askBar.getHigh(), bidBar.getTime(), getClass());
 						}
 					}
 				}
