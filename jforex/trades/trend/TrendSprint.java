@@ -26,6 +26,7 @@ import jforex.techanalysis.source.FlexTASource;
 import jforex.techanalysis.source.TechnicalSituation;
 import jforex.trades.flat.FlatTradeSetup;
 import jforex.trades.momentum.MomentumReversalSetup;
+import jforex.utils.FXUtils;
 import jforex.utils.StopLoss;
 import jforex.utils.log.FlexLogEntry;
 
@@ -267,6 +268,11 @@ Grupa 4: price action / candlestick paterns
 			if ((flatSignal != null && !flatSignal.isLong)
 				|| (momentumReversal != null && !momentumReversal.isLong)) {
 				lastTradingEvent = "Closed due to short signal";
+				if (flatSignal != null && !flatSignal.isLong)
+					lastTradingEvent += " (Flat)";
+				else if (momentumReversal != null && !momentumReversal.isLong)
+					lastTradingEvent += " (MomentumReversal)";
+				addTradeHistoryEvent(instrument, period, marketEvents, bidBar.getTime(), 0, lastTradingEvent);
 				order.close();
 				order.waitForUpdate(null);
 				return;

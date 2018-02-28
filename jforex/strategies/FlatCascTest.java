@@ -820,6 +820,11 @@ public class FlatCascTest implements IStrategy {
 				//statsLog.printXlsCSVLine(logLine);
 				statsLog.printXlsValuesFlex(tradeLog.prepareExitReportAsList(message.getOrder().getInstrument()));
 			}
+			List<String> tradeHistory = currentSetup.getTradeHistory();
+			log.print("Trade: " + message.getOrder().getLabel() + " action history:");
+			for (String tradeHistoryEntry : tradeHistory) {
+				log.print(tradeHistoryEntry);
+			}
 
 			orderPerPair.put(message.getOrder().getInstrument().name(), null);
 			for (ITradeSetup setup : tradeSetups)
@@ -831,6 +836,9 @@ public class FlatCascTest implements IStrategy {
 			tradeLog.setOrder(message.getOrder()); // needed for Mkt orders, tradeLog was created without order being created
 			tradeLog.fillTime = message.getCreationTime();
 			tradeLog.fillPrice = message.getOrder().getOpenPrice();
+			currentSetup.addTradeHistoryEntry(new String("Order filled at " + FXUtils.getFormatedTimeGMT(tradeLog.fillTime)
+					+ (message.getOrder().getStopLossPrice() != 0.0 ? "; stop loss set at " + FXUtils.df5.format(message.getOrder().getStopLossPrice()) 
+					: "; no stop loss set")));
 		}
 	}
 

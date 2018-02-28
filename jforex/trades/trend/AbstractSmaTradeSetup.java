@@ -95,13 +95,15 @@ public abstract class AbstractSmaTradeSetup extends TradeSetup {
 			
 				if (buySignal(instrument, period, filter, ma20, ma50, ma100, ma200, bidBar, onlyCross, taValues)) {
 					//lastTradingEvent = "buy signal";
-					lastSL = StopLoss.calcATRBasedStopLoss(instrument, true, taValues, 2.0, bidBar, askBar);
+					//lastSL = StopLoss.calcATRBasedStopLoss(instrument, true, taValues, 2.0, bidBar, askBar);
 					TAEventDesc result = new TAEventDesc(TAEventType.ENTRY_SIGNAL, getName(), instrument, true, askBar, bidBar, period);
+					addTradeHistoryEntry(new String(FXUtils.getFormatedBarTime(bidBar) + ": Long entry signal detected for " + getName()));
 					return result;
 				} else if (sellSignal(instrument, period, filter, ma20, ma50, ma100, ma200, askBar, onlyCross, taValues)) {
 					//lastTradingEvent = "sell signal";
-					lastSL = StopLoss.calcATRBasedStopLoss(instrument, false, taValues, 2.0, bidBar, askBar);
+					//lastSL = StopLoss.calcATRBasedStopLoss(instrument, false, taValues, 2.0, bidBar, askBar);
 					TAEventDesc result = new TAEventDesc(TAEventType.ENTRY_SIGNAL, getName(), instrument, false, askBar, bidBar, period);
+					addTradeHistoryEntry(new String(FXUtils.getFormatedBarTime(bidBar) + ": Long entry signal detected for " + getName()));
 					return result;
 				}
 				return null;

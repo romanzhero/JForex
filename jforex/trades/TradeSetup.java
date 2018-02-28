@@ -1,5 +1,6 @@
 package jforex.trades;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -33,6 +34,8 @@ public abstract class TradeSetup implements ITradeSetup {
 		takeOverOnly = false,
 		useEntryFilters = false; // shall numerical filters be checked before logical entry criteria
 	protected String lastTradingEvent = "none";
+	// history of all trade actions to be logged after trade close
+	protected List<String> tradeHistory = new ArrayList<String>();
 
 	public TradeSetup(boolean pUseEntryFilters, IEngine engine, IContext context) {
 		super();
@@ -75,6 +78,12 @@ public abstract class TradeSetup implements ITradeSetup {
 	@Override
 	public void afterTradeReset(Instrument instrument) {
 		lastTradingEvent = "none";
+		tradeHistory.clear();
+		locked = false;
+	}
+	
+	public void addTradeHistoryEntry(String historyEntry) {
+		tradeHistory.add(historyEntry);
 	}
 
 	@Override
@@ -373,4 +382,18 @@ public abstract class TradeSetup implements ITradeSetup {
 			return ma50;
 		return ma100;
 	}
+
+	public List<String> getTradeHistory() {
+		return tradeHistory;
+	}
+
+	protected void addTradeHistoryEvent(Instrument instrument, Period period, List<TAEventDesc> marketEvents, long time, double price,
+			String message) {
+				TAEventDesc profit = findTAEvent(marketEvents, TAEventType.MAX_TRADE_PROFIT_IN_PERC, "MaxTradeProfitInPerc", instrument, period);
+				addTradeHistoryEntry(new String(FXUtils.getFormatedTimeGMT(time) + ": " + message
+						+ (price != 0.0 ? " at " + FXUtils.df5.format(price) : "")
+						+ "; trade profit " + FXUtils.df2.format(profit.tradeProfitInPerc) + "%"
+						+ ", avg. daily range " + FXUtils.df2.format(profit.avgPnLRange) + "%"));
+			}
+	
 }

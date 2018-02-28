@@ -53,4 +53,8 @@ public interface ITradeSetup {
 	public void setLastTradingEvent(String lastTradingEvent);
 
 	public void addDayRanges(Map<Instrument, InstrumentRangeStats> dayRanges);
+
+	public List<String> getTradeHistory();
+
+	public void addTradeHistoryEntry(String string);
 }

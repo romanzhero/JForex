@@ -49,8 +49,11 @@ public class TrendSprintEarly extends AbstractSmaTradeSetup {
 		TechnicalSituation taSituation = taValues.get(FlexTASource.TA_SITUATION).getTehnicalSituationValue();
 		MACD_H_STATE macdHState = taSituation.macdHistoState;
 		STOCH_STATE stochState = taSituation.stochState;
-		boolean closeBelowAllMAs = taValues.get(FlexTASource.CLOSE_BELOW_ALL_MAs).getBooleanValue();
+		boolean 
+			closeBelowAllMAs = taValues.get(FlexTASource.CLOSE_BELOW_ALL_MAs).getBooleanValue(),
+			ma200Lowest = taValues.get(FlexTASource.MA200_LOWEST).getBooleanValue();
 		return closeBelowAllMAs
+				&& !ma200Lowest
 				&& (trendID.equals(TREND_STATE.DOWN_STRONG) || trendID.equals(TREND_STATE.FRESH_DOWN))
 				&& macdHState.toString().toUpperCase().startsWith("FALLING")
 				&& (stochState.equals(STOCH_STATE.BEARISH_FALLING_IN_MIDDLE)
@@ -95,8 +98,11 @@ Grupa 4: price action / candlestick paterns
 		TechnicalSituation taSituation = taValues.get(FlexTASource.TA_SITUATION).getTehnicalSituationValue();
 		MACD_H_STATE macdHState = taSituation.macdHistoState;
 		STOCH_STATE stochState = taSituation.stochState;
-		boolean closeAboveAllMAs = taValues.get(FlexTASource.CLOSE_ABOVE_ALL_MAs).getBooleanValue();
-		return closeAboveAllMAs
+		boolean 
+			closeAboveAllMAs = taValues.get(FlexTASource.CLOSE_ABOVE_ALL_MAs).getBooleanValue(),
+			ma200Highest = taValues.get(FlexTASource.MA200_HIGHEST).getBooleanValue();
+		return !ma200Highest
+				&& closeAboveAllMAs
 				&& (trendID.equals(TREND_STATE.UP_STRONG) || trendID.equals(TREND_STATE.FRESH_UP))
 				&& macdHState.toString().toUpperCase().startsWith("RAISING")
 				&& (stochState.equals(STOCH_STATE.BULLISH_OVERBOUGHT_BOTH)
@@ -142,6 +148,7 @@ Grupa 4: price action / candlestick paterns
 				&& prevBar.getClose() > ma50[0] && bidBar.getClose() < ma50[1]) {
 				lastTradingEvent = "SL set long to MA50 to protect profit";
 				ma50TrailFlags.put(instrument.name(), new Boolean(true));
+				addTradeHistoryEvent(instrument, period, marketEvents, bidBar.getTime(), bidBar.getLow(), lastTradingEvent);
 				order.setStopLossPrice(bidBar.getLow());
 				order.waitForUpdate(null);
 				return;
@@ -159,6 +166,7 @@ Grupa 4: price action / candlestick paterns
 			if (bidBar.getClose() < getLowestMAExceptMA200(mas)) {
 				lastTradingEvent = "SL set long due to cross of the lowest MA";
 				ma50TrailFlags.put(instrument.name(), new Boolean(true));
+				addTradeHistoryEvent(instrument, period, marketEvents, bidBar.getTime(), bidBar.getLow(), lastTradingEvent);
 				StopLoss.setCloserOnlyStopLoss(order, bidBar.getLow(), bidBar.getTime(), this.getClass());
 				return;
 			} 
@@ -169,6 +177,7 @@ Grupa 4: price action / candlestick paterns
 				&& prevBar.getClose() < ma50[0] && bidBar.getClose() > ma50[1]) {
 				lastTradingEvent = "SL set short to MA50  to protect profit";
 				ma50TrailFlags.put(instrument.name(), new Boolean(true));
+				addTradeHistoryEvent(instrument, period, marketEvents, bidBar.getTime(), bidBar.getHigh(), lastTradingEvent);
 				order.setStopLossPrice(bidBar.getHigh());
 				order.waitForUpdate(null);
 				return;
@@ -184,10 +193,23 @@ Grupa 4: price action / candlestick paterns
 			if (bidBar.getClose() > getHighestMAExceptMA200(mas)) {
 				lastTradingEvent = "SL set short due to cross of the highest MA";
 				ma50TrailFlags.put(instrument.name(), new Boolean(true));
+				addTradeHistoryEvent(instrument, period, marketEvents, bidBar.getTime(), bidBar.getHigh(), lastTradingEvent);
 				StopLoss.setCloserOnlyStopLoss(order, bidBar.getHigh(), bidBar.getTime(), this.getClass());
 				return;
 			}
 		} 
+	}
+
+	@Override
+	public EntryDirection checkTakeOver(Instrument instrument, Period period, IBar askBar, IBar bidBar, Filter filter,
+			Map<String, FlexLogEntry> taValues) throws JFException {
+		return EntryDirection.NONE;
+	}
+
+	@Override
+	public boolean isTradeLocked(Instrument instrument, Period period, IBar askBar, IBar bidBar, Filter filter,
+			IOrder order, Map<String, FlexLogEntry> taValues) throws JFException {
+		return false;
 	}
 
 }
