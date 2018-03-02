@@ -11,6 +11,8 @@ public class TAEventDesc {
 	public enum TAEventType {
 		NONE, ENTRY_SIGNAL, EXIT_SIGNAL, ENTRY_CANCEL_SIGNAL, TA_EVENT, DAILY_PNL_INFO, MAX_TRADE_PROFIT_IN_PERC
 	}
+	public static String
+		MAX_TRADE_PROFIT_IN_PERC = "MaxTradeProfitInPerc";
 
 	public TAEventType eventType;
 	public Instrument instrument;

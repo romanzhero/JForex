@@ -262,6 +262,8 @@ Grupa 4: price action / candlestick paterns
 							1, bidBar.getTime(), 0);
 			
 			if (FlexTASource.solidBearishMomentum(taValues) && bidBar.getClose() < mas20[0]) {
+				lastTradingEvent = "SL long set due to bearish momentum and close below MA20";
+				addTradeHistoryEvent(instrument, period, marketEvents, bidBar.getTime(), bidBar.getLow(), lastTradingEvent);
 				if (order.getStopLossPrice() <= 0) {
 					order.setStopLossPrice(bidBar.getLow());
 					order.waitForUpdate(null);
@@ -276,6 +278,7 @@ Grupa 4: price action / candlestick paterns
 			if ((flatEntry != null && !flatEntry.isLong && order.getProfitLossInPips() > 0)
 				|| FlexTASource.solidBearishMomentum(taValues)) {
 				lastTradingEvent = "breakeven set due to opposite flat signal or momentum";
+				addTradeHistoryEvent(instrument, period, marketEvents, bidBar.getTime(), 0, lastTradingEvent);
 				StopLoss.setBreakEvenSituative(order, bidBar);
 				return;
 			}
@@ -283,6 +286,7 @@ Grupa 4: price action / candlestick paterns
 				|| (trendSprintEntry != null && !trendSprintEntry.isLong)
 				|| (momentumReversalEntry != null && !momentumReversalEntry.isLong)) {
 				lastTradingEvent = "closed due to opposite signals";
+				addTradeHistoryEvent(instrument, period, marketEvents, bidBar.getTime(), 0, lastTradingEvent);
 				order.close();
 				order.waitForUpdate(null);
 				return;
@@ -297,11 +301,13 @@ Grupa 4: price action / candlestick paterns
 				lowestMAValue = mas50[0];
 			if (bidBar.getClose() < lowestMAValue) {
 				if (order.getStopLossPrice() == 0) {
-					lastTradingEvent = "MomentumReversal SL set (1st)"; 					
+					lastTradingEvent = "MomentumReversal SL set (1st)"; 			
+					addTradeHistoryEvent(instrument, period, marketEvents, bidBar.getTime(), bidBar.getLow(), lastTradingEvent);
 					order.setStopLossPrice(bidBar.getLow());
 					order.waitForUpdate(null);
 				} else if (bidBar.getLow() > order.getStopLossPrice()) {
 					lastTradingEvent = "MomentumReversal SL set"; 					
+					addTradeHistoryEvent(instrument, period, marketEvents, bidBar.getTime(), bidBar.getLow(), lastTradingEvent);
 					order.setStopLossPrice(bidBar.getLow());
 					order.waitForUpdate(null);					
 				}
@@ -318,6 +324,8 @@ Grupa 4: price action / candlestick paterns
 							1, bidBar.getTime(), 0);
 			
 			if (FlexTASource.solidBullishMomentum(taValues) && askBar.getClose() > mas20[0]) {
+				lastTradingEvent = "SL short set due to bullish momentum and close above MA20";
+				addTradeHistoryEvent(instrument, period, marketEvents, bidBar.getTime(), bidBar.getHigh(), lastTradingEvent);
 				if (order.getStopLossPrice() <= 0) {
 					order.setStopLossPrice(askBar.getHigh());
 					order.waitForUpdate(null);
@@ -332,6 +340,7 @@ Grupa 4: price action / candlestick paterns
 			if ((flatEntry != null && flatEntry.isLong && order.getProfitLossInPips() > 0)
 				|| FlexTASource.solidBullishMomentum(taValues)) {
 				lastTradingEvent = "breakeven set due to opposite flat signal or momentum";
+				addTradeHistoryEvent(instrument, period, marketEvents, bidBar.getTime(), 0, lastTradingEvent);
 				StopLoss.setBreakEvenSituative(order, bidBar);
 				return;
 			}
@@ -339,6 +348,7 @@ Grupa 4: price action / candlestick paterns
 				|| (trendSprintEntry != null && trendSprintEntry.isLong)
 				|| (momentumReversalEntry != null && momentumReversalEntry.isLong)) {
 				lastTradingEvent = "closed due to opposite signals";
+				addTradeHistoryEvent(instrument, period, marketEvents, bidBar.getTime(), 0, lastTradingEvent);
 				order.close();
 				order.waitForUpdate(null);
 				return;
@@ -354,10 +364,12 @@ Grupa 4: price action / candlestick paterns
 			if (askBar.getClose() > highestMAValue) {
 				if (order.getStopLossPrice() == 0) {
 					lastTradingEvent = "MomentumReversal SL set (1st)"; 					
+					addTradeHistoryEvent(instrument, period, marketEvents, bidBar.getTime(), bidBar.getHigh(), lastTradingEvent);
 					order.setStopLossPrice(askBar.getHigh());
 					order.waitForUpdate(null);
 				} else if (bidBar.getHigh() < order.getStopLossPrice()) {
 					lastTradingEvent = "MomentumReversal SL set"; 					
+					addTradeHistoryEvent(instrument, period, marketEvents, bidBar.getTime(), bidBar.getHigh(), lastTradingEvent);
 					order.setStopLossPrice(askBar.getHigh());
 					order.waitForUpdate(null);					
 				}

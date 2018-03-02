@@ -240,21 +240,25 @@ Grupa 4: price action / candlestick paterns
 			}
 			if ((order.isLong() && (exitLongSL || exitLongTrend))
 				|| (!order.isLong() && (exitShortSL || exitShortTrend))) {
+				addTradeHistoryEvent(instrument, period, marketEvents, bidBar.getTime(), 0, lastTradingEvent);
 				order.close();
 				order.waitForUpdate(null);
 				return;
 				//afterTradeReset(instrument);
-			}
-			
+			}			
 		} else if (order.getState().equals(IOrder.State.FILLED)) {
+			if (maxProfitExceededAvgDayRange(marketEvents)) {
+				profitToProtectReached.put(instrument.name(), new Boolean(true));
+				addTradeHistoryEvent(instrument, period, marketEvents, bidBar.getTime(), 0, "Trade profit exceeded avg. daily range !");
+			}
 			// check whether to unlock the trade - price exceeded opposite
 			// channel border at the time of the signal
 			if ((order.isLong() && askBar.getClose() > lastLongSignal.bBandsTop)
 				|| (!order.isLong() && bidBar.getClose() < lastShortSignal.bBandsBottom)) {
 				lastTradingEvent = "Unlock setup (other setups allowed)";
 				locked = false;
-				// do not reset trade completely ! Keep control over order until
-				// other setups take over !
+				addTradeHistoryEvent(instrument, period, marketEvents, bidBar.getTime(), 0, lastTradingEvent);
+				// do not reset trade completely ! Keep control over order until other setups take over !
 			}
 			
 			// Trade simply generates all long and short canlde-momentum signals.
@@ -277,7 +281,7 @@ Grupa 4: price action / candlestick paterns
 									&& ratioMaxProfitToAvgDayRange(marketEvents) > 0.6,						
 				shortExitSignal = flatEntry != null && flatEntry.isLong
 									&& ratioMaxProfitToAvgDayRange(marketEvents) > 0.6,
-				longProtectSignal = (flatEntry!= null && !flatEntry.isLong)
+				longProtectSignal = (flatEntry != null && !flatEntry.isLong)
 									|| (taSituation.taSituation.equals(OverallTASituation.BEARISH)
 										&& taSituation.taReason.equals(TASituationReason.TREND))
 									|| (trendSprintEntry != null && !trendSprintEntry.isLong)
@@ -293,29 +297,49 @@ Grupa 4: price action / candlestick paterns
 				// check for opposite signal with good profit
 				if ((order.isLong() && longExitSignal)
 					|| (!order.isLong() && shortExitSignal)) {
-					lastTradingEvent = "exit due to opposite flat signal";				
+					lastTradingEvent = "exit due to opposite flat signal while profitable";
+					addTradeHistoryEvent(instrument, period, marketEvents, bidBar.getTime(), 0, lastTradingEvent);
 					order.close();
 					order.waitForUpdate(null);
 					return;
 					//afterTradeReset(instrument);
 				} else if (order.isLong() && longProtectSignal) {
-					lastTradingEvent = "long breakeven signal";				
+					lastTradingEvent = "long breakeven signal due to ";			
+					if (flatEntry != null && !flatEntry.isLong)
+						lastTradingEvent += "short flat signal, ";
+					if (taSituation.taSituation.equals(OverallTASituation.BEARISH)
+						&& taSituation.taReason.equals(TASituationReason.TREND))
+						lastTradingEvent += "bearish (trend) TA situation, ";
+					if (trendSprintEntry != null && !trendSprintEntry.isLong)
+						lastTradingEvent += "short TradeSprintEarly entry signal, ";
+					if (momentumReversalEntry != null && !momentumReversalEntry.isLong)	 
+						lastTradingEvent += "short MomentumReversal signal, ";
+					if (FlexTASource.solidBearishMomentum(taValues) && taValues.get(FlexTASource.CHANNEL_POS).getDoubleValue() < 50)
+						lastTradingEvent += "bearish momentum and close below MA20";
+
+					addTradeHistoryEvent(instrument, period, marketEvents, bidBar.getTime(), 0, lastTradingEvent);
 					if (!StopLoss.setBreakEvenSituative(order, bidBar))
 						// order was closed !
 						return;
 				} else if (!order.isLong() && shortProtectSignal) {
-					lastTradingEvent = "short breakeven signal";	
+					lastTradingEvent = "short breakeven signal due to";	
+					if (flatEntry != null && flatEntry.isLong)
+						lastTradingEvent += "long flat signal, ";
+					if (taSituation.taSituation.equals(OverallTASituation.BULLISH)
+						&& taSituation.taReason.equals(TASituationReason.TREND))
+						lastTradingEvent += "bullish (trend) TA situation, ";
+					if (trendSprintEntry != null && trendSprintEntry.isLong)
+						lastTradingEvent += "long TradeSprintEarly entry signal, ";
+					if (momentumReversalEntry != null && momentumReversalEntry.isLong)	 
+						lastTradingEvent += "long MomentumReversal signal, ";
+					if (FlexTASource.solidBullishMomentum(taValues) && taValues.get(FlexTASource.CHANNEL_POS).getDoubleValue() > 50)
+						lastTradingEvent += "bullish momentum and close above MA20";
+					addTradeHistoryEvent(instrument, period, marketEvents, bidBar.getTime(), 0, lastTradingEvent);
 					if (!StopLoss.setBreakEvenSituative(order, askBar))
 						// order was closed !
 						return;
 			} 
 		}
-	}
-
-	@Override
-	public void afterTradeReset(Instrument instrument) {
-		super.afterTradeReset(instrument);
-		locked = false;
 	}
 
 	@Override

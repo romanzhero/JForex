@@ -180,6 +180,7 @@ public class FlatCascTest implements IStrategy {
 		//tradeSetups.add(new PUPBSetup(indicators, history, engine));
 		if (conf.getProperty("SMISetup", "no").equals("yes"))
 			tradeSetups.add(new SmiTradeSetup(engine, context, false, 30.0, 30.0, conf.getProperty("useEntryFilters", "no").equals("yes")));
+		
 		if (conf.getProperty("TrendIDFollowCrossSetup", "no").equals("yes"))
 			tradeSetups.add(new SmaCrossTradeSetup(engine, context, context.getSubscribedInstruments(), true, false, conf.getProperty("useEntryFilters", "no").equals("yes"), 30.0, 25.0, false));
 		if (conf.getProperty("TrendIDFollowSetup", "no").equals("yes"))
@@ -187,10 +188,11 @@ public class FlatCascTest implements IStrategy {
 					conf.getProperty("useEntryFilters", "no").equals("yes"), 30.0, 30.0, false));
 		else if (conf.getProperty("TrendIDFollowSoloSetup", "no").equals("yes"))
 			tradeSetups.add(new SmaSoloTradeSetup(engine, context, context.getSubscribedInstruments(), true, false, 30.0, 30.0, false, true));
-		else if (conf.getProperty("TrendSprintEarly", "no").equals("yes"))
+		
+		if (conf.getProperty("TrendSprintEarly", "no").equals("yes"))
 			tradeSetups.add(new TrendSprintEarly(engine, context, context.getSubscribedInstruments(), true, false, conf.getProperty("useEntryFilters", "no").equals("yes"), 
 					30.0, 30.0, true));
-		else if (conf.getProperty("TrendSprint", "no").equals("yes"))
+		if (conf.getProperty("TrendSprint", "no").equals("yes"))
 			tradeSetups.add(new TrendSprint(engine, context, context.getSubscribedInstruments(), true, false, conf.getProperty("useEntryFilters", "no").equals("yes"), 
 					30.0, 30.0, true));
 	}
@@ -451,7 +453,7 @@ public class FlatCascTest implements IStrategy {
 			// check market situation by testing all available entry signals and TA events and send them to current setup for processing / reaction
 			List<TAEventDesc> marketEvents = checkMarketEvents(instrument, period, askBar, bidBar, selectedFilter, lastTaValues);
 			
-			TAEventDesc maxTradeProfit = new TAEventDesc(TAEventType.MAX_TRADE_PROFIT_IN_PERC, "MaxTradeProfitInPerc", instrument, false, askBar, bidBar, period);
+			TAEventDesc maxTradeProfit = new TAEventDesc(TAEventType.MAX_TRADE_PROFIT_IN_PERC, TAEventDesc.MAX_TRADE_PROFIT_IN_PERC, instrument, false, askBar, bidBar, period);
 			maxTradeProfit.pnlDayRangeRatio = dailyPnL.ratioPnLAvgRange(instrument);
 			maxTradeProfit.avgPnLRange = dailyPnL.getInstrumentData(instrument).rangeStats.avgRange;
 			maxTradeProfit.tradeProfitInPerc = tradeLog.calcMaxProfitInPerc();

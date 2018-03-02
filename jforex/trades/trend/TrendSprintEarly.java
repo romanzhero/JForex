@@ -15,6 +15,7 @@ import com.dukascopy.api.OfferSide;
 import com.dukascopy.api.Period;
 
 import jforex.events.TAEventDesc;
+import jforex.events.TAEventDesc.TAEventType;
 import jforex.techanalysis.Momentum;
 import jforex.techanalysis.Volatility;
 import jforex.techanalysis.Momentum.MACD_H_STATE;
@@ -134,6 +135,12 @@ Grupa 4: price action / candlestick paterns
 			narrowChannel = taValues.get(FlexTASource.BBANDS_SQUEEZE_PERC).getDoubleValue() < 30.0,
 			ma200InChannel = taValues.get(FlexTASource.MA200_IN_CHANNEL).getBooleanValue();
 		String masSlopes = taValues.get(FlexTASource.MA_SLOPES_SCORE).getFormattedValue();
+		
+		if (maxProfitExceededAvgDayRange(marketEvents)) {
+			profitToProtectReached.put(instrument.name(), new Boolean(true));
+			addTradeHistoryEvent(instrument, period, marketEvents, bidBar.getTime(), 0, "Trade profit exceeded avg. daily range !");
+		}
+
 		if (narrowChannel)
 			return;
 
@@ -144,7 +151,7 @@ Grupa 4: price action / candlestick paterns
 			// Cross of MA50 is always observed if trade profit exceeded 1 x avg. daily range ! 
 			// Profit protection ! Only exception: extremely strong trend (MA200MA100 distance > 80)
 			if (!extremeUpTrend(taValues)
-				&& maxProfitExceededAvgDayRange(marketEvents)
+				&& profitToProtectReached.get(instrument.name()).booleanValue()
 				&& prevBar.getClose() > ma50[0] && bidBar.getClose() < ma50[1]) {
 				lastTradingEvent = "SL set long to MA50 to protect profit";
 				ma50TrailFlags.put(instrument.name(), new Boolean(true));
@@ -173,7 +180,7 @@ Grupa 4: price action / candlestick paterns
 		} else {
 			// short
 			if (!extremeDownTrend(taValues)
-				&& maxProfitExceededAvgDayRange(marketEvents)
+				&& profitToProtectReached.get(instrument.name()).booleanValue()
 				&& prevBar.getClose() < ma50[0] && bidBar.getClose() > ma50[1]) {
 				lastTradingEvent = "SL set short to MA50  to protect profit";
 				ma50TrailFlags.put(instrument.name(), new Boolean(true));

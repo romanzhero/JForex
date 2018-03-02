@@ -262,6 +262,10 @@ Grupa 4: price action / candlestick paterns
 			flatSignal = findTAEvent(marketEvents, TAEventType.ENTRY_SIGNAL, FlatTradeSetup.SETUP_NAME, instrument, period),
 			momentumReversal = findTAEvent(marketEvents, TAEventType.ENTRY_SIGNAL, MomentumReversalSetup.SETUP_NAME, instrument, period);
 		
+		if (maxProfitExceededAvgDayRange(marketEvents)) {
+			profitToProtectReached.put(instrument.name(), new Boolean(true));
+			addTradeHistoryEvent(instrument, period, marketEvents, bidBar.getTime(), 0, "Trade profit exceeded avg. daily range !");
+		}
 		// aggressively set break even in the case of solid opposite momentum (but not at very first / earliest bearish states...) !!!
 		// EVEN in narrow channel !
 		if (order.isLong()) {
@@ -280,8 +284,14 @@ Grupa 4: price action / candlestick paterns
 			if (FlexTASource.solidBearishMomentum(taValues)) {
 				lastTradingEvent = "Set to breakeven due to bearish momentum";
 				// this can close the order in the worst case ! If so exit the method !
-				if (!StopLoss.setBreakEvenSituative(order, bidBar))
+				double entryPrice = order.getOpenPrice();
+				if (!StopLoss.setBreakEvenSituative(order, bidBar)) {
+					lastTradingEvent += " and closed";
+					addTradeHistoryEvent(instrument, period, marketEvents, bidBar.getTime(), entryPrice, lastTradingEvent);
 					return;
+				} else {
+					addTradeHistoryEvent(instrument, period, marketEvents, bidBar.getTime(), entryPrice, lastTradingEvent);					
+				}
 			}
 		}
 		else {
@@ -289,15 +299,27 @@ Grupa 4: price action / candlestick paterns
 			if ((flatSignal != null && flatSignal.isLong)
 				|| (momentumReversal != null && momentumReversal.isLong)) {
 				lastTradingEvent = "Closed due to long signal";
+				if (flatSignal != null && flatSignal.isLong)
+					lastTradingEvent += " (Flat)";
+				else if (momentumReversal != null && momentumReversal.isLong)
+					lastTradingEvent += " (MomentumReversal)";
+				addTradeHistoryEvent(instrument, period, marketEvents, bidBar.getTime(), 0, lastTradingEvent);
+
 				order.close();
 				order.waitForUpdate(null);
 				return;
 			}
 			if (FlexTASource.solidBullishMomentum(taValues)) {
 				lastTradingEvent = "Set to breakeven due to bullish momentum";
+				double entryPrice = order.getOpenPrice();
 				// this can close the order in the worst case ! If so exit the method !
-				if (!StopLoss.setBreakEvenSituative(order, askBar));
+				if (!StopLoss.setBreakEvenSituative(order, askBar)) {
+					lastTradingEvent += " and closed";
+					addTradeHistoryEvent(instrument, period, marketEvents, bidBar.getTime(), entryPrice, lastTradingEvent);
 					return;
+				} else {
+					addTradeHistoryEvent(instrument, period, marketEvents, bidBar.getTime(), entryPrice, lastTradingEvent);					
+				}
 			}			
 		}	
 
@@ -346,10 +368,11 @@ Grupa 4: price action / candlestick paterns
 				// Cross of MA50 is always observed if trade profit exceeded 1 x avg. daily range ! 
 				// Profit protection ! Only exception: extremely strong trend (MA200MA100 distance > 80)
 				if (!extremeUpTrend(taValues)
-					&& maxProfitExceededAvgDayRange(marketEvents)
+					&& profitToProtectReached.get(instrument.name()).booleanValue()
 					&& prevBar.getClose() > ma50[0] && bidBar.getClose() < ma50[1]) {
-					lastTradingEvent = "SL set long to MA50 to protect profit";
+					lastTradingEvent = "SL set long to MA50 to protect profit (is or was reached)";
 					ma50TrailFlags.put(instrument.name(), new Boolean(true));
+					addTradeHistoryEvent(instrument, period, marketEvents, bidBar.getTime(), bidBar.getLow(), lastTradingEvent);
 					order.setStopLossPrice(bidBar.getLow());
 					order.waitForUpdate(null);
 					return;
@@ -368,6 +391,7 @@ Grupa 4: price action / candlestick paterns
 				if (prevBar.getClose() > ma50[0] && bidBar.getClose() < ma50[1]) {
 					lastTradingEvent = "SL set long to MA50";
 					ma50TrailFlags.put(instrument.name(), new Boolean(true));
+					addTradeHistoryEvent(instrument, period, marketEvents, bidBar.getTime(), bidBar.getLow(), lastTradingEvent);
 					order.setStopLossPrice(bidBar.getLow());
 					order.waitForUpdate(null);
 					return;
@@ -376,16 +400,19 @@ Grupa 4: price action / candlestick paterns
 				if (bidBar.getClose() < ma100[1]) {
 					lastTradingEvent = "SL set long to MA100";
 					ma50TrailFlags.put(instrument.name(), new Boolean(true));
+					addTradeHistoryEvent(instrument, period, marketEvents, bidBar.getTime(), bidBar.getLow(), lastTradingEvent);
 					order.setStopLossPrice(bidBar.getLow());
 					order.waitForUpdate(null);
 				}					
 			} else {
 				// short
 				if (!extremeDownTrend(taValues)
-					&& maxProfitExceededAvgDayRange(marketEvents)
+					&& profitToProtectReached.get(instrument.name()).booleanValue()
 					&& prevBar.getClose() < ma50[0] && bidBar.getClose() > ma50[1]) {
-					lastTradingEvent = "SL set short to MA50  to protect profit";
+					lastTradingEvent = "SL set short to MA50  to protect profit (is or was reached)";
 					ma50TrailFlags.put(instrument.name(), new Boolean(true));
+					addTradeHistoryEvent(instrument, period, marketEvents, bidBar.getTime(), bidBar.getHigh(), lastTradingEvent);
+
 					order.setStopLossPrice(bidBar.getHigh());
 					order.waitForUpdate(null);
 					return;
@@ -401,6 +428,8 @@ Grupa 4: price action / candlestick paterns
 				if (prevBar.getClose() < ma50[0] && bidBar.getClose() > ma50[1]) {
 					lastTradingEvent = "SL set short to MA50";
 					ma50TrailFlags.put(instrument.name(), new Boolean(true));
+					addTradeHistoryEvent(instrument, period, marketEvents, bidBar.getTime(), bidBar.getHigh(), lastTradingEvent);
+
 					order.setStopLossPrice(bidBar.getHigh());
 					order.waitForUpdate(null);
 					return;
@@ -408,6 +437,8 @@ Grupa 4: price action / candlestick paterns
 				if (bidBar.getClose() > ma100[1]) {
 					lastTradingEvent = "SL set short to MA100";
 					ma50TrailFlags.put(instrument.name(), new Boolean(true));
+					addTradeHistoryEvent(instrument, period, marketEvents, bidBar.getTime(), bidBar.getHigh(), lastTradingEvent);
+
 					order.setStopLossPrice(bidBar.getHigh());
 					order.waitForUpdate(null);
 					return;
@@ -419,11 +450,13 @@ Grupa 4: price action / candlestick paterns
 				if (bidBar.getClose() > ma20[1] && bidBar.getClose() > ma50[1] && bidBar.getClose() > ma100[1]) {
 					lastTradingEvent = "SL reset long";
 					ma50TrailFlags.put(instrument.name(), new Boolean(false));
+					addTradeHistoryEvent(instrument, period, marketEvents, bidBar.getTime(), 0, lastTradingEvent);
 				}
 			} else {
 				if (bidBar.getClose() < ma20[1] && bidBar.getClose() < ma50[1] && bidBar.getClose() < ma100[1]) {
 					lastTradingEvent = "SL reset short";
-					ma50TrailFlags.put(instrument.name(), new Boolean(false));				
+					ma50TrailFlags.put(instrument.name(), new Boolean(false));		
+					addTradeHistoryEvent(instrument, period, marketEvents, bidBar.getTime(), 0, lastTradingEvent);	
 				}
 			}
 		}
@@ -440,6 +473,7 @@ Grupa 4: price action / candlestick paterns
 		super.takeTradingOver(order);
 		// remove old SL !! TrendSprint observes price / MA crosses !
 		try {
+			addTradeHistoryEntry(getName() + " took over the order and reset stop-loss !");
 			order.setStopLossPrice(0);
 			order.waitForUpdate(null);
 		} catch (JFException e) {

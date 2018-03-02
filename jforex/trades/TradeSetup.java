@@ -1,9 +1,9 @@
 package jforex.trades;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
 import jforex.events.TAEventDesc;
 import jforex.events.TAEventDesc.TAEventType;
 import jforex.techanalysis.TradeTrigger.TriggerDesc;
@@ -36,12 +36,16 @@ public abstract class TradeSetup implements ITradeSetup {
 	protected String lastTradingEvent = "none";
 	// history of all trade actions to be logged after trade close
 	protected List<String> tradeHistory = new ArrayList<String>();
+	protected Map<String, Boolean> profitToProtectReached = new HashMap<String, Boolean>();
 
 	public TradeSetup(boolean pUseEntryFilters, IEngine engine, IContext context) {
 		super();
 		this.engine = engine;
 		this.context = context;
 		this.useEntryFilters = pUseEntryFilters;
+		for (Instrument i : context.getSubscribedInstruments()) {
+			profitToProtectReached.put(i.name(), new Boolean(false));
+		}
 	}
 	
 	public TradeSetup(IEngine engine, IContext context, boolean pTakeOverOnly) {
@@ -49,6 +53,9 @@ public abstract class TradeSetup implements ITradeSetup {
 		this.engine = engine;
 		this.context = context;
 		this.takeOverOnly = pTakeOverOnly;
+		for (Instrument i : context.getSubscribedInstruments()) {
+			profitToProtectReached.put(i.name(), new Boolean(false));
+		}
 	}
 
 	@Override
@@ -79,6 +86,7 @@ public abstract class TradeSetup implements ITradeSetup {
 	public void afterTradeReset(Instrument instrument) {
 		lastTradingEvent = "none";
 		tradeHistory.clear();
+		profitToProtectReached.put(instrument.name(), new Boolean(false));
 		locked = false;
 	}
 	
@@ -396,4 +404,7 @@ public abstract class TradeSetup implements ITradeSetup {
 						+ ", avg. daily range " + FXUtils.df2.format(profit.avgPnLRange) + "%"));
 			}
 	
+	protected void addTradeHistoryEvent(long time, String message) {
+		addTradeHistoryEntry(new String(FXUtils.getFormatedTimeGMT(time) + ": " + message));
+	}
 }

@@ -32,7 +32,8 @@ public abstract class AbstractSmaTradeSetup extends TradeSetup {
 		onlyCross = true,
 		mktEntry = true,
 		trailsOnMA50 = false;
-	protected Map<String, Boolean> ma50TrailFlags = new HashMap<String, Boolean>();
+	protected Map<String, Boolean> 
+		ma50TrailFlags = new HashMap<String, Boolean>();
 	protected double flatPercThreshold;
 	protected double bBandsSqueezeThreshold;
 	protected double lastSL;
@@ -72,6 +73,9 @@ public abstract class AbstractSmaTradeSetup extends TradeSetup {
 
 		for (Instrument i : subscribedInstruments) {
 			ma50TrailFlags.put(i.name(), new Boolean(false));
+		}
+		for (Instrument i : subscribedInstruments) {
+			profitToProtectReached.put(i.name(), new Boolean(false));
 		}
 	}
 
@@ -343,6 +347,7 @@ public abstract class AbstractSmaTradeSetup extends TradeSetup {
 	
 	@Override
 	public void afterTradeReset(Instrument instrument) {
+		super.afterTradeReset(instrument);
 		ma50TrailFlags.put(instrument.name(), new Boolean(false));
 	}
 	
