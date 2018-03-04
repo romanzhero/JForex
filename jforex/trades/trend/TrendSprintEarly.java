@@ -56,6 +56,7 @@ public class TrendSprintEarly extends AbstractSmaTradeSetup {
 		return closeBelowAllMAs
 				&& !ma200Lowest
 				&& (trendID.equals(TREND_STATE.DOWN_STRONG) || trendID.equals(TREND_STATE.FRESH_DOWN))
+				&& !taValues.get(FlexTASource.MA20_SLOPE).toString().toUpperCase().startsWith("RAISING")
 				&& macdHState.toString().toUpperCase().startsWith("FALLING")
 				&& (stochState.equals(STOCH_STATE.BEARISH_FALLING_IN_MIDDLE)
 					|| stochState.equals(STOCH_STATE.BEARISH_OVERSOLD_BOTH)
@@ -105,6 +106,7 @@ Grupa 4: price action / candlestick paterns
 		return !ma200Highest
 				&& closeAboveAllMAs
 				&& (trendID.equals(TREND_STATE.UP_STRONG) || trendID.equals(TREND_STATE.FRESH_UP))
+				&& !taValues.get(FlexTASource.MA20_SLOPE).toString().toUpperCase().startsWith("FALLING")
 				&& macdHState.toString().toUpperCase().startsWith("RAISING")
 				&& (stochState.equals(STOCH_STATE.BULLISH_OVERBOUGHT_BOTH)
 					|| stochState.equals(STOCH_STATE.BULLISH_OVERBOUGHT_FAST)

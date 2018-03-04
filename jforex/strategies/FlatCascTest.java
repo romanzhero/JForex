@@ -456,6 +456,7 @@ public class FlatCascTest implements IStrategy {
 			TAEventDesc maxTradeProfit = new TAEventDesc(TAEventType.MAX_TRADE_PROFIT_IN_PERC, TAEventDesc.MAX_TRADE_PROFIT_IN_PERC, instrument, false, askBar, bidBar, period);
 			maxTradeProfit.pnlDayRangeRatio = dailyPnL.ratioPnLAvgRange(instrument);
 			maxTradeProfit.avgPnLRange = dailyPnL.getInstrumentData(instrument).rangeStats.avgRange;
+			maxTradeProfit.maxDayRange = dailyPnL.getInstrumentData(instrument).rangeStats.maxRange;
 			maxTradeProfit.tradeProfitInPerc = tradeLog.calcMaxProfitInPerc();
 			marketEvents.add(maxTradeProfit);
 			
@@ -823,10 +824,11 @@ public class FlatCascTest implements IStrategy {
 				statsLog.printXlsValuesFlex(tradeLog.prepareExitReportAsList(message.getOrder().getInstrument()));
 			}
 			List<String> tradeHistory = currentSetup.getTradeHistory();
-			log.print("Trade: " + message.getOrder().getLabel() + " action history:");
+			log.print("------------------ TRADE: " + message.getOrder().getLabel() + " ACTION HISTORY ------------------");
 			for (String tradeHistoryEntry : tradeHistory) {
 				log.print(tradeHistoryEntry);
 			}
+			log.print("------------------ TRADE: " + message.getOrder().getLabel() + " ACTION HISTORY END !!! ------------------");
 
 			orderPerPair.put(message.getOrder().getInstrument().name(), null);
 			for (ITradeSetup setup : tradeSetups)

@@ -25,7 +25,7 @@ public class TAEventDesc {
 		channelPosition, 
 		stopLossLevel, takeProfitLevel,
 		bBandsSqueezePerc, maDistancePerc,
-		pnlDayRangeRatio = 0, avgPnLRange = 0, tradeProfitInPerc = 0;
+		pnlDayRangeRatio = 0, avgPnLRange = 0, tradeProfitInPerc = 0, maxDayRange = 0;
 
 	public TAEventDesc(TAEventType eventType, String eventName,	Instrument instrument, boolean isLong, IBar askBar, IBar bidBar, Period timeFrame) {
 		super();

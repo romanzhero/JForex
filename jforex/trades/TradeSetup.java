@@ -401,7 +401,9 @@ public abstract class TradeSetup implements ITradeSetup {
 				addTradeHistoryEntry(new String(FXUtils.getFormatedTimeGMT(time) + ": " + message
 						+ (price != 0.0 ? " at " + FXUtils.df5.format(price) : "")
 						+ "; trade profit " + FXUtils.df2.format(profit.tradeProfitInPerc) + "%"
-						+ ", avg. daily range " + FXUtils.df2.format(profit.avgPnLRange) + "%"));
+						+ ", avg. daily range " + FXUtils.df2.format(profit.avgPnLRange) + "% (ratio "
+						+ FXUtils.df2.format(this.ratioMaxProfitToAvgDayRange(marketEvents)) + "%, ratio to max. day range "
+						+ FXUtils.df2.format(profit.tradeProfitInPerc / profit.maxDayRange * 100) + "%)"));
 			}
 	
 	protected void addTradeHistoryEvent(long time, String message) {
