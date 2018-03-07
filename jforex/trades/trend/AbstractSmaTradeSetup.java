@@ -27,7 +27,7 @@ import com.dukascopy.api.OfferSide;
 import com.dukascopy.api.Period;
 
 public abstract class AbstractSmaTradeSetup extends TradeSetup {
-
+	protected static String MA50_TRAIL_FLAG = "MA50_TRAIL_FLAG";
 	protected boolean 
 		onlyCross = true,
 		mktEntry = true,
@@ -54,6 +54,7 @@ public abstract class AbstractSmaTradeSetup extends TradeSetup {
 
 		for (Instrument i : subscribedInstruments) {
 			ma50TrailFlags.put(i.name(), new Boolean(false));
+			tradeEvents.get(i.name()).put(MA50_TRAIL_FLAG, new FlexLogEntry(MA50_TRAIL_FLAG, new Boolean(false)));
 		}
 	}
 	
@@ -73,9 +74,7 @@ public abstract class AbstractSmaTradeSetup extends TradeSetup {
 
 		for (Instrument i : subscribedInstruments) {
 			ma50TrailFlags.put(i.name(), new Boolean(false));
-		}
-		for (Instrument i : subscribedInstruments) {
-			profitToProtectReached.put(i.name(), new Boolean(false));
+			tradeEvents.get(i.name()).put(MA50_TRAIL_FLAG, new FlexLogEntry(MA50_TRAIL_FLAG, new Boolean(false)));
 		}
 	}
 
@@ -349,6 +348,7 @@ public abstract class AbstractSmaTradeSetup extends TradeSetup {
 	public void afterTradeReset(Instrument instrument) {
 		super.afterTradeReset(instrument);
 		ma50TrailFlags.put(instrument.name(), new Boolean(false));
+		tradeEvents.get(instrument.name()).put(MA50_TRAIL_FLAG, new FlexLogEntry(MA50_TRAIL_FLAG, new Boolean(false)));
 	}
 	
 	@Override

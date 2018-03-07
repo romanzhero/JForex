@@ -36,7 +36,7 @@ public class TrendSprint extends AbstractSmaTradeSetup {
 	public TrendSprint(IEngine engine, IContext context, Set<Instrument> subscribedInstruments, 
 			boolean mktEntry, boolean onlyCross, boolean useEntryFilters,
 			double pFlatPercThreshold, double pBBandsSqueezeThreshold, boolean trailsOnMA50) {
-		super(engine, context, subscribedInstruments, mktEntry, onlyCross, useEntryFilters, pFlatPercThreshold, pBBandsSqueezeThreshold,	trailsOnMA50);
+		super(engine, context, subscribedInstruments, mktEntry, onlyCross, useEntryFilters, pFlatPercThreshold, pBBandsSqueezeThreshold, trailsOnMA50);
 	}
 
 	public TrendSprint(IEngine engine, IContext context, Set<Instrument> subscribedInstruments, boolean mktEntry,

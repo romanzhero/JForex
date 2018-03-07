@@ -28,6 +28,10 @@ public abstract class TradeSetup implements ITradeSetup {
 	protected IContext context = null;
 	protected IOrder order = null;
 	protected Map<Instrument, InstrumentRangeStats> dayRanges = null;
+	
+	protected static String 
+		PROFIT_TO_PROTECT_REACHED = "PROFIT_TO_PROTECT_REACHED", 
+		OPPOSITE_CHANNEL_PIERCED = "OPPOSITE_CHANNEL_PIERCED";
 
 	protected boolean 
 		locked = false,
@@ -37,6 +41,14 @@ public abstract class TradeSetup implements ITradeSetup {
 	// history of all trade actions to be logged after trade close
 	protected List<String> tradeHistory = new ArrayList<String>();
 	protected Map<String, Boolean> profitToProtectReached = new HashMap<String, Boolean>();
+	// generalized log of events to be tracked and reacted upon in inTradeProcessing
+	// replaces for example ma50Trailing in TrendSprint. Multi-instrument ready
+	// Each instrument has its own map of events. After trade is closed, the latter is emptied
+	// It must be initialized of course, as individual flags before
+	protected Map<String, Map<String, FlexLogEntry>> tradeEvents = new HashMap<String, Map<String, FlexLogEntry>>();
+	//TODO: exactly the same thing should be done with all the configuration parameters instead of individual values !
+	//TODO: a TradeSetupFactory is needed for this to parse and create proper configurations !!! Input of the factory
+	//TODO: are Properties and output first the configuration map which is passed to the new trade setup object !
 
 	public TradeSetup(boolean pUseEntryFilters, IEngine engine, IContext context) {
 		super();
@@ -45,6 +57,10 @@ public abstract class TradeSetup implements ITradeSetup {
 		this.useEntryFilters = pUseEntryFilters;
 		for (Instrument i : context.getSubscribedInstruments()) {
 			profitToProtectReached.put(i.name(), new Boolean(false));
+			// only empty map per instrument. Each setup must fill the initial values and define keys !
+			tradeEvents.put(i.name(), new HashMap<String, FlexLogEntry>());
+			tradeEvents.get(i.name()).put(PROFIT_TO_PROTECT_REACHED, new FlexLogEntry(PROFIT_TO_PROTECT_REACHED, new Boolean(false)));
+			tradeEvents.get(i.name()).put(OPPOSITE_CHANNEL_PIERCED, new FlexLogEntry(OPPOSITE_CHANNEL_PIERCED, new Boolean(false)));
 		}
 	}
 	
@@ -55,6 +71,9 @@ public abstract class TradeSetup implements ITradeSetup {
 		this.takeOverOnly = pTakeOverOnly;
 		for (Instrument i : context.getSubscribedInstruments()) {
 			profitToProtectReached.put(i.name(), new Boolean(false));
+			tradeEvents.put(i.name(), new HashMap<String, FlexLogEntry>());
+			tradeEvents.get(i.name()).put(PROFIT_TO_PROTECT_REACHED, new FlexLogEntry(PROFIT_TO_PROTECT_REACHED, new Boolean(false)));
+			tradeEvents.get(i.name()).put(OPPOSITE_CHANNEL_PIERCED, new FlexLogEntry(OPPOSITE_CHANNEL_PIERCED, new Boolean(false)));
 		}
 	}
 
@@ -87,6 +106,7 @@ public abstract class TradeSetup implements ITradeSetup {
 		lastTradingEvent = "none";
 		tradeHistory.clear();
 		profitToProtectReached.put(instrument.name(), new Boolean(false));
+		tradeEvents.replace(instrument.name(), new HashMap<String, FlexLogEntry>());
 		locked = false;
 	}
 	
@@ -409,4 +429,42 @@ public abstract class TradeSetup implements ITradeSetup {
 	protected void addTradeHistoryEvent(long time, String message) {
 		addTradeHistoryEntry(new String(FXUtils.getFormatedTimeGMT(time) + ": " + message));
 	}
+
+	protected boolean checkExtremeProfit(Instrument instrument, Period period, IBar askBar, IBar bidBar, IOrder order, List<TAEventDesc> marketEvents) {
+		TAEventDesc profitData = findTAEvent(marketEvents, TAEventType.MAX_TRADE_PROFIT_IN_PERC, TAEventDesc.MAX_TRADE_PROFIT_IN_PERC, instrument, period);
+		if (profitData.tradeProfitInPerc / profitData.maxDayRange > 0.5)
+		{
+			if (order.isLong()) {
+				if (bidBar.getClose() < bidBar.getOpen()) {
+					lastTradingEvent = "SL long set to bottom of last negative bar due to extreme profit";
+					addTradeHistoryEvent(instrument, period, marketEvents, bidBar.getTime(), bidBar.getLow(), lastTradingEvent);
+					StopLoss.setCloserOnlyStopLoss(order, bidBar.getLow(), bidBar.getTime(), this.getClass());
+					return true;
+				} 
+			} else {
+				// short
+				if (askBar.getClose() > askBar.getOpen()) {
+					lastTradingEvent = "SL short set to top of last negative bar due to extreme profit";
+					addTradeHistoryEvent(instrument, period, marketEvents, bidBar.getTime(), askBar.getHigh(), lastTradingEvent);
+					StopLoss.setCloserOnlyStopLoss(order, askBar.getHigh(), askBar.getTime(), this.getClass());
+					return true;
+				} 
+			}
+		} 
+		return false;
+	}
+
+	protected void checkOppositeChannelPierced(Instrument instrument, Period period, IBar bidBar, IBar askBar, IOrder order,
+			Map<String, FlexLogEntry> taValues, List<TAEventDesc> marketEvents) {
+			if (tradeEvents.get(instrument.name()).get(OPPOSITE_CHANNEL_PIERCED).getBooleanValue()
+				|| taValues.get(FlexTASource.BBANDS_SQUEEZE_PERC).getDoubleValue() < 25.0) 
+				return;
+		
+			if ((order.isLong() && taValues.get(FlexTASource.CHANNEL_POS).getDoubleValue() > 100)
+				|| (!order.isLong() && taValues.get(FlexTASource.CHANNEL_POS).getDoubleValue() < 0)) {
+				lastTradingEvent = "Channel " + (order.isLong() ? "top " : "bottom ") + "pierced !";
+				addTradeHistoryEvent(instrument, period, marketEvents, bidBar.getTime(), 0, lastTradingEvent);
+				tradeEvents.get(instrument.name()).put(OPPOSITE_CHANNEL_PIERCED, new FlexLogEntry(OPPOSITE_CHANNEL_PIERCED, new Boolean(true)));
+			}
+		}
 }
