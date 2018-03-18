@@ -23,6 +23,7 @@ import jforex.techanalysis.Momentum.STOCH_STATE;
 import jforex.techanalysis.Trend.TREND_STATE;
 import jforex.techanalysis.source.FlexTASource;
 import jforex.techanalysis.source.TechnicalSituation;
+import jforex.trades.flat.FlatTradeSetup;
 import jforex.utils.StopLoss;
 import jforex.utils.log.FlexLogEntry;
 
@@ -48,15 +49,29 @@ public class TrendSprintEarly extends AbstractSmaTradeSetup {
 			throws JFException {
 		TREND_STATE trendID = taValues.get(FlexTASource.TREND_ID).getTrendStateValue();
 		TechnicalSituation taSituation = taValues.get(FlexTASource.TA_SITUATION).getTehnicalSituationValue();
+
+/*		if (taSituation.fastSMIState.toString().contains("OVERSOLD")
+				&& taSituation.stochState.toString().contains("OVERSOLD_BOTH"))
+				return false;*/
+		if (taValues.get(FlexTASource.MA100_ABOVE_MA200).getBooleanValue())
+			// too early, previous regime was uptrend !
+			return false;
+		if (taValues.get(FlexTASource.BBANDS_SQUEEZE_PERC).getDoubleValue() > 80 
+			&& taValues.get(FlexTASource.CHANNEL_POS).getDoubleValue() < 10)
+			// breakout in high volatility, too late ! 
+			return false;
+		
 		MACD_H_STATE macdHState = taSituation.macdHistoState;
 		STOCH_STATE stochState = taSituation.stochState;
 		boolean 
 			closeBelowAllMAs = taValues.get(FlexTASource.CLOSE_BELOW_ALL_MAs).getBooleanValue(),
 			ma200Lowest = taValues.get(FlexTASource.MA200_LOWEST).getBooleanValue();
-		return closeBelowAllMAs
+		return taValues.get(FlexTASource.BBANDS_SQUEEZE_PERC).getDoubleValue() > 25
+				&& taValues.get(FlexTASource.MAs_DISTANCE_PERC).getDoubleValue() > 20				
+				&& closeBelowAllMAs
 				&& !ma200Lowest
 				&& (trendID.equals(TREND_STATE.DOWN_STRONG) || trendID.equals(TREND_STATE.FRESH_DOWN))
-				&& !taValues.get(FlexTASource.MA20_SLOPE).toString().toUpperCase().startsWith("RAISING")
+				&& !taValues.get(FlexTASource.MA20_SLOPE).getFormattedValue().toUpperCase().startsWith("RAISING")
 				&& macdHState.toString().toUpperCase().startsWith("FALLING")
 				&& (stochState.equals(STOCH_STATE.BEARISH_FALLING_IN_MIDDLE)
 					|| stochState.equals(STOCH_STATE.BEARISH_OVERSOLD_BOTH)
@@ -94,19 +109,33 @@ Grupa 4: price action / candlestick paterns
 	 */	
 	@Override
 	protected boolean buySignal(Instrument instrument, Period period, Filter filter, double[] ma20, double[] ma50,
-			double[] ma100, double[] ma200, IBar bidBar, boolean strict, Map<String, FlexLogEntry> taValues)
-			throws JFException {
+			double[] ma100, double[] ma200, IBar bidBar, boolean strict, Map<String, FlexLogEntry> taValues) throws JFException {
 		TREND_STATE trendID = taValues.get(FlexTASource.TREND_ID).getTrendStateValue();
-		TechnicalSituation taSituation = taValues.get(FlexTASource.TA_SITUATION).getTehnicalSituationValue();
+		TechnicalSituation taSituation = taValues.get(FlexTASource.TA_SITUATION).getTehnicalSituationValue();	
+
+/*		if (taSituation.fastSMIState.toString().contains("OVERBOUGHT")
+			&& taSituation.stochState.toString().contains("OVERBOUGHT_BOTH"))
+			// too late !
+			return false;*/
+		if (!taValues.get(FlexTASource.MA100_ABOVE_MA200).getBooleanValue())
+			// too early, previous regime was downtrend !
+			return false;
+		if (taValues.get(FlexTASource.BBANDS_SQUEEZE_PERC).getDoubleValue() > 80 
+			&& taValues.get(FlexTASource.CHANNEL_POS).getDoubleValue() > 90)
+			// breakout in high volatility, too late ! 
+			return false;
+		
 		MACD_H_STATE macdHState = taSituation.macdHistoState;
 		STOCH_STATE stochState = taSituation.stochState;
 		boolean 
 			closeAboveAllMAs = taValues.get(FlexTASource.CLOSE_ABOVE_ALL_MAs).getBooleanValue(),
 			ma200Highest = taValues.get(FlexTASource.MA200_HIGHEST).getBooleanValue();
-		return !ma200Highest
+		return taValues.get(FlexTASource.BBANDS_SQUEEZE_PERC).getDoubleValue() > 25
+				&& taValues.get(FlexTASource.MAs_DISTANCE_PERC).getDoubleValue() > 20
+				&& !ma200Highest
 				&& closeAboveAllMAs
 				&& (trendID.equals(TREND_STATE.UP_STRONG) || trendID.equals(TREND_STATE.FRESH_UP))
-				&& !taValues.get(FlexTASource.MA20_SLOPE).toString().toUpperCase().startsWith("FALLING")
+				&& !taValues.get(FlexTASource.MA20_SLOPE).getFormattedValue().toUpperCase().startsWith("FALLING")
 				&& macdHState.toString().toUpperCase().startsWith("RAISING")
 				&& (stochState.equals(STOCH_STATE.BULLISH_OVERBOUGHT_BOTH)
 					|| stochState.equals(STOCH_STATE.BULLISH_OVERBOUGHT_FAST)
@@ -145,6 +174,7 @@ Grupa 4: price action / candlestick paterns
 
 		if (narrowChannel)
 			return;
+		//TAEventDesc	flatEntry = findTAEvent(marketEvents, TAEventType.ENTRY_SIGNAL, FlatTradeSetup.SETUP_NAME, instrument, period);
 
 		IBar prevBar = this.context.getHistory().getBars(instrument, period, OfferSide.BID, Filter.WEEKENDS, 2, bidBar.getTime(), 0).get(0);
 		

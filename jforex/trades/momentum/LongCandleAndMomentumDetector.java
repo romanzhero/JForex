@@ -10,7 +10,6 @@ import com.dukascopy.api.OfferSide;
 import com.dukascopy.api.Period;
 
 import jforex.techanalysis.Momentum;
-import jforex.techanalysis.Momentum.SINGLE_LINE_STATE;
 import jforex.techanalysis.TradeTrigger;
 import jforex.techanalysis.source.FlexTASource;
 import jforex.techanalysis.source.TechnicalSituation;
@@ -35,11 +34,11 @@ public class LongCandleAndMomentumDetector extends AbstractCandleAndMomentumDete
 		}
 		// now check the momentum condition too
 		if (candleSignalAppeared && !momentumConfired) {
-			// however it might happen that S/R of candle signal was exceeded in
-			// the opposite direction
-			// MUST cancel the whole signal !
-			if (bidBar.getClose() < candleSignalDesc.pivotLevel)
+			// however it might happen that S/R of candle signal was exceeded in the opposite direction --> MUST cancel the whole signal !
+			// or entry too high
+			if (bidBar.getClose() < candleSignalDesc.pivotLevel || taValues.get(FlexTASource.CHANNEL_POS).getDoubleValue() > 100)
 				reset();
+			
 			if (candleSignalAppeared) {
 				TechnicalSituation taSituation = taValues.get(FlexTASource.TA_SITUATION).getTehnicalSituationValue();
 				Momentum.STOCH_STATE stoch = taSituation.stochState;

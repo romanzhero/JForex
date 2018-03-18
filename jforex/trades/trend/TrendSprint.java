@@ -17,8 +17,6 @@ import com.dukascopy.api.Period;
 import jforex.events.TAEventDesc;
 import jforex.events.TAEventDesc.TAEventType;
 import jforex.techanalysis.Momentum;
-import jforex.techanalysis.Momentum.SMI_STATE;
-import jforex.techanalysis.Momentum.STOCH_STATE;
 import jforex.techanalysis.Trend;
 import jforex.techanalysis.Trend.TREND_STATE;
 import jforex.techanalysis.Volatility;
@@ -26,7 +24,6 @@ import jforex.techanalysis.source.FlexTASource;
 import jforex.techanalysis.source.TechnicalSituation;
 import jforex.trades.flat.FlatTradeSetup;
 import jforex.trades.momentum.MomentumReversalSetup;
-import jforex.utils.FXUtils;
 import jforex.utils.StopLoss;
 import jforex.utils.log.FlexLogEntry;
 
@@ -258,9 +255,7 @@ Grupa 4: price action / candlestick paterns
 			narrowChannel = taValues.get(FlexTASource.BBANDS_SQUEEZE_PERC).getDoubleValue() < 30.0,
 			ma200InChannel = taValues.get(FlexTASource.MA200_IN_CHANNEL).getBooleanValue();
 		String masSlopes = taValues.get(FlexTASource.MA_SLOPES_SCORE).getFormattedValue();
-		TAEventDesc 
-			flatSignal = findTAEvent(marketEvents, TAEventType.ENTRY_SIGNAL, FlatTradeSetup.SETUP_NAME, instrument, period),
-			momentumReversal = findTAEvent(marketEvents, TAEventType.ENTRY_SIGNAL, MomentumReversalSetup.SETUP_NAME, instrument, period);
+		TAEventDesc momentumReversal = findTAEvent(marketEvents, TAEventType.ENTRY_SIGNAL, MomentumReversalSetup.SETUP_NAME, instrument, period);
 		
 		if (maxProfitExceededAvgDayRange(marketEvents)) {
 			profitToProtectReached.put(instrument.name(), new Boolean(true));
@@ -269,19 +264,14 @@ Grupa 4: price action / candlestick paterns
 		// aggressively set break even in the case of solid opposite momentum (but not at very first / earliest bearish states...) !!!
 		// EVEN in narrow channel !
 		if (order.isLong()) {
-			if ((flatSignal != null && !flatSignal.isLong)
-				|| (momentumReversal != null && !momentumReversal.isLong)) {
-				lastTradingEvent = "Closed due to short signal";
-				if (flatSignal != null && !flatSignal.isLong)
-					lastTradingEvent += " (Flat)";
-				else if (momentumReversal != null && !momentumReversal.isLong)
-					lastTradingEvent += " (MomentumReversal)";
+			if (momentumReversal != null && !momentumReversal.isLong) {
+				lastTradingEvent = "Closed due to short signal (MomentumReversal)";
 				addTradeHistoryEvent(instrument, period, marketEvents, bidBar.getTime(), 0, lastTradingEvent);
 				order.close();
 				order.waitForUpdate(null);
 				return;
 			}
-			if (FlexTASource.solidBearishMomentum(taValues)) {
+			if (FlexTASource.solidBearishMomentum(taValues) && order.getProfitLossInPips() > 0) {
 				lastTradingEvent = "Set to breakeven due to bearish momentum";
 				// this can close the order in the worst case ! If so exit the method !
 				double entryPrice = order.getOpenPrice();
@@ -293,23 +283,24 @@ Grupa 4: price action / candlestick paterns
 					addTradeHistoryEvent(instrument, period, marketEvents, bidBar.getTime(), entryPrice, lastTradingEvent);					
 				}
 			}
+			if (bidBar.getClose() < getLowestMAExceptMA200(mas)) {
+				lastTradingEvent = "SL set long due to cross of the lowest MA";
+				ma50TrailFlags.put(instrument.name(), new Boolean(true));
+				addTradeHistoryEvent(instrument, period, marketEvents, bidBar.getTime(), bidBar.getLow(), lastTradingEvent);
+				StopLoss.setCloserOnlyStopLoss(order, bidBar.getLow(), bidBar.getTime(), this.getClass());
+				return;
+			} 			
 		}
 		else {
 			// short
-			if ((flatSignal != null && flatSignal.isLong)
-				|| (momentumReversal != null && momentumReversal.isLong)) {
-				lastTradingEvent = "Closed due to long signal";
-				if (flatSignal != null && flatSignal.isLong)
-					lastTradingEvent += " (Flat)";
-				else if (momentumReversal != null && momentumReversal.isLong)
-					lastTradingEvent += " (MomentumReversal)";
+			if (momentumReversal != null && momentumReversal.isLong) {
+				lastTradingEvent = "Closed due to long signal (MomentumReversal)";
 				addTradeHistoryEvent(instrument, period, marketEvents, bidBar.getTime(), 0, lastTradingEvent);
-
 				order.close();
 				order.waitForUpdate(null);
 				return;
 			}
-			if (FlexTASource.solidBullishMomentum(taValues)) {
+			if (FlexTASource.solidBullishMomentum(taValues) && order.getProfitLossInPips() > 0) {
 				lastTradingEvent = "Set to breakeven due to bullish momentum";
 				double entryPrice = order.getOpenPrice();
 				// this can close the order in the worst case ! If so exit the method !
@@ -320,7 +311,14 @@ Grupa 4: price action / candlestick paterns
 				} else {
 					addTradeHistoryEvent(instrument, period, marketEvents, bidBar.getTime(), entryPrice, lastTradingEvent);					
 				}
-			}			
+			}
+			if (bidBar.getClose() > getHighestMAExceptMA200(mas)) {
+				lastTradingEvent = "SL set short due to cross of the highest MA";
+				ma50TrailFlags.put(instrument.name(), new Boolean(true));
+				addTradeHistoryEvent(instrument, period, marketEvents, bidBar.getTime(), bidBar.getHigh(), lastTradingEvent);
+				StopLoss.setCloserOnlyStopLoss(order, bidBar.getHigh(), bidBar.getTime(), this.getClass());
+				return;
+			}
 		}	
 
 		if (narrowChannel)

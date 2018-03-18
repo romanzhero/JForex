@@ -20,6 +20,7 @@ import jforex.techanalysis.source.TechnicalSituation.TASituationReason;
 import jforex.trades.TradeSetup;
 import jforex.trades.momentum.LongCandleAndMomentumDetector;
 import jforex.trades.momentum.ShortCandleAndMomentumDetector;
+import jforex.utils.StopLoss;
 import jforex.utils.log.FlexLogEntry;
 
 public abstract class AbstractMeanReversionSetup extends TradeSetup {
@@ -35,6 +36,10 @@ public abstract class AbstractMeanReversionSetup extends TradeSetup {
 		for (Instrument i : context.getSubscribedInstruments()) {
 			tradeEvents.get(i.name()).put(OPPOSITE_CHANNEL_PIERCED, new FlexLogEntry(OPPOSITE_CHANNEL_PIERCED, new Boolean(false)));
 		}
+		// this way signals will be generated regardless of the channel position so they can be used both for entry and all exit checks
+		// entry and exit checks must explicitly test channel position !
+		longCmd = new LongCandleAndMomentumDetector(100, false);
+		shortCmd = new ShortCandleAndMomentumDetector(0, false);		
 	}
 
 	public AbstractMeanReversionSetup(IEngine engine, IContext context, boolean pTakeOverOnly) {
@@ -55,6 +60,7 @@ public abstract class AbstractMeanReversionSetup extends TradeSetup {
 		}
 	}
 
+	// true if the order was closed
 	protected boolean openOrderProcessing(Instrument instrument, Period period, IBar bidBar, IOrder order, Map<String, FlexLogEntry> taValues, List<TAEventDesc> marketEvents,
 			IBar barToCheck, TechnicalSituation taSituation, TAEventDesc trendSprintEntry, TAEventDesc momentumReversalEntry) throws JFException {
 			if (!order.getState().equals(IOrder.State.OPENED)) 
@@ -69,21 +75,22 @@ public abstract class AbstractMeanReversionSetup extends TradeSetup {
 				exitShortTrend = false;
 			if (order.isLong()) {
 				exitLongSL = barToCheck.getClose() < order.getStopLossPrice();
-				exitLongTrend = (taSituation.taSituation.equals(OverallTASituation.BEARISH)
-									&& taSituation.taReason.equals(TASituationReason.TREND))
+				exitLongTrend = (momentumReversalEntry != null && !momentumReversalEntry.isLong);
+/*				(taSituation.taSituation.equals(OverallTASituation.BEARISH) && taSituation.taReason.equals(TASituationReason.TREND))
 								|| (trendSprintEntry != null && !trendSprintEntry.isLong)
-								|| (momentumReversalEntry != null && !momentumReversalEntry.isLong)
+								|| 
 								|| (FlexTASource.solidBearishMomentum(taValues) && taValues.get(FlexTASource.CHANNEL_POS).getDoubleValue() < 50);
-				lastTradingEvent = exitLongSL ? "Cancel entry, SL exceeded" : "Cancel entry, bearish trend or momentum";
+*/				lastTradingEvent = exitLongSL ? "Cancel entry, SL exceeded" : "Cancel entry, bearish trend or momentum";
 		
 			} else {
 				exitShortSL = barToCheck.getClose() > order.getStopLossPrice();
-				exitShortTrend = (taSituation.taSituation.equals(OverallTASituation.BULLISH)
+				exitShortTrend = (momentumReversalEntry != null && momentumReversalEntry.isLong);
+/*				(taSituation.taSituation.equals(OverallTASituation.BULLISH)
 									&& taSituation.taReason.equals(TASituationReason.TREND))
 								|| (trendSprintEntry != null && trendSprintEntry.isLong)
-								|| (momentumReversalEntry != null && momentumReversalEntry.isLong)
+								|| 
 								|| (FlexTASource.solidBullishMomentum(taValues) && taValues.get(FlexTASource.CHANNEL_POS).getDoubleValue() > 50);
-				lastTradingEvent = exitLongSL ? "Cancel entry, SL exceeded" : "Cancel entry, bullish trend or momentum";
+*/				lastTradingEvent = exitLongSL ? "Cancel entry, SL exceeded" : "Cancel entry, bullish trend or momentum";
 			}
 			if ((order.isLong() && (exitLongSL || exitLongTrend))
 				|| (!order.isLong() && (exitShortSL || exitShortTrend))) {
@@ -97,10 +104,10 @@ public abstract class AbstractMeanReversionSetup extends TradeSetup {
 		}
 
 	@Override
-	public IOrder submitOrder(String label, Instrument instrument, boolean isLong, double amount, IBar bidBar, IBar askBar)
-			throws JFException {
-				return submitStpOrder(label, instrument, isLong, amount, bidBar, askBar, isLong ? lastLongSignal.pivotLevel : lastShortSignal.pivotLevel);
-			}
+	public IOrder submitOrder(String label, Instrument instrument, boolean isLong, double amount, IBar bidBar, IBar askBar)	throws JFException {
+		double spread = Math.abs(askBar.getClose() - bidBar.getClose());
+		return submitStpOrder(label, instrument, isLong, amount, bidBar, askBar, isLong ? lastLongSignal.pivotLevel - 2 * spread: lastShortSignal.pivotLevel + 2 * spread);
+	}
 
 	public TradeTrigger.TriggerDesc getLastLongSignal() {
 		return lastLongSignal;
@@ -109,5 +116,20 @@ public abstract class AbstractMeanReversionSetup extends TradeSetup {
 	public TradeTrigger.TriggerDesc getLastShortSignal() {
 		return lastShortSignal;
 	}
+
+	protected void checkMA20BreakAfterOppositeChannelPierced(Instrument instrument, Period period, IBar askBar, IBar bidBar,
+			IOrder order, Map<String, FlexLogEntry> taValues, List<TAEventDesc> marketEvents) {
+				if ((order.isLong() 
+						&& tradeEvents.get(instrument.name()).get(OPPOSITE_CHANNEL_PIERCED).getBooleanValue() 
+						&& taValues.get(FlexTASource.CHANNEL_POS).getDoubleValue() < 50)
+					|| (!order.isLong() 
+						&& tradeEvents.get(instrument.name()).get(OPPOSITE_CHANNEL_PIERCED).getBooleanValue() 
+						&& taValues.get(FlexTASource.CHANNEL_POS).getDoubleValue() > 50)) {
+					lastTradingEvent = order.isLong() ? "long protect signal due to opposite channel pierced and close below MA20"
+							: "short protect signal due to opposite channel pierced and close above MA20";
+					addTradeHistoryEvent(instrument, period, marketEvents, bidBar.getTime(), order.isLong() ? bidBar.getLow() : askBar.getHigh(), lastTradingEvent);
+					StopLoss.setCloserOnlyStopLoss(order, order.isLong() ? bidBar.getLow() : askBar.getHigh(), bidBar.getTime(), getClass());
+				}
+			}
 
 }

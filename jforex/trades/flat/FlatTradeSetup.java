@@ -12,9 +12,7 @@ import jforex.techanalysis.source.TechnicalSituation;
 import jforex.techanalysis.source.TechnicalSituation.OverallTASituation;
 import jforex.techanalysis.source.TechnicalSituation.TASituationReason;
 import jforex.trades.ITradeSetup;
-import jforex.trades.momentum.LongCandleAndMomentumDetector;
 import jforex.trades.momentum.MomentumReversalSetup;
-import jforex.trades.momentum.ShortCandleAndMomentumDetector;
 import jforex.trades.trend.TrendSprint;
 import jforex.utils.StopLoss;
 import jforex.utils.log.FlexLogEntry;
@@ -32,10 +30,6 @@ public class FlatTradeSetup extends AbstractMeanReversionSetup implements ITrade
 	public static String SETUP_NAME = "Flat";
 	public FlatTradeSetup(IEngine engine, IContext context, boolean aggressive, boolean useEntryFilters) {
 		super(useEntryFilters, engine, context);
-		// this way signals will be generated regardless of the channel position so they can be used both for entry and all exit checks
-		// entry and exit checks must explicitly test channel position !
-		longCmd = new LongCandleAndMomentumDetector(100, false);
-		shortCmd = new ShortCandleAndMomentumDetector(0, false);
 		this.aggressive = aggressive;
 	}
 
@@ -216,6 +210,8 @@ Grupa 4: price action / candlestick paterns
 			// The newest one wins therefore it must be ensured that their check methods are called for each bar while strategy is running !
 			// Should be OK with successive calls to checkEntry and inTradeProcessing
 
+			checkMA20BreakAfterOppositeChannelPierced(instrument, period, askBar, bidBar, order, taValues,	marketEvents);
+
 			if (taValues.get(FlexTASource.BBANDS_SQUEEZE_PERC).getDoubleValue() < 30.0)
 				return;
 
@@ -228,20 +224,15 @@ Grupa 4: price action / candlestick paterns
 				shortExitSignal = flatEntry != null && flatEntry.isLong
 									&& ratioMaxProfitToAvgDayRange(marketEvents) > 0.6,
 				longProtectSignal = (flatEntry != null && !flatEntry.isLong)
-									|| (taSituation.taSituation.equals(OverallTASituation.BEARISH)
-										&& taSituation.taReason.equals(TASituationReason.TREND))
-									|| (trendSprintEntry != null && !trendSprintEntry.isLong)
 									|| (momentumReversalEntry != null && !momentumReversalEntry.isLong)	 
-									|| (FlexTASource.solidBearishMomentum(taValues) && taValues.get(FlexTASource.CHANNEL_POS).getDoubleValue() < 50)
-									|| (tradeEvents.get(instrument.name()).get(OPPOSITE_CHANNEL_PIERCED).getBooleanValue() && taValues.get(FlexTASource.CHANNEL_POS).getDoubleValue() < 50)
+									|| (bidBar.getLow() > order.getOpenPrice() // only if profitable, otherwise let it break the SL !
+										&& FlexTASource.solidBearishMomentum(taValues) 
+										&& taValues.get(FlexTASource.CHANNEL_POS).getDoubleValue() < 50)
 									|| taValues.get(FlexTASource.CHANNEL_POS).getDoubleValue() < 0,
 				shortProtectSignal = (flatEntry != null && flatEntry.isLong)
-									|| (taSituation.taSituation.equals(OverallTASituation.BULLISH)
-										&& taSituation.taReason.equals(TASituationReason.TREND))
-									|| (trendSprintEntry != null && trendSprintEntry.isLong)
 									|| (momentumReversalEntry != null && momentumReversalEntry.isLong)
-									|| (FlexTASource.solidBullishMomentum(taValues) && taValues.get(FlexTASource.CHANNEL_POS).getDoubleValue() > 50)
-									|| (tradeEvents.get(instrument.name()).get(OPPOSITE_CHANNEL_PIERCED).getBooleanValue() && taValues.get(FlexTASource.CHANNEL_POS).getDoubleValue() > 50)
+									|| (askBar.getHigh() > order.getOpenPrice()
+										&& FlexTASource.solidBullishMomentum(taValues) && taValues.get(FlexTASource.CHANNEL_POS).getDoubleValue() > 50)
 									|| taValues.get(FlexTASource.CHANNEL_POS).getDoubleValue() > 100;
 				
 				// check for opposite signal with good profit
@@ -260,8 +251,6 @@ Grupa 4: price action / candlestick paterns
 					if (taSituation.taSituation.equals(OverallTASituation.BEARISH)
 						&& taSituation.taReason.equals(TASituationReason.TREND))
 						lastTradingEvent += "bearish (trend) TA situation, ";
-					if (trendSprintEntry != null && !trendSprintEntry.isLong)
-						lastTradingEvent += "short TradeSprintEarly entry signal, ";
 					if (momentumReversalEntry != null && !momentumReversalEntry.isLong)	 
 						lastTradingEvent += "short MomentumReversal signal, ";
 					if (FlexTASource.solidBearishMomentum(taValues) && taValues.get(FlexTASource.CHANNEL_POS).getDoubleValue() < 50)
@@ -278,8 +267,6 @@ Grupa 4: price action / candlestick paterns
 					if (taSituation.taSituation.equals(OverallTASituation.BULLISH)
 						&& taSituation.taReason.equals(TASituationReason.TREND))
 						lastTradingEvent += "bullish (trend) TA situation, ";
-					if (trendSprintEntry != null && trendSprintEntry.isLong)
-						lastTradingEvent += "long TradeSprintEarly entry signal, ";
 					if (momentumReversalEntry != null && momentumReversalEntry.isLong)	 
 						lastTradingEvent += "long MomentumReversal signal, ";
 					if (FlexTASource.solidBullishMomentum(taValues) && taValues.get(FlexTASource.CHANNEL_POS).getDoubleValue() > 50)

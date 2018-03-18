@@ -36,7 +36,7 @@ public abstract class AbstractSmaTradeSetup extends TradeSetup {
 		ma50TrailFlags = new HashMap<String, Boolean>();
 	protected double flatPercThreshold;
 	protected double bBandsSqueezeThreshold;
-	protected double lastSL;
+	protected double lastSL = 0.0;
 	
 	public AbstractSmaTradeSetup(IEngine engine, IContext context, Set<Instrument> subscribedInstruments, 
 			boolean mktEntry, 
@@ -54,7 +54,7 @@ public abstract class AbstractSmaTradeSetup extends TradeSetup {
 
 		for (Instrument i : subscribedInstruments) {
 			ma50TrailFlags.put(i.name(), new Boolean(false));
-			tradeEvents.get(i.name()).put(MA50_TRAIL_FLAG, new FlexLogEntry(MA50_TRAIL_FLAG, new Boolean(false)));
+			populateTradeEvents(i, false);
 		}
 	}
 	
@@ -74,7 +74,7 @@ public abstract class AbstractSmaTradeSetup extends TradeSetup {
 
 		for (Instrument i : subscribedInstruments) {
 			ma50TrailFlags.put(i.name(), new Boolean(false));
-			tradeEvents.get(i.name()).put(MA50_TRAIL_FLAG, new FlexLogEntry(MA50_TRAIL_FLAG, new Boolean(false)));
+			populateTradeEvents(i, false);
 		}
 	}
 
@@ -348,7 +348,7 @@ public abstract class AbstractSmaTradeSetup extends TradeSetup {
 	public void afterTradeReset(Instrument instrument) {
 		super.afterTradeReset(instrument);
 		ma50TrailFlags.put(instrument.name(), new Boolean(false));
-		tradeEvents.get(instrument.name()).put(MA50_TRAIL_FLAG, new FlexLogEntry(MA50_TRAIL_FLAG, new Boolean(false)));
+		populateTradeEvents(instrument, false);
 	}
 	
 	@Override
@@ -430,6 +430,12 @@ public abstract class AbstractSmaTradeSetup extends TradeSetup {
 				return false;
 			return currMA20 < currMA50 && currMA50 < currMA100;
 		}
+	}
+
+	@Override
+	protected void populateTradeEvents(Instrument i, boolean value) {
+		super.populateTradeEvents(i, value);
+		tradeEvents.get(i.name()).put(MA50_TRAIL_FLAG, new FlexLogEntry(MA50_TRAIL_FLAG, new Boolean(false)));
 	}
 
 }

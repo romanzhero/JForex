@@ -59,9 +59,13 @@ public abstract class TradeSetup implements ITradeSetup {
 			profitToProtectReached.put(i.name(), new Boolean(false));
 			// only empty map per instrument. Each setup must fill the initial values and define keys !
 			tradeEvents.put(i.name(), new HashMap<String, FlexLogEntry>());
-			tradeEvents.get(i.name()).put(PROFIT_TO_PROTECT_REACHED, new FlexLogEntry(PROFIT_TO_PROTECT_REACHED, new Boolean(false)));
-			tradeEvents.get(i.name()).put(OPPOSITE_CHANNEL_PIERCED, new FlexLogEntry(OPPOSITE_CHANNEL_PIERCED, new Boolean(false)));
+			populateTradeEvents(i, false);
 		}
+	}
+
+	protected void populateTradeEvents(Instrument i, boolean value) {
+		tradeEvents.get(i.name()).put(PROFIT_TO_PROTECT_REACHED, new FlexLogEntry(PROFIT_TO_PROTECT_REACHED, new Boolean(value)));
+		tradeEvents.get(i.name()).put(OPPOSITE_CHANNEL_PIERCED, new FlexLogEntry(OPPOSITE_CHANNEL_PIERCED, new Boolean(value)));
 	}
 	
 	public TradeSetup(IEngine engine, IContext context, boolean pTakeOverOnly) {
@@ -72,8 +76,7 @@ public abstract class TradeSetup implements ITradeSetup {
 		for (Instrument i : context.getSubscribedInstruments()) {
 			profitToProtectReached.put(i.name(), new Boolean(false));
 			tradeEvents.put(i.name(), new HashMap<String, FlexLogEntry>());
-			tradeEvents.get(i.name()).put(PROFIT_TO_PROTECT_REACHED, new FlexLogEntry(PROFIT_TO_PROTECT_REACHED, new Boolean(false)));
-			tradeEvents.get(i.name()).put(OPPOSITE_CHANNEL_PIERCED, new FlexLogEntry(OPPOSITE_CHANNEL_PIERCED, new Boolean(false)));
+			populateTradeEvents(i, false);
 		}
 	}
 
@@ -106,7 +109,7 @@ public abstract class TradeSetup implements ITradeSetup {
 		lastTradingEvent = "none";
 		tradeHistory.clear();
 		profitToProtectReached.put(instrument.name(), new Boolean(false));
-		tradeEvents.replace(instrument.name(), new HashMap<String, FlexLogEntry>());
+		populateTradeEvents(instrument, false);
 		locked = false;
 	}
 	

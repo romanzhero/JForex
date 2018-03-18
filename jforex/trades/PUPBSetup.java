@@ -5,6 +5,7 @@ import java.util.Map;
 
 import jforex.events.TAEventDesc;
 import jforex.events.TAEventDesc.TAEventType;
+import jforex.techanalysis.Momentum;
 import jforex.techanalysis.TradeTrigger;
 import jforex.techanalysis.source.FlexTASource;
 import jforex.techanalysis.source.TechnicalSituation;
@@ -50,20 +51,34 @@ public class PUPBSetup extends AbstractMeanReversionSetup implements ITradeSetup
 		if (currLongSignal == null && currShortSignal == null)
 			return null;
 		
-		double ma100ma200Distance = taValues.get(FlexTASource.MA200MA100_TREND_DISTANCE_PERC).getDoubleValue();
+		double 
+			ma100ma200Distance = taValues.get(FlexTASource.MA200MA100_TREND_DISTANCE_PERC).getDoubleValue(),
+			channelWidth = taValues.get(FlexTASource.BBANDS_SQUEEZE_PERC).getDoubleValue();
+		if (channelWidth < 50)
+			return null;
+		
 		boolean 
 			isMA200Highest = taValues.get(FlexTASource.MA200_HIGHEST).getBooleanValue(), 
 			isMA200Lowest = taValues.get(FlexTASource.MA200_LOWEST).getBooleanValue(),
 			MA200NotInChannel = !taValues.get(FlexTASource.MA200_IN_CHANNEL).getBooleanValue(),
 			uptrend = (MA200NotInChannel || ma100ma200Distance > 50) && isMA200Lowest,
 			downtrend = (MA200NotInChannel || ma100ma200Distance > 50) && isMA200Highest;
+		TechnicalSituation taSituation = taValues.get(FlexTASource.TA_SITUATION).getTehnicalSituationValue();
+		Momentum.SINGLE_LINE_STATE slowSMI = taSituation.slowSMIState; 
 		if (!uptrend && !downtrend) {
 			return null; 
 		}
 		
+		double channelPos = taValues.get(FlexTASource.CHANNEL_POS).getDoubleValue();
 		boolean 
-			bulishSignal = uptrend && currLongSignal != null && currLongSignal.channelPosition < 0,
-			bearishSignal = downtrend && currShortSignal != null && currShortSignal.channelPosition > 100;
+			bulishSignal = uptrend && currLongSignal != null 
+							&& currLongSignal.channelPosition < 0
+							&& !slowSMI.toString().contains("OVERSOLD")
+							&& channelPos < 90,
+			bearishSignal = downtrend && currShortSignal != null 
+							&& currShortSignal.channelPosition > 100
+							&& !slowSMI.toString().contains("OVERBOUGHT")
+							&& channelPos > 10;
 		locked = bulishSignal || bearishSignal;
 		// there is a signal !
 		if (bulishSignal) {
@@ -119,6 +134,8 @@ public class PUPBSetup extends AbstractMeanReversionSetup implements ITradeSetup
 			checkSetupUnlock(instrument, period, askBar, bidBar, order, marketEvents);
 			checkOppositeChannelPierced(instrument, period, bidBar, askBar, order, taValues, marketEvents);
 			
+			checkMA20BreakAfterOppositeChannelPierced(instrument, period, askBar, bidBar, order, taValues, marketEvents);
+			
 			if (taValues.get(FlexTASource.BBANDS_SQUEEZE_PERC).getDoubleValue() < 30.0)
 				return;
 			
@@ -135,7 +152,9 @@ public class PUPBSetup extends AbstractMeanReversionSetup implements ITradeSetup
 										&& taSituation.taReason.equals(TASituationReason.TREND))
 									|| (trendSprintEntry != null && !trendSprintEntry.isLong)
 									|| (momentumReversalEntry != null && !momentumReversalEntry.isLong)	 
-									|| (FlexTASource.solidBearishMomentum(taValues) && taValues.get(FlexTASource.CHANNEL_POS).getDoubleValue() < 50)
+									|| (order.getOpenPrice() < bidBar.getLow() // ONLY for profitable trades !
+										&& FlexTASource.solidBearishMomentum(taValues) 
+										&& taValues.get(FlexTASource.CHANNEL_POS).getDoubleValue() < 50)
 									|| (tradeEvents.get(instrument.name()).get(OPPOSITE_CHANNEL_PIERCED).getBooleanValue() && taValues.get(FlexTASource.CHANNEL_POS).getDoubleValue() < 50)
 									|| taValues.get(FlexTASource.CHANNEL_POS).getDoubleValue() < 0,
 				shortProtectSignal = (flatEntry != null && flatEntry.isLong)
@@ -143,7 +162,9 @@ public class PUPBSetup extends AbstractMeanReversionSetup implements ITradeSetup
 										&& taSituation.taReason.equals(TASituationReason.TREND))
 									|| (trendSprintEntry != null && trendSprintEntry.isLong)
 									|| (momentumReversalEntry != null && momentumReversalEntry.isLong)
-									|| (FlexTASource.solidBullishMomentum(taValues) && taValues.get(FlexTASource.CHANNEL_POS).getDoubleValue() > 50)
+									|| (order.getOpenPrice() > askBar.getHigh() // ONLY for profitable trades !
+										&& FlexTASource.solidBullishMomentum(taValues) 
+										&& taValues.get(FlexTASource.CHANNEL_POS).getDoubleValue() > 50)
 									|| (tradeEvents.get(instrument.name()).get(OPPOSITE_CHANNEL_PIERCED).getBooleanValue() && taValues.get(FlexTASource.CHANNEL_POS).getDoubleValue() > 50)
 									|| taValues.get(FlexTASource.CHANNEL_POS).getDoubleValue() > 100;
 				
@@ -189,6 +210,30 @@ public class PUPBSetup extends AbstractMeanReversionSetup implements ITradeSetup
 						return;
 			} 
 		}
+	}
+
+	@Override
+	protected boolean openOrderProcessing(Instrument instrument, Period period, IBar bidBar, IOrder order,
+			Map<String, FlexLogEntry> taValues, List<TAEventDesc> marketEvents, IBar barToCheck,
+			TechnicalSituation taSituation, TAEventDesc trendSprintEntry, TAEventDesc momentumReversalEntry)
+			throws JFException {
+		if (super.openOrderProcessing(instrument, period, bidBar, order, taValues, marketEvents, barToCheck, taSituation,
+				trendSprintEntry, momentumReversalEntry))
+			return true;
+		if (!order.getState().equals(IOrder.State.OPENED)) 
+			return false;
+
+		double channelPos = taValues.get(FlexTASource.CHANNEL_POS).getDoubleValue();
+		if ((order.isLong() && channelPos > 100) || (!order.isLong() && channelPos < 0)) {
+			// too late !
+			lastTradingEvent = "Cancel entry, channel top or bottom exceeded";
+			addTradeHistoryEvent(instrument, period, marketEvents, bidBar.getTime(), 0, lastTradingEvent);
+			order.close();
+			order.waitForUpdate(null);
+
+			return true;
+		}
+		return false;
 	} 
 	
 }

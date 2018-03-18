@@ -13,6 +13,8 @@ import com.dukascopy.api.Instrument;
 import com.dukascopy.api.JFException;
 import com.dukascopy.api.OfferSide;
 import com.dukascopy.api.Period;
+import com.dukascopy.api.IIndicators.AppliedPrice;
+import com.dukascopy.api.IIndicators.MaType;
 
 import jforex.events.TAEventDesc;
 import jforex.events.TAEventDesc.TAEventType;
@@ -20,6 +22,7 @@ import jforex.techanalysis.Momentum;
 import jforex.techanalysis.Trend;
 import jforex.techanalysis.Trend.FLAT_REGIME_CAUSE;
 import jforex.techanalysis.Trend.TREND_STATE;
+import jforex.techanalysis.Volatility;
 import jforex.techanalysis.source.FlexTASource;
 import jforex.techanalysis.source.TechnicalSituation;
 import jforex.trades.ITradeSetup;
@@ -49,9 +52,9 @@ public class MomentumReversalSetup extends TradeSetup implements ITradeSetup {
  Grupa 1: trend ili flat
 1. TREND_ID							
 2. MAs_DISTANCE_PERC						
-3. MA200_HIGHEST						
-4. MA200_LOWEST							
-5. MA200_IN_CHANNEL						
+3. MA200_HIGHEST					- da, ili barem veliki MAs distance						
+4. MA200_LOWEST						- NE !	
+5. MA200_IN_CHANNEL					- NE, ili barem najvislji od preostala 3 (najkasnije 2 svecice unazad)	
 6. MA200MA100_TREND_DISTANCE_PERC			
 7. FLAT_REGIME polozaj MAs u kanalu			
 8. ICHI							
@@ -103,14 +106,19 @@ Grupa 4: price action / candlestick paterns
 			channelWidthDirection = (Momentum.SINGLE_LINE_STATE)taValues.get(FlexTASource.CHANNEL_WIDTH_DIRECTION).getValue();
 		String maSlopesScore = taValues.get(FlexTASource.MA_SLOPES_SCORE).getFormattedValue();
 				
-		if (bBandsSqueeze < 30)
+		if (bBandsSqueeze < 20)
 			return null;
+		if (bBandsSqueeze < 30 && maDistance < 30)
+			return null;
+
+		
 		
 		TechnicalSituation taSituation = taValues.get(FlexTASource.TA_SITUATION).getTehnicalSituationValue();
 					
 		double[][] mas = taValues.get(FlexTASource.MAs).getDa2DimValue();
 		boolean 
-			bullishMomentum = !(ma200Lowest && !ma200InChannel)
+			bullishMomentum = !(ma200Lowest && !ma200InChannel) // bullish general trend, other setups for that
+							&& !(taValues.get(FlexTASource.MA100_ABOVE_MA200).getBooleanValue() && taValues.get(FlexTASource.MA200MA100_TREND_DISTANCE_PERC).getDoubleValue() > 10)
 							&& chPos > 100 
 							&& !channelWidthDirection.equals(Momentum.SINGLE_LINE_STATE.FALLING_IN_MIDDLE)
 							&& (taSituation.smiState.equals(Momentum.SMI_STATE.BULLISH_BOTH_RAISING_IN_MIDDLE)
@@ -119,6 +127,7 @@ Grupa 4: price action / candlestick paterns
 							|| (taSituation.smiState.equals(Momentum.SMI_STATE.BULLISH_WEAK_RAISING_IN_MIDDLE) && slowSMI > 0))
 							&& taSituation.stochState.toString().startsWith("BULLISH"),
 			bearishMomentum = !(ma200Highest && !ma200InChannel) 
+							&& !(!taValues.get(FlexTASource.MA100_ABOVE_MA200).getBooleanValue() && taValues.get(FlexTASource.MA200MA100_TREND_DISTANCE_PERC).getDoubleValue() > 10)
 							&& chPos < 0 
 							&& !channelWidthDirection.equals(Momentum.SINGLE_LINE_STATE.FALLING_IN_MIDDLE)
 							&& (taSituation.smiState.equals(Momentum.SMI_STATE.BEARISH_BOTH_FALLING_IN_MIDDLE)
@@ -132,6 +141,7 @@ Grupa 4: price action / candlestick paterns
 
 			
 			if (bullishMomentum) {
+				double[][] bBands = context.getIndicators().bbands(instrument, period, OfferSide.ASK, AppliedPrice.CLOSE, 20, 2.0, 2.0, MaType.SMA, filter, 3, askBar.getTime(), 0);
 				double[] 
 						mas20 = context.getIndicators().sma(instrument, period, OfferSide.ASK, IIndicators.AppliedPrice.CLOSE, 20, filter, 
 								3, bidBar.getTime(), 0),
@@ -150,23 +160,35 @@ Grupa 4: price action / candlestick paterns
 					prePreviousBarCloseNotAboveAllMAs = !(last3AskBars.get(0).getClose() > mas20[0]
 													&& last3AskBars.get(0).getClose() > mas50[0]
 													&& last3AskBars.get(0).getClose() > mas100[0]
-													&& last3AskBars.get(0).getClose() > mas200[0]); 
+													&& last3AskBars.get(0).getClose() > mas200[0]),
+					atLeastOneMA200WasAboveChannel = mas200[0] > bBands[Volatility.BBANDS_TOP][0]
+													|| mas200[1] > bBands[Volatility.BBANDS_TOP][1]
+													|| !ma200InChannel,
+					atLeastOneHighestMAAboveChannel = false;
+					if (taValues.get(FlexTASource.TREND_ID).getTrendStateValue().equals(Trend.TREND_STATE.DOWN_MILD)
+						|| taValues.get(FlexTASource.TREND_ID).getTrendStateValue().equals(Trend.TREND_STATE.DOWN_STRONG)) {
+						atLeastOneHighestMAAboveChannel = mas100[0] > bBands[Volatility.BBANDS_TOP][0]
+								|| mas100[1] > bBands[Volatility.BBANDS_TOP][1]
+								|| mas100[2] > bBands[Volatility.BBANDS_TOP][2];						
+					}
 				if (closeAboveAllMAs 
+					&& (atLeastOneMA200WasAboveChannel || atLeastOneHighestMAAboveChannel)
 					&& (previousBarCloseNotAboveAllMAs || prePreviousBarCloseNotAboveAllMAs)) {
-					if (useEntryFilters) {
+/*					if (useEntryFilters) {
 						if (ma200Highest)
 							return null;
 						if (entryTrendID.equals(TREND_STATE.UP_MILD)
 							|| entryTrendID.equals(TREND_STATE.UP_STRONG)
 							|| entryTrendID.equals(TREND_STATE.FRESH_UP))
 							return null;
-					}
+					}*/
 
 					
 					return new TAEventDesc(TAEventType.ENTRY_SIGNAL, getName(), instrument, true, askBar, bidBar, period);
 				} else 
 					return null;				
 			} else if (bearishMomentum) {
+				double[][] bBands = context.getIndicators().bbands(instrument, period, OfferSide.BID, AppliedPrice.CLOSE, 20, 2.0, 2.0, MaType.SMA, filter, 3, bidBar.getTime(), 0);
 				double[] 
 						mas20 = context.getIndicators().sma(instrument, period, OfferSide.BID, IIndicators.AppliedPrice.CLOSE, 20, filter, 
 								3, bidBar.getTime(), 0),
@@ -185,17 +207,28 @@ Grupa 4: price action / candlestick paterns
 					prePreviousBarCloseNotBelowAllMAs = !(last3BidBars.get(0).getClose() < mas20[0]
 													&& last3BidBars.get(0).getClose() < mas50[0]
 													&& last3BidBars.get(0).getClose() < mas100[0]
-													&& last3BidBars.get(0).getClose() < mas200[0]); 
+													&& last3BidBars.get(0).getClose() < mas200[0]),
+					atLeastOneMA200WasBelowChannel = mas200[0] < bBands[Volatility.BBANDS_BOTTOM][0]
+							|| mas200[1] < bBands[Volatility.BBANDS_BOTTOM][1]
+							|| !ma200InChannel, 
+					atLeastOneLowestMABelowChannel = false;
+					if (taValues.get(FlexTASource.TREND_ID).getTrendStateValue().equals(Trend.TREND_STATE.UP_MILD)
+						|| taValues.get(FlexTASource.TREND_ID).getTrendStateValue().equals(Trend.TREND_STATE.UP_STRONG)) {
+						atLeastOneLowestMABelowChannel = mas100[0] < bBands[Volatility.BBANDS_BOTTOM][0]
+								|| mas100[1] < bBands[Volatility.BBANDS_BOTTOM][1]
+								|| mas100[2] < bBands[Volatility.BBANDS_BOTTOM][2];						
+					}
 				if (closeBelowAllMAs 
+					&& (atLeastOneMA200WasBelowChannel || atLeastOneLowestMABelowChannel)
 					&& (previousBarCloseNotBelowAllMAs || prePreviousBarCloseNotBelowAllMAs)) {
-					if (useEntryFilters) {
+/*					if (useEntryFilters) {
 						if (ma200Lowest)
 							return null;
 						if (entryTrendID.equals(TREND_STATE.DOWN_MILD)
 							|| entryTrendID.equals(TREND_STATE.DOWN_STRONG)
 							|| entryTrendID.equals(TREND_STATE.FRESH_DOWN))
 							return null;
-					}
+					}*/
 					
 					return new TAEventDesc(TAEventType.ENTRY_SIGNAL, getName(), instrument, false, askBar, bidBar, period);
 				} else 
@@ -246,11 +279,21 @@ Grupa 4: price action / candlestick paterns
 	@Override
 	public void inTradeProcessing(Instrument instrument, Period period, IBar askBar, IBar bidBar, Filter filter,
 			IOrder order, Map<String, FlexLogEntry> taValues, List<TAEventDesc> marketEvents) throws JFException {
+		
+		checkOppositeChannelPierced(instrument, period, bidBar, askBar, order, taValues, marketEvents);
+		
 		TREND_STATE entryTrendID = taValues.get(FlexTASource.TREND_ID).getTrendStateValue();
 		TAEventDesc
 			flatEntry = findTAEvent(marketEvents, TAEventType.ENTRY_SIGNAL, FlatTradeSetup.SETUP_NAME, instrument, period),
 			trendSprintEntry = findTAEvent(marketEvents, TAEventType.ENTRY_SIGNAL, TrendSprint.SETUP_NAME, instrument, period),
 			momentumReversalEntry = findTAEvent(marketEvents, TAEventType.ENTRY_SIGNAL, MomentumReversalSetup.SETUP_NAME, instrument, period);
+		if (maxProfitExceededAvgDayRange(marketEvents)) {
+			profitToProtectReached.put(instrument.name(), new Boolean(true));
+			addTradeHistoryEvent(instrument, period, marketEvents, bidBar.getTime(), 0, "Trade profit exceeded avg. daily range !");
+		}
+		
+		if (checkExtremeProfit(instrument, period, askBar, bidBar, order, marketEvents))
+			return;		
 	
 		if (order.isLong()) {
 			double[] 
@@ -261,8 +304,10 @@ Grupa 4: price action / candlestick paterns
 					mas100 = context.getIndicators().sma(instrument, period, OfferSide.BID, IIndicators.AppliedPrice.CLOSE, 100, filter, 
 							1, bidBar.getTime(), 0);
 			
-			if (FlexTASource.solidBearishMomentum(taValues) && bidBar.getClose() < mas20[0]) {
-				lastTradingEvent = "SL long set due to bearish momentum and close below MA20";
+			if (((FlexTASource.solidBearishMomentum(taValues) && bidBar.getLow() > order.getOpenPrice()) // react to bad momentum ONLY if profitable !
+				|| tradeEvents.get(instrument.name()).get(OPPOSITE_CHANNEL_PIERCED).getBooleanValue()) // but after piercing opposite channel always !  
+				&& bidBar.getClose() < mas20[0]) {
+				lastTradingEvent = "SL long set due to bearish momentum or opposite channel pierced and close below MA20";
 				addTradeHistoryEvent(instrument, period, marketEvents, bidBar.getTime(), bidBar.getLow(), lastTradingEvent);
 				if (order.getStopLossPrice() <= 0) {
 					order.setStopLossPrice(bidBar.getLow());
@@ -323,8 +368,10 @@ Grupa 4: price action / candlestick paterns
 					mas100 = context.getIndicators().sma(instrument, period, OfferSide.ASK, IIndicators.AppliedPrice.CLOSE, 100, filter, 
 							1, bidBar.getTime(), 0);
 			
-			if (FlexTASource.solidBullishMomentum(taValues) && askBar.getClose() > mas20[0]) {
-				lastTradingEvent = "SL short set due to bullish momentum and close above MA20";
+			if (((FlexTASource.solidBullishMomentum(taValues) && askBar.getHigh() < order.getOpenPrice()) 
+				|| tradeEvents.get(instrument.name()).get(OPPOSITE_CHANNEL_PIERCED).getBooleanValue()) 
+				&& askBar.getClose() > mas20[0]) {
+				lastTradingEvent = "SL short set due to bullish momentum or opposite channel pierced and close above MA20";
 				addTradeHistoryEvent(instrument, period, marketEvents, bidBar.getTime(), bidBar.getHigh(), lastTradingEvent);
 				if (order.getStopLossPrice() <= 0) {
 					order.setStopLossPrice(askBar.getHigh());

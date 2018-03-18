@@ -22,6 +22,7 @@ import jforex.logging.TradeLog;
 import jforex.techanalysis.Trend;
 import jforex.techanalysis.source.FlexTASource;
 import jforex.trades.*;
+import jforex.trades.flat.AbstractMeanReversionSetup;
 import jforex.trades.flat.FlatStrongTradeSetup;
 import jforex.trades.flat.FlatTradeSetup;
 import jforex.trades.momentum.SmiTradeSetup;
@@ -362,14 +363,14 @@ public class MultiPairCasc implements IStrategy {
 		if (currPairData.currentSetup != null && currPairData.currentSetup.getName().equals("Flat")) {
 			if (isLong) {
 				if (taValues.get(FlexTASource.BULLISH_CANDLES) != null)
-					taValues.replace(FlexTASource.BULLISH_CANDLES, new FlexLogEntry(FlexTASource.BULLISH_CANDLES, ((FlatTradeSetup)currPairData.currentSetup).getLastLongSignal()));
+					taValues.replace(FlexTASource.BULLISH_CANDLES, new FlexLogEntry(FlexTASource.BULLISH_CANDLES, ((AbstractMeanReversionSetup)currPairData.currentSetup).getLastLongSignal()));
 				else
-					taValues.put(FlexTASource.BULLISH_CANDLES, new FlexLogEntry(FlexTASource.BULLISH_CANDLES, ((FlatTradeSetup)currPairData.currentSetup).getLastLongSignal()));
+					taValues.put(FlexTASource.BULLISH_CANDLES, new FlexLogEntry(FlexTASource.BULLISH_CANDLES, ((AbstractMeanReversionSetup)currPairData.currentSetup).getLastLongSignal()));
 			} else {
 				if (taValues.get(FlexTASource.BEARISH_CANDLES) != null)
-					taValues.replace(FlexTASource.BEARISH_CANDLES, new FlexLogEntry(FlexTASource.BEARISH_CANDLES, ((FlatTradeSetup)currPairData.currentSetup).getLastShortSignal()));
+					taValues.replace(FlexTASource.BEARISH_CANDLES, new FlexLogEntry(FlexTASource.BEARISH_CANDLES, ((AbstractMeanReversionSetup)currPairData.currentSetup).getLastShortSignal()));
 				else 
-					taValues.put(FlexTASource.BEARISH_CANDLES, new FlexLogEntry(FlexTASource.BEARISH_CANDLES, ((FlatTradeSetup)currPairData.currentSetup).getLastShortSignal()));
+					taValues.put(FlexTASource.BEARISH_CANDLES, new FlexLogEntry(FlexTASource.BEARISH_CANDLES, ((AbstractMeanReversionSetup)currPairData.currentSetup).getLastShortSignal()));
 			}
 		}
 		for (Map.Entry<String, FlexLogEntry> curr : taValues.entrySet()) {

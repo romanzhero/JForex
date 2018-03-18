@@ -37,7 +37,7 @@ public class ShortCandleAndMomentumDetector extends AbstractCandleAndMomentumDet
 		}
 		// now check the momentum condition too
 		if (candleSignalAppeared && !momentumConfired) {
-			if (askBar.getClose() > candleSignalDesc.pivotLevel)
+			if (askBar.getClose() > candleSignalDesc.pivotLevel || taValues.get(FlexTASource.CHANNEL_POS).getDoubleValue() < 0)
 				reset();
 
 			if (candleSignalAppeared) {

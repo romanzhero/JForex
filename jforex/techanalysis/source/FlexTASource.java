@@ -57,6 +57,7 @@ public class FlexTASource {
 		ATR = "ATR",
 		ICHI = "Ichi",
 		MA200MA100_TREND_DISTANCE_PERC = "MA200 MA100 Distance percentile",
+		MA100_ABOVE_MA200 = "MA100 above MA200",
 		BBANDS = "BBands",
 		TA_SITUATION = "TASituationDescription",
 		CHANNEL_WIDTH_DIRECTION = "ChannelWidthDirection";
@@ -596,6 +597,8 @@ public class FlexTASource {
 		mas[1][2] = mas100[2];
 		mas[1][3] = mas200[2];
 		
+		result.put(MA100_ABOVE_MA200, new FlexLogEntry(MA100_ABOVE_MA200, new Boolean(mas100[2] > mas200[2])));
+		
 		if (bidBar.getClose() > mas20[2] 
 			&& bidBar.getClose() > mas50[2] 
 			&& bidBar.getClose() > mas100[2]
@@ -610,6 +613,7 @@ public class FlexTASource {
 			result.put(CLOSE_BELOW_ALL_MAs, new FlexLogEntry(CLOSE_BELOW_ALL_MAs, new Boolean(true)));
 		else
 			result.put(CLOSE_BELOW_ALL_MAs, new FlexLogEntry(CLOSE_BELOW_ALL_MAs, new Boolean(false)));
+		
 		
 		result.put(MAs, new FlexLogEntry(MAs, mas, instrument.getPipScale() == 5 ? FXUtils.df5 : FXUtils.df2));
 		

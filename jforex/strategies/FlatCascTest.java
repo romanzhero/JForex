@@ -25,6 +25,7 @@ import jforex.logging.TradeLog;
 import jforex.techanalysis.Trend;
 import jforex.techanalysis.source.FlexTASource;
 import jforex.trades.*;
+import jforex.trades.flat.AbstractMeanReversionSetup;
 import jforex.trades.flat.FlatStrongTradeSetup;
 import jforex.trades.flat.FlatTradeSetup;
 import jforex.trades.momentum.CandleImpulsSetup;
@@ -177,7 +178,6 @@ public class FlatCascTest implements IStrategy {
 			tradeSetups.add(new FlatStrongTradeSetup(engine, context, history, true, conf.getProperty("useEntryFilters", "no").equals("yes")));
 		if (conf.getProperty("FlatSetup", "no").equals("yes"))
 			tradeSetups.add(new FlatTradeSetup(engine, context, true, conf.getProperty("useEntryFilters", "no").equals("yes")));
-		//tradeSetups.add(new PUPBSetup(indicators, history, engine));
 		if (conf.getProperty("SMISetup", "no").equals("yes"))
 			tradeSetups.add(new SmiTradeSetup(engine, context, false, 30.0, 30.0, conf.getProperty("useEntryFilters", "no").equals("yes")));
 		
@@ -189,11 +189,13 @@ public class FlatCascTest implements IStrategy {
 		else if (conf.getProperty("TrendIDFollowSoloSetup", "no").equals("yes"))
 			tradeSetups.add(new SmaSoloTradeSetup(engine, context, context.getSubscribedInstruments(), true, false, 30.0, 30.0, false, true));
 		
-		if (conf.getProperty("TrendSprintEarly", "no").equals("yes"))
-			tradeSetups.add(new TrendSprintEarly(engine, context, context.getSubscribedInstruments(), true, false, conf.getProperty("useEntryFilters", "no").equals("yes"), 
-					30.0, 30.0, true));
+		if (conf.getProperty("PUPBSetup", "no").equals("yes"))
+			tradeSetups.add(new PUPBSetup(indicators, context, history, engine, conf.getProperty("useEntryFilters", "no").equals("yes")));
 		if (conf.getProperty("TrendSprint", "no").equals("yes"))
 			tradeSetups.add(new TrendSprint(engine, context, context.getSubscribedInstruments(), true, false, conf.getProperty("useEntryFilters", "no").equals("yes"), 
+					30.0, 30.0, true));
+		if (conf.getProperty("TrendSprintEarly", "no").equals("yes"))
+			tradeSetups.add(new TrendSprintEarly(engine, context, context.getSubscribedInstruments(), true, false, conf.getProperty("useEntryFilters", "no").equals("yes"), 
 					30.0, 30.0, true));
 	}
 
@@ -683,14 +685,14 @@ public class FlatCascTest implements IStrategy {
 		if (currentSetup != null && currentSetup.getName().equals("Flat")) {
 			if (isLong) {
 				if (taValues.get(FlexTASource.BULLISH_CANDLES) != null)
-					taValues.replace(FlexTASource.BULLISH_CANDLES, new FlexLogEntry(FlexTASource.BULLISH_CANDLES, ((FlatTradeSetup) currentSetup).getLastLongSignal()));
+					taValues.replace(FlexTASource.BULLISH_CANDLES, new FlexLogEntry(FlexTASource.BULLISH_CANDLES, ((AbstractMeanReversionSetup) currentSetup).getLastLongSignal()));
 				else
-					taValues.put(FlexTASource.BULLISH_CANDLES, new FlexLogEntry(FlexTASource.BULLISH_CANDLES, ((FlatTradeSetup) currentSetup).getLastLongSignal()));
+					taValues.put(FlexTASource.BULLISH_CANDLES, new FlexLogEntry(FlexTASource.BULLISH_CANDLES, ((AbstractMeanReversionSetup) currentSetup).getLastLongSignal()));
 			} else {
 				if (taValues.get(FlexTASource.BEARISH_CANDLES) != null)
-					taValues.replace(FlexTASource.BEARISH_CANDLES, new FlexLogEntry(FlexTASource.BEARISH_CANDLES, ((FlatTradeSetup) currentSetup).getLastShortSignal()));
+					taValues.replace(FlexTASource.BEARISH_CANDLES, new FlexLogEntry(FlexTASource.BEARISH_CANDLES, ((AbstractMeanReversionSetup) currentSetup).getLastShortSignal()));
 				else 
-					taValues.put(FlexTASource.BEARISH_CANDLES, new FlexLogEntry(FlexTASource.BEARISH_CANDLES, ((FlatTradeSetup) currentSetup).getLastShortSignal()));
+					taValues.put(FlexTASource.BEARISH_CANDLES, new FlexLogEntry(FlexTASource.BEARISH_CANDLES, ((AbstractMeanReversionSetup) currentSetup).getLastShortSignal()));
 			}
 		}
 		tradeLog.addTAData(taValues);

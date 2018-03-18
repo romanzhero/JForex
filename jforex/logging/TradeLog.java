@@ -299,6 +299,7 @@ public class TradeLog {
 		addLogEntry(taValues.get(FlexTASource.MA200_LOWEST));
 		addLogEntry(taValues.get(FlexTASource.MA200_IN_CHANNEL));
 		addLogEntry(taValues.get(FlexTASource.MA200MA100_TREND_DISTANCE_PERC));
+		addLogEntry(taValues.get(FlexTASource.MA100_ABOVE_MA200));
 		addLogEntry(taValues.get(FlexTASource.MA20_SLOPE));
 		addLogEntry(taValues.get(FlexTASource.MA50_SLOPE));
 		addLogEntry(taValues.get(FlexTASource.MA100_SLOPE));
@@ -329,6 +330,7 @@ public class TradeLog {
 		target.add(taValues.get(FlexTASource.MA200_LOWEST));
 		target.add(taValues.get(FlexTASource.MA200_IN_CHANNEL));
 		target.add(taValues.get(FlexTASource.MA200MA100_TREND_DISTANCE_PERC));
+		target.add(taValues.get(FlexTASource.MA100_ABOVE_MA200));
 		target.add(taValues.get(FlexTASource.MA20_SLOPE));
 		target.add(taValues.get(FlexTASource.MA50_SLOPE));
 		target.add(taValues.get(FlexTASource.MA100_SLOPE));
